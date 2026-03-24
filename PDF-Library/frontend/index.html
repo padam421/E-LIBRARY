@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF Library</title>
+
+    <!-- CSS Connection -->
+    <link rel="stylesheet" href="assets/css/styles.css" />
+
+    <!-- Google Identity Services API -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- CSS Connection -->
+    <link rel="stylesheet" href="assets/css/styles.css" />
+
+    <!-- NEW: Material Symbols Font for Icons -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    />
+
+    <!-- IMPORTANT: If you have other CSS or API links in your <head>, paste them here -->
+  </head>
+  <body>
+    <!-- HEADER SECTION -->
+    <header class="header">
+      <!-- Left: Menu Button -->
+      <div class="header-left">
+        <button
+          id="open-sidebar-btn"
+          class="icon-btn"
+          style="color: #5f6368; margin-left: 8px"
+        >
+          <span class="material-symbols-outlined">menu_book</span>
+        </button>
+      </div>
+      <!-- Center: Logo -->
+      <div class="header-center">PDF Library</div>
+
+      <!-- Right: Profile & Auth -->
+      <div class="header-right">
+        <button id="sign-in-btn" class="sign-in-btn">Sign in</button>
+
+        <button id="profile-btn" class="profile-btn hidden">
+          <img
+            id="profile-img"
+            src=""
+            alt="Profile"
+            class="hidden"
+            referrerpolicy="no-referrer"
+          />
+          <span id="profile-initials" class="hidden"></span>
+        </button>
+
+        <!-- Profile Popup (Hidden by default) -->
+        <div id="profile-popup" class="profile-popup hidden">
+          <div class="popup-header">
+            <span id="popup-email" class="popup-email"></span>
+            <button id="close-popup-btn" class="close-btn">&times;</button>
+          </div>
+
+          <div class="popup-profile-section">
+            <!-- NEW WRAPPER FOR HOVER EFFECTS -->
+            <div id="popup-profile-container" class="popup-profile-wrapper">
+              <div class="popup-avatar" style="margin-bottom: 0">
+                <img
+                  id="popup-img"
+                  src=""
+                  alt="Profile"
+                  class="hidden"
+                  referrerpolicy="no-referrer"
+                />
+                <span id="popup-initials" class="hidden"></span>
+              </div>
+              <!-- Camera Icon Overlay -->
+              <div class="camera-icon-overlay">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="white">
+                  <path
+                    d="M4 4h3l2-2h6l2 2h3c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zm8 3c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z"
+                  />
+                </svg>
+              </div>
+              <!-- Hover Tooltip -->
+              <div class="profile-tooltip">Change profile picture</div>
+            </div>
+            <!-- EXACT ID RESTORED FOR JS CONNECTION -->
+            <h2
+              id="popup-greeting"
+              class="popup-greeting"
+              style="margin-top: 12px"
+            >
+              Hi, User!
+            </h2>
+          </div>
+
+          <div class="popup-manage-section">
+            <a
+              href="https://myaccount.google.com/"
+              target="_blank"
+              class="manage-account-btn"
+              style="
+                text-decoration: none;
+                display: inline-block;
+                text-align: center;
+              "
+            >
+              Manage your Google Account
+            </a>
+          </div>
+
+          <!-- EXACT ID RESTORED FOR JS CONNECTION (Single/Multiple Accounts inject here) -->
+          <div id="auth-actions-container"></div>
+
+          <div class="popup-footer">
+            <a href="#">Privacy Policy</a>
+            <span>•</span>
+            <a href="#">Terms of Service</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT SECTION -->
+    <!-- MAIN CONTENT SECTION -->
+    <main
+      class="main-content"
+      style="
+        padding: 20px;
+        align-items: flex-start;
+        text-align: left;
+        width: 100%;
+        box-sizing: border-box;
+      "
+    >
+      <h1 style="margin-left: 4%; margin-bottom: 30px">
+        Welcome to the PDF Library
+      </h1>
+      <!-- The PDF rows will be injected here -->
+      <div id="pdf-container" style="width: 100%"></div>
+    </main>
+    <!-- START OF CHANGE PROFILE PICTURE MODAL -->
+    <!-- START OF SIDEBAR MENU -->
+    <!-- The dark overlay that closes the menu when clicked -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <!-- The sliding panel -->
+    <div id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <!-- Back Arrow Icon -->
+        <button id="close-sidebar-btn" class="icon-btn">
+          <span class="material-symbols-outlined">arrow_back</span>
+        </button>
+        <!-- Search Icon -->
+        <button id="sidebar-search-btn" class="icon-btn">
+          <span class="material-symbols-outlined">search</span>
+        </button>
+      </div>
+
+      <div class="sidebar-content">
+        <div class="sidebar-section-title">Recent</div>
+        <!-- History items will be injected here by JavaScript -->
+        <div id="history-list" class="history-list"></div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="sidebar-footer-btn">
+          <span class="material-symbols-outlined">settings</span>
+          Settings & help
+        </button>
+      </div>
+    </div>
+    <!-- START OF SEARCH MODAL -->
+    <div id="search-backdrop" class="sidebar-overlay hidden"></div>
+    <div id="search-modal" class="search-modal hidden">
+      <div class="search-header">
+        <span class="material-symbols-outlined">search</span>
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Search your library..."
+          autocomplete="off"
+        />
+        <button id="close-search-btn" class="icon-btn">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div id="search-results" class="search-results">
+        <!-- Search results injected here -->
+      </div>
+    </div>
+    <!-- END OF SEARCH MODAL -->
+    <div id="change-pic-backdrop" class="change-pic-backdrop hidden">
+      <div id="change-pic-modal" class="change-pic-modal">
+        <div class="change-pic-header">
+          <button id="close-change-pic" class="icon-btn">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="#e8eaed">
+              <path
+                d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+              />
+            </svg>
+          </button>
+          <h2>Change profile picture</h2>
+        </div>
+
+        <div class="change-pic-body">
+          <!-- THIS IS THE PROFILE PICTURE DISPLAY THAT WAS MISSING -->
+          <div class="large-profile-display">
+            <img
+              id="large-preview-img"
+              src=""
+              alt="Profile"
+              class="hidden"
+              referrerpolicy="no-referrer"
+            />
+            <div id="large-preview-initials" class="hidden"></div>
+          </div>
+
+          <!-- THE TWO BUTTONS -->
+          <div class="action-buttons-container">
+            <div class="action-btn-wrapper">
+              <button id="upload-device-btn" class="circle-btn">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="#e8eaed">
+                  <path
+                    d="M19 7v3h-2V7h-3V5h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-2zM5 19l3-4 2 3 3-4 4 5H5z"
+                  />
+                </svg>
+              </button>
+              <span>Upload from<br />device</span>
+            </div>
+            <div class="action-btn-wrapper">
+              <button id="take-picture-btn" class="circle-btn">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="#e8eaed">
+                  <path
+                    d="M4 4h3l2-2h6l2 2h3c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zm8 3c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z"
+                  />
+                </svg>
+              </button>
+              <span>Take a picture</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hidden elements for functionality -->
+        <input
+          type="file"
+          id="hidden-file-input"
+          accept="image/*"
+          class="hidden"
+        />
+
+        <!-- Camera UI Overlay -->
+        <div id="camera-ui" class="camera-ui hidden">
+          <video id="camera-video" autoplay playsinline></video>
+          <div class="camera-controls">
+            <button id="cancel-camera-btn" class="camera-text-btn">
+              Cancel
+            </button>
+            <button id="capture-btn" class="capture-circle"></button>
+            <div style="width: 50px"></div>
+            <!-- spacer -->
+          </div>
+          <canvas id="camera-canvas" class="hidden"></canvas>
+        </div>
+      </div>
+    </div>
+    <!-- START OF PREMIUM AI SIDEBAR -->
+    <!-- Floating AI Button (Bottom Right) -->
+    <button id="ai-chat-btn" class="ai-chat-btn">AI</button>
+
+    <!-- The Right Sidebar Panel -->
+    <div id="ai-sidebar" class="ai-sidebar">
+      <<!-- Clean Close Button & History Menu inside the sidebar -->
+      <div
+        class="ai-sidebar-top"
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        "
+      >
+        <button id="ai-close-btn" class="ai-icon-btn">
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </button>
+
+        <!-- Three Dots History Menu -->
+        <div style="position: relative">
+          <button id="ai-history-btn" class="ai-icon-btn" title="Chat History">
+            <span class="material-symbols-outlined">more_vert</span>
+          </button>
+
+          <!-- The History Dropdown Popup -->
+          <div
+            id="ai-history-dropdown"
+            class="ai-history-dropdown hidden-dropdown"
+          >
+            <div class="history-dropdown-header">Interaction History</div>
+            <div id="ai-history-list" class="history-list-container">
+              <!-- History items will appear here -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Chat History Area (No Header) -->
+      <div id="ai-chat-body" class="ai-chat-body">
+        <!-- Messages will appear here -->
+      </div>
+
+      <!-- The Sophisticated Perplexity-Style Search Bar -->
+      <!-- The Sophisticated Perplexity-Style Search Bar -->
+      <div class="ai-input-container">
+        <div class="ai-input-box">
+          <!-- Top half: Text Input -->
+          <div class="ai-input-top">
+            <!-- START OF FILE DISPLAY AREA -->
+            <div
+              id="file-preview-container"
+              class="file-preview-container"
+            ></div>
+            <!-- END OF FILE DISPLAY AREA -->
+            <input
+              type="text"
+              id="ai-chat-input"
+              placeholder="Type / for search modes and shortcuts"
+              autocomplete="off"
+            />
+          </div>
+
+          <!-- Bottom half: Buttons -->
+          <div class="ai-input-bottom">
+            <!-- START OF NEW UPLOAD CONTAINER -->
+            <div class="upload-container">
+              <!-- The Plus Button -->
+              <!-- The Plus Button -->
+              <button
+                id="ai-plus-btn"
+                class="action-btn"
+                type="button"
+                title="Attach file"
+                style="
+                  background: transparent;
+                  border: none;
+                  cursor: pointer;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  padding: 4px;
+                "
+              >
+                <span
+                  class="material-symbols-outlined"
+                  style="font-size: 22px; color: #a0a0a0"
+                  >add</span
+                >
+              </button>
+
+              <!-- New Chat Button & Hover Popup -->
+              <div
+                style="position: relative; display: flex; align-items: center"
+              >
+                <button
+                  id="ai-new-chat-btn"
+                  class="action-btn"
+                  type="button"
+                  style="
+                    background: transparent;
+                    border: none;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 4px;
+                    margin-left: 4px;
+                  "
+                >
+                  <span
+                    class="material-symbols-outlined"
+                    style="
+                      font-size: 22px;
+                      color: #a0a0a0;
+                      transition: color 0.2s;
+                    "
+                    >edit_square</span
+                  >
+                </button>
+
+                <!-- The Pill-Shaped Hover Popup -->
+                <div class="new-chat-tooltip">
+                  <span
+                    class="material-symbols-outlined"
+                    style="font-size: 18px"
+                    >edit_square</span
+                  >
+                  New chat
+                </div>
+              </div>
+
+              <!-- The Hidden Popup Menu -->
+              <div id="ai-upload-popup" class="upload-popup">
+                <button
+                  id="ai-upload-device-btn"
+                  class="popup-item"
+                  type="button"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                  Upload from device
+                </button>
+              </div>
+
+              <!-- The Hidden File Input (This actually opens the computer folder) -->
+              <input
+                type="file"
+                id="ai-file-input"
+                style="display: none"
+                multiple
+              />
+            </div>
+            <!-- END OF NEW UPLOAD CONTAINER -->
+
+            <!-- Right side: Model, Mic, and Send -->
+            <!-- Right side: Dynamic Royal Send Button -->
+            <div class="ai-input-actions">
+              <button
+                id="ai-send-btn"
+                class="royal-send-btn hidden-send"
+                type="button"
+                title="Send message"
+              >
+                <span class="material-symbols-outlined">send</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- END OF PREMIUM AI SIDEBAR -->
+    <!-- This tool converts AI Markdown into beautiful HTML -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- JavaScript Connections (MUST BE AT THE VERY BOTTOM) -->
+    <script src="assets/js/auth.js"></script>
+  </body>
+</html>
