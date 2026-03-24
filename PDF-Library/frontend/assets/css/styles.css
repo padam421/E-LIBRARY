@@ -1,0 +1,1779 @@
+/* =========================================
+   BASE STYLES
+   ========================================= */
+body {
+  margin: 0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  background-color: #f8f9fa;
+  color: #202124;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* =========================================
+   HEADER LAYOUT (Top-Right Profile, Centered Logo)
+   ========================================= */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #dadce0;
+  position: relative;
+}
+
+.header-left {
+  flex: 1; /* Takes up 1/3 of the space on the left */
+}
+
+.header-center {
+  flex: 1; /* Takes up 1/3 of the space in the middle */
+  text-align: center; /* Perfectly centers the text */
+  font-size: 24px;
+  font-weight: bold;
+  color: #202124;
+}
+
+.header-right {
+  flex: 1; /* Takes up 1/3 of the space on the right */
+  display: flex;
+  justify-content: flex-end; /* Pushes the profile button to the far right edge */
+  position: relative; /* Anchors the popup to this section */
+}
+
+/* =========================================
+   MAIN CONTENT LAYOUT (Centered under Logo)
+   ========================================= */
+.main-content {
+  text-align: center;
+  padding: 60px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.main-content h1 {
+  font-size: 32px;
+  font-weight: bold;
+  color: #202124;
+  margin: 0;
+}
+
+/* =========================================
+   BUTTONS & PROFILE ICON
+   ========================================= */
+.sign-in-btn {
+  background-color: #1a73e8;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.sign-in-btn:hover {
+  background-color: #1557b0;
+}
+
+.profile-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 0;
+  background-color: #1a73e8;
+  color: white;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s;
+}
+
+.profile-btn:hover {
+  border-color: #dadce0;
+}
+
+.profile-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-btn span {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* =========================================
+   PROFILE POPUP (Matches Images 2 & 3)
+   ========================================= */
+.profile-popup {
+  position: absolute;
+  top: 50px; /* Positioned right below the profile button */
+  right: 0; /* Aligned to the right edge */
+  width: 360px;
+  background-color: #202124;
+  border-radius: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  padding: 16px;
+  color: #e8eaed;
+  z-index: 1000;
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 0 8px;
+}
+
+.popup-email {
+  font-size: 13px;
+  color: #9aa0a6;
+  flex: 1;
+  text-align: center;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #9aa0a6;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+  position: absolute;
+  right: 20px;
+}
+
+.close-btn:hover {
+  color: #e8eaed;
+}
+
+.popup-profile-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.popup-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #1a73e8;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 12px;
+  font-size: 28px;
+  border: 2px solid #ea4335; /* Google colors border representation */
+}
+
+.popup-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.popup-greeting {
+  font-size: 22px;
+  font-weight: 400;
+  color: #e8eaed;
+  margin: 0;
+}
+
+.popup-manage-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.manage-account-btn {
+  background-color: transparent;
+  border: 1px solid #5f6368;
+  color: #8ab4f8;
+  padding: 8px 24px;
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.manage-account-btn:hover {
+  background-color: rgba(138, 180, 248, 0.04);
+}
+
+/* =========================================
+   DYNAMIC AUTH ACTIONS CONTAINER
+   ========================================= */
+#auth-actions-container {
+  margin: 0 8px 8px 8px;
+}
+
+/* Single Account View */
+.single-account-actions {
+  display: flex;
+  background-color: #2d2e30;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.single-account-actions .action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  background: transparent;
+  border: none;
+  color: #e8eaed;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.single-account-actions .action-btn:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.single-account-actions .divider {
+  width: 1px;
+  background-color: #3c4043;
+}
+
+/* Multiple Accounts View */
+.accounts-accordion {
+  background-color: #2d2e30;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.accordion-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 16px 24px;
+  background: transparent;
+  border: none;
+  color: #e8eaed;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.accordion-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.accordion-toggle-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.collapsed-avatars {
+  display: flex;
+}
+
+.collapsed-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #2d2e30;
+  background-color: #1a73e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-left: -8px;
+  z-index: 10;
+}
+
+.collapsed-avatar:first-child {
+  margin-left: 0;
+}
+
+.collapsed-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.collapsed-avatar span {
+  font-size: 10px;
+  color: white;
+  font-weight: 500;
+}
+
+.secondary-accounts-list {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 8px 0;
+  border-bottom: 1px solid #3c4043;
+}
+
+/* Custom Scrollbar for the list */
+.secondary-accounts-list::-webkit-scrollbar {
+  width: 8px;
+}
+.secondary-accounts-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.secondary-accounts-list::-webkit-scrollbar-thumb {
+  background: #5f6368;
+  border-radius: 4px;
+}
+.secondary-accounts-list::-webkit-scrollbar-thumb:hover {
+  background: #9aa0a6;
+}
+
+.secondary-account-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 24px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  color: #e8eaed;
+  transition: background-color 0.2s;
+}
+
+.secondary-account-item:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.secondary-account-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #1a73e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.secondary-account-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.secondary-account-avatar span {
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+}
+
+.secondary-account-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.secondary-account-name {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #e8eaed;
+}
+
+.secondary-account-email {
+  font-size: 12px;
+  color: #9aa0a6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.expanded-actions .action-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #e8eaed;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-align: left;
+}
+
+.expanded-actions .action-btn:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+/* =========================================
+   FOOTER
+   ========================================= */
+.popup-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding-top: 8px;
+  font-size: 12px;
+  color: #9aa0a6;
+}
+
+.popup-footer a {
+  color: #9aa0a6;
+  text-decoration: none;
+}
+
+.popup-footer a:hover {
+  text-decoration: underline;
+}
+/* =========================================
+   CHANGE PROFILE PICTURE PANEL & TOOLTIP
+   ========================================= */
+
+/* Wrapper for hover effects */
+.popup-profile-wrapper {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+/* Darken image on hover */
+.popup-profile-wrapper:hover .popup-avatar {
+  filter: brightness(0.7);
+}
+
+/* Camera icon overlay */
+.camera-icon-overlay {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: #3c4043;
+  border: 2px solid #202124;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+/* Hover Tooltip */
+.profile-tooltip {
+  position: absolute;
+  top: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #5f6368;
+  color: white;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+.popup-profile-wrapper:hover .profile-tooltip {
+  opacity: 1;
+}
+
+/* The Right-Side Modal Panel */
+/* The Blurred Backdrop */
+.change-pic-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.55); /* Dark semi-transparent overlay */
+  backdrop-filter: blur(5px); /* Blurs the background */
+  -webkit-backdrop-filter: blur(5px); /* Safari support */
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Centers the modal perfectly */
+}
+
+/* The Centered Modal Panel */
+.change-pic-modal {
+  width: 320px; /* REDUCED WIDTH */
+  max-width: 90vw;
+  background-color: #202124;
+  color: #e8eaed;
+  border-radius: 16px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.change-pic-header {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #3c4043;
+}
+
+.change-pic-header h2 {
+  font-size: 18px;
+  font-weight: 400;
+  margin: 0 0 0 16px;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 50%;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.change-pic-body {
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Large Profile Display */
+.large-profile-display {
+  width: 160px; /* SLIGHTLY SMALLER PROFILE PICTURE */
+  height: 160px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-bottom: 24px; /* REDUCED SPACING */
+  background-color: #1a73e8;
+}
+
+.large-profile-display img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#large-preview-initials {
+  width: 100%;
+  height: 100%;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 64px;
+}
+
+/* The Blurred Backdrop */
+.change-pic-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(
+    0,
+    0,
+    0,
+    0.6
+  ); /* Slightly darker for better contrast */
+  backdrop-filter: blur(6px); /* Beautiful background blur */
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* The Centered Modal Panel - PREMIUM DESIGN */
+.change-pic-modal {
+  width: 360px;
+  max-width: 90vw;
+  background-color: #28292c; /* Sleek, elevated dark gray */
+  color: #e8eaed;
+  border-radius: 24px; /* Modern, soft rounded corners */
+  box-shadow:
+    0 24px 40px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.05); /* Deep shadow + subtle border */
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.change-pic-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08); /* Very subtle separator */
+}
+
+.change-pic-header h2 {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0 0 0 16px;
+  letter-spacing: 0.2px;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 50%;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+.icon-btn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.change-pic-body {
+  padding: 32px 24px 40px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Large Profile Display - HIGH QUALITY */
+.large-profile-display {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-bottom: 36px;
+  background-color: #1a73e8;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); /* Makes the image pop off the background */
+  border: 2px solid rgba(255, 255, 255, 0.05);
+}
+
+.large-profile-display img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#large-preview-initials {
+  width: 100%;
+  height: 100%;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 64px;
+}
+
+/* Action Buttons Grid */
+.action-buttons-container {
+  display: flex;
+  justify-content: center;
+  gap: 48px; /* Perfect spacing for exactly two buttons */
+  width: 100%;
+}
+
+.action-btn-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 80px;
+  text-align: center;
+  gap: 12px;
+}
+
+.action-btn-wrapper span {
+  font-size: 13px;
+  color: #e8eaed;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+/* Premium Button Styling */
+.circle-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: #3c4043;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.circle-btn:hover {
+  background-color: #4a4d51;
+  transform: translateY(-2px); /* Button lifts up slightly on hover */
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Camera UI Overlay */
+.camera-ui {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #000;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+}
+#camera-video {
+  width: 100%;
+  height: calc(100% - 80px);
+  object-fit: cover;
+}
+.camera-controls {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background-color: #000;
+}
+.camera-text-btn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+}
+.capture-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: white;
+  border: 4px solid #5f6368;
+  cursor: pointer;
+}
+.capture-circle:active {
+  background-color: #e8eaed;
+}
+/* =========================================
+   SIDEBAR MENU STYLES (Premium Dark Theme)
+   ========================================= */
+
+/* Material Symbols Base Settings */
+.material-symbols-outlined {
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+}
+
+/* The dark background overlay */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.sidebar-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* The Sliding Panel */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: -320px; /* Hidden off-screen by default */
+  width: 320px;
+  height: 100vh;
+  background-color: #1e1f22; /* Sleek Dark Theme */
+  color: #e3e3e3;
+  z-index: 10001;
+  display: flex;
+  flex-direction: column;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth slide animation */
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.3);
+  font-family: "Google Sans", Roboto, Arial, sans-serif;
+}
+.sidebar.active {
+  left: 0; /* Slides into view */
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+}
+.sidebar-header .icon-btn {
+  color: #e3e3e3;
+}
+.sidebar-header .icon-btn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-top: 16px;
+}
+
+.sidebar-section-title {
+  padding: 0 24px 12px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #e3e3e3;
+}
+
+/* History Items & Premium Typography */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Sophisticated Hover Tooltip */
+.history-item-wrapper {
+  position: relative;
+  padding: 0 12px;
+}
+.history-item-wrapper::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: -28px;
+  left: 24px;
+  background-color: #e8eaed; /* Light tooltip on dark theme */
+  color: #202124;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  transform: translateY(-5px);
+  z-index: 10005;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.history-item-wrapper:hover::after {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.5s; /* Slight delay for a professional feel */
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.history-item:hover {
+  background-color: #282a2c;
+  border-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.history-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  overflow: hidden;
+}
+.history-item-left .material-symbols-outlined {
+  font-size: 18px;
+  color: #c4c7c5;
+}
+
+/* Refined Typography */
+.history-text {
+  font-size: 14px;
+  font-weight: 500; /* Bolder, more professional */
+  letter-spacing: 0.3px; /* Better spacing */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #e3e3e3;
+  font-family:
+    "Google Sans",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+}
+
+/* Delete Menu (3 dots) */
+.history-more-btn {
+  opacity: 0;
+  padding: 4px;
+  width: 28px;
+  height: 28px;
+  color: #c4c7c5;
+}
+.history-item:hover .history-more-btn {
+  opacity: 1;
+}
+.delete-dropdown {
+  position: absolute;
+  right: 24px;
+  top: 36px;
+  background-color: #282a2c;
+  border: 1px solid #444746;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  overflow: hidden;
+}
+.delete-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  color: #e3e3e3;
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+}
+.delete-btn:hover {
+  background-color: #333538;
+}
+.delete-btn .material-symbols-outlined {
+  font-size: 18px;
+  color: #f28b82;
+}
+
+/* Search Modal Styles */
+.search-modal {
+  position: fixed;
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  max-width: 90vw;
+  background-color: #28292c;
+  border-radius: 12px;
+  box-shadow:
+    0 16px 32px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+  z-index: 10002;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.search-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 12px;
+}
+.search-header .material-symbols-outlined {
+  color: #9aa0a6;
+}
+#search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #e8eaed;
+  font-size: 16px;
+  outline: none;
+  font-family: "Google Sans", Roboto, sans-serif;
+}
+#search-input::placeholder {
+  color: #9aa0a6;
+}
+.search-results {
+  max-height: 350px;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+.search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  cursor: pointer;
+  color: #e3e3e3;
+  transition: background-color 0.2s;
+}
+.search-result-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Sidebar Footer (Settings) */
+.sidebar-footer {
+  padding: 12px;
+  margin-bottom: 8px;
+}
+.sidebar-footer-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  background: none;
+  border: none;
+  color: #e3e3e3;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+.sidebar-footer-btn:hover {
+  background-color: #282a2c;
+}
+/* =========================================
+   PREMIUM AI SIDEBAR STYLES (PERPLEXITY STYLE)
+   ========================================= */
+
+/* Floating Circular Button */
+.ai-chat-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a73e8, #8ab4f8);
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  border: none;
+  box-shadow: 0 4px 16px rgba(26, 115, 232, 0.4);
+  cursor: pointer;
+  z-index: 9999;
+  transition: transform 0.3s ease;
+  font-family: "Google Sans", sans-serif;
+}
+.ai-chat-btn:hover {
+  transform: scale(1.08);
+}
+
+/* The Sidebar Panel */
+.ai-sidebar {
+  position: fixed;
+  top: 0;
+  right: -450px; /* Hidden off-screen */
+  width: 420px;
+  max-width: 90vw;
+  height: 100vh;
+  background-color: #191a1c; /* Deep professional dark */
+  border-left: 1px solid #2e2f31;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  transition: right 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  font-family: "Google Sans", Roboto, sans-serif;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.5);
+}
+.ai-sidebar.active {
+  right: 0;
+} /* Slides in */
+
+/* Top area for the close button */
+.ai-sidebar-top {
+  padding: 16px 24px 0 24px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* Chat Body Area */
+.ai-chat-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Sophisticated Input Area (Perplexity Style) */
+.ai-input-container {
+  padding: 0 24px 32px 24px; /* Perfectly aligned to the left and right edges */
+  background-color: #191a1c;
+}
+/* --- START OF PREMIUM TRACING BORDER SEARCH BAR --- */
+
+/* 1. Define the angle for the spinning animation */
+@property --angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* 2. The Main Container */
+.ai-input-box {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+  border: none; /* Removes standard borders */
+  background: transparent; /* We let the ::after shield handle the background */
+  border-radius: 16px;
+}
+
+/* 3. The Spinning "Comet" Line (Outer Border) */
+.ai-input-box::before {
+  content: "";
+  position: absolute;
+  inset: -1.5px; /* This 1.5px is the exact thickness of your spinning line */
+  border-radius: 17.5px; /* Slightly larger to wrap the corners perfectly */
+
+  /* Royal Aesthetic: 75% invisible, creating a single continuous line of Cyan -> Indigo -> Purple */
+  background: conic-gradient(
+    from var(--angle),
+    transparent 0%,
+    transparent 75%,
+    rgba(56, 189, 248, 0.3) 85%,
+    /* Faint Cyan tail */ rgba(99, 102, 241, 0.8) 95%,
+    /* Deep Indigo body */ rgba(168, 85, 247, 1) 100% /* Royal Purple head */
+  );
+  z-index: -2; /* Puts the spinning line at the very back */
+  animation: spin-tracing-line 3s linear infinite;
+  transition: filter 0.4s ease;
+}
+
+/* 4. The Solid Dark Shield (GUARANTEES the center stays dark) */
+.ai-input-box::after {
+  content: "";
+  position: absolute;
+  inset: 0; /* Exactly covers the inside of the box, blocking the gradient */
+  background-color: #1e1e20; /* Professional, deep dark gray/black */
+  border-radius: 16px;
+  z-index: -1; /* Sits ON TOP of the spinning line, but BEHIND your text */
+
+  /* A very faint, static inner line so the box always has definition */
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  transition: box-shadow 0.4s ease;
+}
+
+/* 5. Hover Effects: The Subtle Glow */
+.ai-input-box:hover::before {
+  /* When hovered, the spinning line casts a faint purple glow outward */
+  filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.5));
+}
+
+.ai-input-box:hover::after {
+  /* When hovered, a very faint, elegant glow appears INSIDE the dark box */
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 0 20px rgba(99, 102, 241, 0.12);
+}
+
+/* 6. The Continuous Spinning Animation */
+@keyframes spin-tracing-line {
+  0% {
+    --angle: 0deg;
+  }
+  100% {
+    --angle: 360deg;
+  }
+}
+
+/* --- END OF PREMIUM TRACING BORDER SEARCH BAR --- */
+
+/* Top Half: Input */
+.ai-input-top {
+  width: 100%;
+}
+.ai-input-top input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #e3e3e3;
+  font-size: 15px;
+  outline: none;
+  font-family: "Google Sans", Roboto, sans-serif;
+}
+.ai-input-top input::placeholder {
+  color: #7a7c7f;
+  font-weight: 500;
+}
+
+/* Bottom Half: Buttons */
+.ai-input-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ai-input-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Specific Button Styles */
+.ai-icon-btn-outline {
+  background: transparent;
+  border: 1px solid #444746;
+  color: #a0a0a0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+.ai-icon-btn-outline:hover {
+  background-color: #333538;
+  color: #fff;
+}
+
+.ai-icon-btn {
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+.ai-icon-btn:hover {
+  color: #fff;
+}
+
+.ai-model-btn {
+  background: none;
+  border: none;
+  color: #8ab4f8; /* Blue accent text */
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.ai-model-btn:hover {
+  color: #aecbfa;
+}
+
+/* --- START OF ROYAL SEND BUTTON --- */
+.royal-send-btn {
+  background-color: #e8eaed; /* Crisp, premium light color */
+  color: #191a1c; /* Deep dark icon color for maximum HD contrast */
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  /* Smooth, premium transition for appearing and hovering */
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* The HD Material Icon Styling */
+.royal-send-btn .material-symbols-outlined {
+  font-size: 18px;
+  font-variation-settings:
+    "FILL" 1,
+    "wght" 600; /* Solid fill and bold weight for HD quality */
+  margin-left: 2px; /* Perfectly centers the paper plane visually */
+  margin-top: 1px;
+}
+
+/* Hover effect with subtle royal glow */
+.royal-send-btn:hover {
+  background-color: #ffffff;
+  transform: scale(1.05);
+  box-shadow:
+    0 4px 16px rgba(255, 255, 255, 0.1),
+    0 0 12px rgba(168, 85, 247, 0.4);
+}
+
+.royal-send-btn:active {
+  transform: scale(0.95);
+}
+
+/* The class that keeps it hidden until the user types */
+.hidden-send {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.8); /* Shrinks slightly when hidden */
+  pointer-events: none; /* Prevents clicking when invisible */
+}
+/* --- END OF ROYAL SEND BUTTON --- */
+
+/* Message Bubbles */
+.ai-msg-user {
+  align-self: flex-end;
+  background-color: #2e2f31;
+  color: #e3e3e3;
+  padding: 14px 18px;
+  border-radius: 20px 20px 4px 20px;
+  max-width: 85%;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.ai-msg-bot {
+  align-self: flex-start;
+  color: #e3e3e3;
+  padding: 8px 0;
+  max-width: 95%;
+  font-size: 15px;
+  line-height: 1.6;
+}
+/* --- START OF UPLOAD POPUP STYLES --- */
+.upload-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.upload-popup {
+  position: absolute;
+  bottom: 45px; /* Opens above the + button */
+  left: 0;
+  background-color: #1e1e20; /* Deep premium dark color */
+  border: 1px solid #333538;
+  border-radius: 12px;
+  padding: 6px;
+  width: 200px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  z-index: 100;
+
+  /* Smooth Animation Setup */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* This class is added by JavaScript to show the popup */
+.upload-popup.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.popup-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  color: #e8eaed;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.popup-item:hover {
+  background-color: #2a2b2e; /* Highlights when hovered */
+}
+/* --- END OF UPLOAD POPUP STYLES --- */
+/* --- START OF FILE PREVIEW CHIPS --- */
+.file-preview-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Adds a little space below the files if there are any */
+.file-preview-container:not(:empty) {
+  margin-bottom: 8px;
+}
+
+/* The sleek dark card for each file */
+.file-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #2a2b2e; /* Premium dark gray */
+  border: 1px solid #44474a;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: #e8eaed;
+  max-width: 220px;
+  animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Keeps long file names from breaking the layout */
+.file-chip-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The 'X' remove button */
+.file-chip-remove {
+  background: none;
+  border: none;
+  color: #9aa0a6;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.file-chip-remove:hover {
+  color: #ff6b6b; /* Turns soft red on hover */
+  background-color: rgba(255, 107, 107, 0.1);
+}
+
+/* Smooth entrance animation */
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+/* --- END OF FILE PREVIEW CHIPS --- */
+
+/* --- START OF AI HISTORY STYLES --- */
+.ai-history-dropdown {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  width: 300px;
+  background-color: #1e1e20;
+  border: 1px solid #333538;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  max-height: 400px;
+
+  /* Smooth Animation */
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ai-history-dropdown.hidden-dropdown {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  pointer-events: none;
+}
+
+.history-dropdown-header {
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e8eaed;
+  border-bottom: 1px solid #333538;
+  background-color: #252628;
+  border-radius: 12px 12px 0 0;
+}
+
+.history-list-container {
+  overflow-y: auto;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Custom Scrollbar for History */
+.history-list-container::-webkit-scrollbar {
+  width: 6px;
+}
+.history-list-container::-webkit-scrollbar-thumb {
+  background: #44474a;
+  border-radius: 3px;
+}
+
+.ai-history-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Pushes the 3 dots to the far right */
+  position: relative; /* Required for the delete popup to position correctly */
+}
+
+.ai-history-item:hover {
+  background-color: #2a2b2e;
+}
+
+.ai-history-item:last-child {
+  border-bottom: none;
+}
+
+.ai-history-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.ai-history-item-query {
+  font-size: 13px;
+  color: #e8eaed;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.ai-history-item-date {
+  font-size: 11px;
+  color: #9aa0a6;
+}
+
+/* The 3 dots button ON each history item */
+.ai-history-more-btn {
+  background: none;
+  border: none;
+  color: #9aa0a6;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0; /* Hidden until you hover over the item */
+  transition: all 0.2s;
+}
+
+.ai-history-item:hover .ai-history-more-btn {
+  opacity: 1; /* Appears when hovering */
+}
+
+.ai-history-more-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #e8eaed;
+}
+
+/* The Delete Dropdown Menu */
+.ai-history-delete-menu {
+  position: absolute;
+  right: 24px;
+  top: 36px;
+  background-color: #282a2c;
+  border: 1px solid #444746;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 1001;
+  overflow: hidden;
+}
+
+.ai-history-delete-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  color: #e3e3e3;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.ai-history-delete-btn:hover {
+  background-color: #333538;
+}
+
+.ai-history-delete-btn .material-symbols-outlined {
+  font-size: 16px;
+  color: #f28b82; /* Soft red color for the trash can */
+}
+/* --- START OF NEW CHAT BUTTON STYLES --- */
+.new-chat-tooltip {
+  position: absolute;
+  bottom: 130%; /* Positions the popup above the button */
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background-color: #282a2c; /* Premium dark pill background */
+  color: #e3e3e3;
+  padding: 8px 16px;
+  border-radius: 24px; /* Perfectly rounded pill shape */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+
+  /* Smooth animation settings */
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  pointer-events: none; /* Prevents the popup from blocking mouse clicks */
+  z-index: 1000;
+}
+
+/* Hover effect: Makes the popup float up and appear */
+#ai-new-chat-btn:hover + .new-chat-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Hover effect: Makes the icon light up when hovered */
+#ai-new-chat-btn:hover .material-symbols-outlined {
+  color: #ffffff !important;
+}
+/* --- END OF NEW CHAT BUTTON STYLES --- */
+
+/* =========================================
+   PDF LIBRARY ROWS (LIGHT THEME)
+   ========================================= */
+.pdf-row-container {
+  margin-bottom: 40px;
+  width: 100%;
+}
+
+.row-title {
+  font-size: 20px;
+  color: #202124;
+  font-weight: bold;
+  margin: 0 4% 10px 4%;
+}
+
+.pdf-row {
+  display: flex;
+  overflow-x: auto;
+  padding: 20px 4%;
+  gap: 16px;
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar for a cleaner look */
+.pdf-row::-webkit-scrollbar {
+  display: none;
+}
+.pdf-row {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Individual PDF Cards (The Thumbnails) */
+.pdf-card {
+  flex: 0 0 auto;
+  width: 220px; /* Width of the poster */
+  aspect-ratio: 16 / 9; /* Widescreen format */
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+  cursor: pointer;
+  background-color: #e8eaed;
+  display: block; /* Required for <a> tags */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* The Hover Zoom Effect */
+.pdf-card:hover {
+  transform: scale(1.08); /* Zooms in slightly */
+  z-index: 2;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+}
+
+.pdf-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Title that appears at the bottom of the thumbnail */
+.pdf-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  padding: 12px 10px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.pdf-card:hover .pdf-info {
+  opacity: 1; /* Shows title on hover */
+}
+
+.pdf-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

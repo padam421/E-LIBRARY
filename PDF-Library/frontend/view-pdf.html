@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF Viewer - PDF Library</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <style>
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden; /* Prevent double scrollbars */
+        background-color: #f4f4f9;
+      }
+      .viewer-header {
+        display: flex;
+        align-items: center;
+        padding: 10px 20px;
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        height: 60px;
+        box-sizing: border-box;
+      }
+      .back-button {
+        text-decoration: none;
+        color: #333;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 16px;
+      }
+      .back-button:hover {
+        color: #007bff;
+      }
+      .pdf-title-display {
+        margin-left: 20px;
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .iframe-container {
+        height: calc(100% - 60px); /* Fill remaining space below header */
+        width: 100%;
+      }
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="viewer-header">
+      <a href="index.html" class="back-button">
+        <!-- Simple back arrow SVG -->
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+        Back to Library
+      </a>
+      <div class="pdf-title-display" id="pdf-title-display">Loading PDF...</div>
+    </div>
+
+    <div class="iframe-container">
+      <iframe id="pdf-iframe" src="" allow="autoplay"></iframe>
+    </div>
+
+    <script>
+      // When the page loads, get the Drive ID and Title from the URL
+      document.addEventListener("DOMContentLoaded", () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const driveId = urlParams.get("id");
+        const title = urlParams.get("title");
+
+        if (driveId) {
+          // Set the iframe source to the Google Drive preview URL
+          const iframe = document.getElementById("pdf-iframe");
+          iframe.src = `https://drive.google.com/file/d/${driveId}/preview`;
+        } else {
+          document.getElementById("pdf-title-display").textContent =
+            "Error: No PDF ID provided.";
+        }
+
+        if (title) {
+          // Set the title in the header and the browser tab
+          document.getElementById("pdf-title-display").textContent = title;
+          document.title = `${title} - PDF Viewer`;
+        }
+      });
+    </script>
+  </body>
+</html>
