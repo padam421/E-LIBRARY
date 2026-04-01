@@ -1,13 +1,42 @@
 /* =========================================
-   BASE STYLES
+   BASE STYLES — Ultra-Premium Dark Theme
+   Source Serif 4 + System Fonts
    ========================================= */
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
 body {
   margin: 0;
   font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
-    sans-serif;
-  background-color: #f8f9fa;
-  color: #202124;
+    "Source Serif 4", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  font-optical-sizing: auto;
+  background-color: #08080a;
+  color: #f5f5f7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Source Serif 4 for all headings, titles, and prominent text */
+h1, h2, h3, h4, h5, h6,
+.header-center,
+.row-title,
+.pdf-title,
+.cinematic-title,
+.section-heading {
+  font-family: "Source Serif 4", Georgia, serif;
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+}
+
+/* Descriptions and body text */
+.pdf-description,
+.cinematic-desc,
+.main-content p {
+  font-family: "Source Serif 4", Georgia, serif;
+  font-optical-sizing: auto;
 }
 
 .hidden {
@@ -15,72 +44,87 @@ body {
 }
 
 /* =========================================
-   HEADER LAYOUT (Top-Right Profile, Centered Logo)
+   HEADER — Frosted Glass Premium
    ========================================= */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 24px;
-  background-color: #ffffff;
-  border-bottom: 1px solid #dadce0;
-  position: relative;
+  padding: 14px 28px;
+  background: rgba(8, 8, 10, 0.72);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid rgba(255,255,255,0.06);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  transition: background 0.3s ease;
 }
 
 .header-left {
-  flex: 1; /* Takes up 1/3 of the space on the left */
+  flex: 1;
 }
 
 .header-center {
-  flex: 1; /* Takes up 1/3 of the space in the middle */
-  text-align: center; /* Perfectly centers the text */
-  font-size: 24px;
-  font-weight: bold;
-  color: #202124;
+  flex: 1;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #f5f5f7;
+  letter-spacing: -0.02em;
 }
 
 .header-right {
-  flex: 1; /* Takes up 1/3 of the space on the right */
+  flex: 1;
   display: flex;
-  justify-content: flex-end; /* Pushes the profile button to the far right edge */
-  position: relative; /* Anchors the popup to this section */
+  justify-content: flex-end;
+  position: relative;
 }
 
 /* =========================================
-   MAIN CONTENT LAYOUT (Centered under Logo)
+   MAIN CONTENT — Premium Dark Layout
    ========================================= */
 .main-content {
   text-align: center;
-  padding: 60px 20px;
+  padding: 40px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
 .main-content h1 {
-  font-size: 32px;
-  font-weight: bold;
-  color: #202124;
+  font-size: 36px;
+  font-weight: 800;
+  color: #f5f5f7;
   margin: 0;
+  letter-spacing: -0.03em;
 }
 
 /* =========================================
-   BUTTONS & PROFILE ICON
+   BUTTONS & PROFILE ICON — Premium Pill Style
    ========================================= */
 .sign-in-btn {
-  background-color: #1a73e8;
+  background: rgba(10, 132, 255, 0.9);
   color: white;
   border: none;
   padding: 10px 24px;
-  border-radius: 4px;
+  border-radius: 980px;
+  font-family: "Source Serif 4", sans-serif;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+  letter-spacing: -0.01em;
 }
 
 .sign-in-btn:hover {
-  background-color: #1557b0;
+  background: rgba(10, 132, 255, 1);
+  transform: scale(1.03);
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.25);
+}
+
+.sign-in-btn:active {
+  transform: scale(0.97);
 }
 
 .profile-btn {
@@ -1027,7 +1071,7 @@ body {
   color: #e8eaed;
   font-size: 16px;
   outline: none;
-  font-family: "Google Sans", Roboto, sans-serif;
+  font-family: "Source Serif 4", Georgia, serif;
 }
 #search-input::placeholder {
   color: #9aa0a6;
@@ -1236,7 +1280,7 @@ body {
   color: #e3e3e3;
   font-size: 15px;
   outline: none;
-  font-family: "Google Sans", Roboto, sans-serif;
+  font-family: "Source Serif 4", Georgia, serif;
 }
 .ai-input-top input::placeholder {
   color: #7a7c7f;
@@ -1691,89 +1735,357 @@ body {
 /* --- END OF NEW CHAT BUTTON STYLES --- */
 
 /* =========================================
-   PDF LIBRARY ROWS (LIGHT THEME)
+   ULTRA-PREMIUM DARK LIBRARY DESIGN
    ========================================= */
+
+.main-content {
+  background-color: #08080a !important;
+  color: #f5f5f7;
+  min-height: 100vh;
+}
+
+.main-content h1 {
+  color: #f5f5f7 !important;
+  margin-bottom: 8px;
+}
+
+/* ── Row Container ── */
 .pdf-row-container {
-  margin-bottom: 40px;
+  margin-bottom: 2.5vw;
   width: 100%;
 }
 
+/* ── Row Title — Source Serif 4 ── */
 .row-title {
-  font-size: 20px;
-  color: #202124;
-  font-weight: bold;
-  margin: 0 4% 10px 4%;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 24px;
+  color: #f5f5f7;
+  font-weight: 700;
+  margin: 0 4% 0.6em 4%;
+  letter-spacing: -0.02em;
 }
 
+/* ── Horizontal Scroll Row ── */
 .pdf-row {
   display: flex;
   overflow-x: auto;
-  padding: 20px 4%;
-  gap: 16px;
+  padding: 16px 4%;
+  gap: 18px;
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
 }
-
-/* Hide scrollbar for a cleaner look */
 .pdf-row::-webkit-scrollbar {
   display: none;
 }
-.pdf-row {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
 
-/* Individual PDF Cards (The Thumbnails) */
+/* =========================================
+   ULTRA-PREMIUM BOOK CARD
+   3D hover, ambient glow, smooth slow-down
+   ========================================= */
 .pdf-card {
   flex: 0 0 auto;
-  width: 220px; /* Width of the poster */
-  aspect-ratio: 16 / 9; /* Widescreen format */
-  border-radius: 8px;
+  width: 185px;
+  aspect-ratio: 2 / 3;
+  border-radius: 12px;
   overflow: hidden;
   position: relative;
-  transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease;
   cursor: pointer;
-  background-color: #e8eaed;
-  display: block; /* Required for <a> tags */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background-color: #141416;
+  display: block;
+  scroll-snap-align: start;
+  /* PREMIUM: Multi-property transition with Apple easing */
+  transition:
+    transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
+    box-shadow 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
+    filter 0.4s ease;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    0 0 0 0.5px rgba(255, 255, 255, 0.04);
+  will-change: transform;
 }
 
-/* The Hover Zoom Effect */
+/* HOVER: Scale up + ambient glow + lift */
 .pdf-card:hover {
-  transform: scale(1.08); /* Zooms in slightly */
-  z-index: 2;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+  transform: scale(1.08) translateY(-6px);
+  z-index: 10;
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(10, 132, 255, 0.08),
+    0 0 0 0.5px rgba(255, 255, 255, 0.1);
 }
 
+/* PRESS: Subtle scale-down for tactile feel */
+.pdf-card:active {
+  transform: scale(1.02) translateY(-2px);
+  transition: transform 0.1s ease;
+}
+
+/* Dim other cards when one is hovered */
+.pdf-row:hover .pdf-card:not(:hover) {
+  filter: brightness(0.65);
+  transition:
+    transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
+    box-shadow 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
+    filter 0.3s ease;
+}
+
+/* ── Thumbnail Image ── */
 .pdf-thumbnail {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
-/* Title that appears at the bottom of the thumbnail */
+.pdf-card:hover .pdf-thumbnail {
+  transform: scale(1.04);
+}
+
+/* ── Info Overlay (appears on hover) ── */
 .pdf-info {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-  padding: 12px 10px;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.92) 0%,
+    rgba(0, 0, 0, 0.5) 55%,
+    transparent 100%
+  );
+  padding: 24px 14px 14px;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transform: translateY(6px);
+  transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
 .pdf-card:hover .pdf-info {
-  opacity: 1; /* Shows title on hover */
+  opacity: 1;
+  transform: translateY(0);
 }
 
+/* ── Title on Card ── */
 .pdf-title {
+  font-family: "Source Serif 4", Georgia, serif;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   margin: 0;
-  color: white;
+  color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+/* ── Author on Card ── */
+.pdf-author {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  font-weight: 400;
+}
+
+/* =========================================
+   CINEMATIC MODAL (WHITE THEME)
+   ========================================= */
+.cinematic-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 100000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(4px);
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.cinematic-modal {
+  width: 850px;
+  max-width: 95vw;
+  height: 85vh;
+  background-color: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 24px 40px rgba(0, 0, 0, 0.2);
+  animation: modalScaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.close-cinematic-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #202124;
+  width: 36px;
+  height: 36px;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: none;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.close-cinematic-btn:hover {
+  background-color: #ffffff;
+}
+
+.cinematic-hero {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.cinematic-media {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border: none; /* Removes iframe borders */
+  transition: opacity 0.8s ease;
+}
+.cinematic-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      to top,
+      #ffffff 0%,
+      rgba(255, 255, 255, 0.8) 30%,
+      transparent 70%
+    ),
+    linear-gradient(
+      to right,
+      #ffffff 0%,
+      rgba(255, 255, 255, 0.9) 35%,
+      transparent 60%
+    );
+  pointer-events: none;
+}
+
+.cinematic-content {
+  position: absolute;
+  bottom: 10%;
+  left: 40px;
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 10;
+}
+
+.cinematic-title {
+  font-size: 42px;
+  font-weight: 800;
+  color: #202124;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.cinematic-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.match-text {
+  color: #188038;
+  font-weight: bold;
+}
+.age-rating {
+  border: 1px solid #dadce0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #5f6368;
+}
+.category-tag {
+  color: #5f6368;
+}
+
+.cinematic-desc {
+  font-size: 16px;
+  color: #3c4043;
+  line-height: 1.6;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cinematic-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.primary-play-btn {
+  background-color: #1a73e8;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px 10px 16px;
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    transform 0.1s;
+  box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
+}
+
+.primary-play-btn:hover {
+  background-color: #1557b0;
+  transform: translateY(-1px);
+}
+
+.secondary-circle-btn {
+  background-color: white;
+  color: #5f6368;
+  border: 1px solid #dadce0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.secondary-circle-btn:hover {
+  border-color: #1a73e8;
+  color: #1a73e8;
+  background-color: #f8f9fa;
 }

@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import aiRoutes from "./routes/aiRoutes.js";
-import pdfRoutes from "./routes/pdfRoutes.js"; // <-- We added this
+import pdfRoutes from "./routes/pdfRoutes.js";
 
 const app = express();
 
@@ -12,8 +12,8 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 // Your existing AI routes
 app.use("/api/ai", aiRoutes);
 
-// Your NEW PDF routes
-app.use("/api/pdfs", pdfRoutes); // <-- We added this
+// Your PDF routes
+app.use("/api/pdfs", pdfRoutes);
 
 // A simple test route to make sure the server is awake
 app.get("/", (req, res) => {
