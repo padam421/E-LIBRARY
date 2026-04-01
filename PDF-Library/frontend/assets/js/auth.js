@@ -1,5 +1,5 @@
 const CLIENT_ID =
-  "877749541241-er2bgq0ficnur2pnuojr0h25200hg6tn.apps.googleusercontent.com";
+  "492249193220-e9hpnb9hgnmsrdi68m64mvuomg8589n3.apps.googleusercontent.com";
 
 let tokenClient;
 let accounts = [];
@@ -1014,16 +1014,14 @@ document.addEventListener("DOMContentLoaded", () => {
 /* --- END OF NEW CHAT LOGIC --- */
 
 /* =========================================
-   PDF LIBRARY FETCH & RENDER LOGIC
+   PREMIUM PDF LIBRARY FETCH & RENDER LOGIC
    ========================================= */
 document.addEventListener("DOMContentLoaded", () => {
-  // Fetch PDFs as soon as the page loads
   fetchPDFs();
 });
 
 async function fetchPDFs() {
   try {
-    // Calls your backend route
     const response = await fetch("http://localhost:3000/api/pdfs");
     const pdfs = await response.json();
     renderPDFRows(pdfs);
@@ -1035,69 +1033,209 @@ async function fetchPDFs() {
 function renderPDFRows(pdfs) {
   const container = document.getElementById("pdf-container");
   if (!container) return;
+  container.innerHTML = "";
 
-  container.innerHTML = ""; // Clear container
+  // 1. FILTER: Keep ONLY books with posters. Hidden books stay safely in the backend.
+  const visiblePdfs = pdfs.filter(
+    (pdf) =>
+      pdf.poster_drive_id && pdf.poster_drive_id !== "No Poster Available",
+  );
 
-  // Group PDFs into fake categories for the row layout
-  const categories = {
-    "Continue Reading": pdfs.slice(0, 5),
-    "Recommended for You": pdfs.slice(5, 10),
-    "Recently Added": pdfs.slice(10, 15),
-  };
+  // 2. SORT: Prioritize Videos first, then Fiction, then alphabetical.
+  // This ensures your first row is packed with Fiction and Video content.
+  visiblePdfs.sort((a, b) => {
+    const aVideo =
+      a.video_drive_id && a.video_drive_id !== "No Video Available" ? 1 : 0;
+    const bVideo =
+      b.video_drive_id && b.video_drive_id !== "No Video Available" ? 1 : 0;
+    if (bVideo !== aVideo) return bVideo - aVideo;
 
-  // If you have less than 5 PDFs, just show them in one row
-  if (pdfs.length < 5) {
-    categories["All Books"] = pdfs;
+    const aFic =
+      a.category && a.category.toLowerCase().includes("fiction") ? 1 : 0;
+    const bFic =
+      b.category && b.category.toLowerCase().includes("fiction") ? 1 : 0;
+    if (bFic !== aFic) return bFic - aFic;
+
+    return (a.category || "").localeCompare(b.category || "");
+  });
+
+  // 3. CHUNK: Force exactly 10 books per row!
+  // This lumps all remaining books together to fill empty spaces.
+  const chunkedRows = [];
+  for (let i = 0; i < visiblePdfs.length; i += 10) {
+    chunkedRows.push(visiblePdfs.slice(i, i + 10));
   }
 
-  // Loop through categories and build rows
-  for (const [categoryName, categoryPdfs] of Object.entries(categories)) {
-    if (!categoryPdfs || categoryPdfs.length === 0) continue;
-
-    // Create Row Container
+  // 4. BUILD THE UI
+  chunkedRows.forEach((rowBooks, index) => {
     const rowContainer = document.createElement("div");
     rowContainer.className = "pdf-row-container";
 
-    // Create Row Title
+    // 5. ASSIGN PREMIUM TITLES BASED ON ROW NUMBER
     const title = document.createElement("h2");
     title.className = "row-title";
-    title.textContent = categoryName;
+
+    if (index === 0) title.textContent = "Trending Fiction & Masterpieces";
+    else if (index === 1) title.textContent = "Critically Acclaimed & Drama";
+    else if (index === 2) title.textContent = "Fascinating Reads & Non-Fiction";
+    else if (index === 3) title.textContent = "Academic, Science & History";
+    else {
+      // For any extra rows, generate a title based on the first book in that row
+      let cat = rowBooks[0].category;
+      title.textContent =
+        cat && cat !== "Uncategorized"
+          ? `${cat} & Similar Reads`
+          : "More Top Picks";
+    }
+
     rowContainer.appendChild(title);
 
-    // Create Horizontal Scrolling Area
     const row = document.createElement("div");
     row.className = "pdf-row";
 
-    // Add PDF Cards to the row
-    categoryPdfs.forEach((pdf) => {
-      const pdfLink = document.createElement("a");
-      if (pdf.pdf_drive_id) {
-        // Link to our new viewer page, passing the ID and Title in the URL
-        pdfLink.href = `view-pdf.html?id=${encodeURIComponent(pdf.pdf_drive_id)}&title=${encodeURIComponent(pdf.title)}`;
-      } else {
-        pdfLink.href = "#";
+    // 6. RENDER THE EXACT 10 BOOKS FOR THIS ROW
+    rowBooks.forEach((pdf) => {
+      const card = document.createElement("div");
+      card.className = "pdf-card";
+
+      const hasVideo =
+        pdf.video_drive_id && pdf.video_drive_id !== "No Video Available";
+      const imageUrl = `https://drive.google.com/thumbnail?id=${pdf.poster_drive_id}&sz=w800`;
+
+      card.innerHTML = `
+          <img src="${imageUrl}" alt="Cover" class="pdf-thumbnail" referrerpolicy="no-referrer">
+          <div class="pdf-info">
+              <p class="pdf-title">${pdf.title}</p>
+              <p class="pdf-author">${pdf.author}</p>
+          </div>
+      `;
+
+      // ── HOVER PRELOADING ──
+      // Preloads the high-resolution poster image on hover so the
+      // cinematic modal opens instantly without a blank image delay.
+      if (hasVideo) {
+        card.addEventListener("mouseenter", () => {
+          const preloadImg = new Image();
+          preloadImg.src = `https://drive.google.com/thumbnail?id=${pdf.poster_drive_id}&sz=w1200`;
+        });
       }
-      // THIS MAKES IT OPEN IN A NEW TAB
-      pdfLink.target = "_blank";
 
-      pdfLink.className = "pdf-card";
+      // CLICK LOGIC: Navigate to Netflix-style detail page
+      card.addEventListener("click", () => {
+        if (hasVideo) {
+          // Books with video → Full detail page with video player + recommendations
+          window.location.href = `book-detail.html?id=${pdf.id}&title=${encodeURIComponent(pdf.title)}`;
+        } else {
+          // Books without video → Also go to detail page (shows poster + info + recommendations)
+          window.location.href = `book-detail.html?id=${pdf.id}&title=${encodeURIComponent(pdf.title)}`;
+        }
+      });
 
-      // Placeholder image if your database doesn't have thumbnails yet
-      const imageUrl =
-        pdf.thumbnail_url ||
-        "https://images.unsplash.com/photo-1618365908648-e71bd5716cba?q=80&w=250&auto=format&fit=crop";
-
-      pdfLink.innerHTML = `
-                <img src="${imageUrl}" alt="PDF Cover" class="pdf-thumbnail" referrerpolicy="no-referrer">
-                <div class="pdf-info">
-                    <p class="pdf-title">${pdf.title || "Untitled Document"}</p>
-                </div>
-            `;
-
-      row.appendChild(pdfLink);
+      row.appendChild(card);
     });
 
     rowContainer.appendChild(row);
     container.appendChild(rowContainer);
-  }
+  });
 }
+/* =========================================
+   CINEMATIC MODAL LOGIC (Google Drive Iframe — Direct, No Backend Auth)
+   ========================================= */
+const cinematicBackdrop = document.getElementById("cinematic-modal-backdrop");
+const closeCinematicBtn = document.getElementById("close-cinematic-btn");
+const cinematicPoster = document.getElementById("cinematic-poster");
+const cinematicVideo = document.getElementById("cinematic-video");
+const cinematicTitle = document.getElementById("cinematic-title");
+const cinematicCategory = document.getElementById("cinematic-category");
+const cinematicDesc = document.getElementById("cinematic-desc");
+const cinematicReadBtn = document.getElementById("cinematic-read-btn");
+
+let videoFallbackTimeout = null;
+let iframeLoadHandler = null;
+
+function showVideo() {
+  // Smooth transition: hide poster, show video iframe
+  cinematicPoster.classList.add("hidden");
+  cinematicVideo.classList.remove("hidden");
+}
+
+function openCinematicModal(pdf) {
+  // 1. Populate Text Data
+  cinematicTitle.textContent = pdf.title;
+  cinematicCategory.textContent = pdf.category || "Fiction";
+  cinematicDesc.textContent = pdf.description || "No description available.";
+
+  // 2. Set Poster Image (high resolution)
+  cinematicPoster.src = `https://drive.google.com/thumbnail?id=${pdf.poster_drive_id}&sz=w1200`;
+
+  // 3. Setup "Read PDF" button
+  if (cinematicReadBtn) {
+    cinematicReadBtn.onclick = () => {
+      window.open(
+        `view-pdf.html?id=${encodeURIComponent(pdf.pdf_drive_id)}&title=${encodeURIComponent(pdf.title)}`,
+        "_blank",
+      );
+    };
+  }
+
+  // 4. Reset visual state — show poster, hide video
+  cinematicPoster.classList.remove("hidden");
+  cinematicVideo.classList.add("hidden");
+
+  // 5. Clean up any previous iframe load listener
+  if (iframeLoadHandler) {
+    cinematicVideo.removeEventListener("load", iframeLoadHandler);
+    iframeLoadHandler = null;
+  }
+  clearTimeout(videoFallbackTimeout);
+
+  // 6. Listen for iframe load event — this fires when Google Drive's
+  //    preview page has finished loading its HTML (player is ready)
+  iframeLoadHandler = () => {
+    clearTimeout(videoFallbackTimeout);
+    // Small delay to let Google's player JS initialize after HTML loads
+    setTimeout(showVideo, 800);
+  };
+  cinematicVideo.addEventListener("load", iframeLoadHandler);
+
+  // 7. Set iframe source — Google Drive /preview URL
+  cinematicVideo.src = `https://drive.google.com/file/d/${pdf.video_drive_id}/preview`;
+
+  // 8. Show Modal
+  cinematicBackdrop.classList.remove("hidden");
+
+  // 9. SAFETY FALLBACK: If iframe load event doesn't fire within 12 seconds,
+  //    show the iframe anyway (it might still be loading but at least the
+  //    user sees Google's player UI instead of just the poster)
+  videoFallbackTimeout = setTimeout(() => {
+    if (!cinematicPoster.classList.contains("hidden")) {
+      showVideo();
+    }
+  }, 12000);
+}
+
+function closeCinematicModal() {
+  cinematicBackdrop.classList.add("hidden");
+  clearTimeout(videoFallbackTimeout);
+
+  // Remove load listener
+  if (iframeLoadHandler) {
+    cinematicVideo.removeEventListener("load", iframeLoadHandler);
+    iframeLoadHandler = null;
+  }
+
+  // Stop the iframe — clear src to halt video playback and download
+  cinematicVideo.src = "";
+  cinematicVideo.classList.add("hidden");
+  cinematicPoster.classList.remove("hidden");
+}
+
+// Event Listeners for closing modal
+if (closeCinematicBtn)
+  closeCinematicBtn.addEventListener("click", closeCinematicModal);
+if (cinematicBackdrop) {
+  cinematicBackdrop.addEventListener("click", (e) => {
+    if (e.target === cinematicBackdrop) closeCinematicModal();
+  });
+}
+

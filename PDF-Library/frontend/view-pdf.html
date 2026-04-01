@@ -5,14 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PDF Viewer - PDF Library</title>
     <link rel="stylesheet" href="assets/css/styles.css" />
+
+    <!-- Source Serif 4 Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap" rel="stylesheet" />
+
     <style>
       body,
       html {
         margin: 0;
         padding: 0;
         height: 100%;
-        overflow: hidden; /* Prevent double scrollbars */
+        overflow: hidden;
         background-color: #f4f4f9;
+        font-family: "Source Serif 4", -apple-system, sans-serif;
       }
       .viewer-header {
         display: flex;
@@ -31,6 +38,7 @@
         align-items: center;
         gap: 5px;
         font-size: 16px;
+        font-family: "Source Serif 4", Georgia, serif;
       }
       .back-button:hover {
         color: #007bff;
@@ -43,9 +51,11 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        font-family: "Source Serif 4", Georgia, serif;
+        letter-spacing: -0.02em;
       }
       .iframe-container {
-        height: calc(100% - 60px); /* Fill remaining space below header */
+        height: calc(100% - 60px);
         width: 100%;
       }
       iframe {
@@ -57,7 +67,7 @@
   </head>
   <body>
     <div class="viewer-header">
-      <a href="index.html" class="back-button">
+      <a href="javascript:void(0)" onclick="history.back()" class="back-button">
         <!-- Simple back arrow SVG -->
         <svg
           width="24"
@@ -71,7 +81,7 @@
         >
           <path d="M19 12H5M12 19l-7-7 7-7" />
         </svg>
-        Back to Library
+        Back
       </a>
       <div class="pdf-title-display" id="pdf-title-display">Loading PDF...</div>
     </div>

@@ -20,7 +20,7 @@ export const askAI = async (req, res) => {
         .json({ error: "Please ask a question or attach a file!" });
     }
     const model = genAI.getGenerativeModel({
-      model: "gemini-3.1-flash-lite-preview",
+      model: "gemini-2.5-flash",
       systemInstruction:
         "You are a highly helpful and engaging AI assistant. You MUST dynamically use relevant emojis throughout your responses to make them visually appealing. Always use emojis for headings, bullet points, warnings, tips, and general context, exactly like modern chat interfaces.",
     });

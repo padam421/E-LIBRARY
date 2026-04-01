@@ -8,10 +8,13 @@
     <!-- CSS Connection -->
     <link rel="stylesheet" href="assets/css/styles.css" />
 
+    <!-- Source Serif 4 Font — Used across entire website -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap" rel="stylesheet" />
+
     <!-- Google Identity Services API -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <!-- CSS Connection -->
-    <link rel="stylesheet" href="assets/css/styles.css" />
 
     <!-- NEW: Material Symbols Font for Icons -->
     <link
@@ -446,6 +449,72 @@
       </div>
     </div>
     <!-- END OF PREMIUM AI SIDEBAR -->
+
+    <!-- START OF PREMIUM CINEMATIC DETAIL MODAL -->
+    <div id="cinematic-modal-backdrop" class="cinematic-backdrop hidden">
+      <div class="cinematic-modal">
+        <!-- Close Button -->
+        <button id="close-cinematic-btn" class="icon-btn close-cinematic-btn">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+
+        <!-- Top Hero Section (Poster & Video) -->
+        <div class="cinematic-hero">
+          <!-- The Poster that shows for 3 seconds -->
+          <img
+            id="cinematic-poster"
+            src=""
+            alt="Book Cover"
+            class="cinematic-media"
+          />
+
+         <!-- The Video (Google Drive /preview embed — works without backend auth) -->
+          <iframe
+            id="cinematic-video"
+            class="cinematic-media hidden"
+            allow="autoplay; fullscreen; encrypted-media"
+            allowfullscreen
+            frameborder="0"
+          ></iframe>
+
+
+          <!-- Gradient overlay so text is readable -->
+          <div class="cinematic-vignette"></div>
+
+          <!-- Content over the media -->
+          <div class="cinematic-content">
+            <h1 id="cinematic-title" class="cinematic-title">Book Title</h1>
+
+            <div class="cinematic-meta">
+              <span class="match-text">98% Match</span>
+              <span class="age-rating">U/A 13+</span>
+              <span id="cinematic-category" class="category-tag">Category</span>
+            </div>
+
+            <p id="cinematic-desc" class="cinematic-desc">
+              Book description goes here...
+            </p>
+
+            <!-- Action Buttons -->
+            <!-- Action Buttons -->
+            <div class="cinematic-actions">
+              <!-- Changed to a sleek Read PDF button instead of a Play button -->
+              <button id="cinematic-read-btn" class="secondary-circle-btn" title="Read PDF" style="width: auto; padding: 0 20px; border-radius: 22px; font-weight: 600; gap: 8px;">
+                <span class="material-symbols-outlined" style="font-size: 20px;">menu_book</span> Read PDF
+              </button>
+              
+              <button class="secondary-circle-btn" title="Add to List">
+                <span class="material-symbols-outlined">add</span>
+              </button>
+              
+              <button class="secondary-circle-btn" title="Like">
+                <span class="material-symbols-outlined">thumb_up</span>
+              </button>
+            </div>
+      </div>
+    </div>
+    <!-- END OF PREMIUM CINEMATIC DETAIL MODAL -->
+
     <!-- This tool converts AI Markdown into beautiful HTML -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
