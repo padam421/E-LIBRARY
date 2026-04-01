@@ -1,4 +1,4 @@
-﻿SET NAMES utf8mb4;
+SET NAMES utf8mb4;
 
 CREATE TABLE IF NOT EXISTS users (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -9,11 +9,15 @@ CREATE TABLE IF NOT EXISTS users (
   PRIMARY KEY (id)
 ) ENGINE=InnoDB;
 
-CREATE TABLE IF NO T EXISTS pdfs (
+CREATE TABLE IF NOT EXISTS pdfs (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   title VARCHAR(255) NOT NULL,
   author VARCHAR(255) NULL,
   description TEXT NULL,
+  category VARCHAR(100) NULL,
+  poster_drive_id VARCHAR(255) NULL,
+  video_drive_id VARCHAR(255) NULL,
+  pdf_drive_id VARCHAR(255) NULL,
   storage_provider ENUM('gcs','url') NOT NULL DEFAULT 'gcs',
   gcs_bucket VARCHAR(255) NULL,
   gcs_object_key VARCHAR(1024) NULL,

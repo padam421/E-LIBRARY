@@ -1,0 +1,684 @@
+/* ═══════════════════════════════════════════
+   BOOK DETAIL — APPLE PREMIUM DESIGN SYSTEM
+   Fonts: Inter (UI) + Source Serif 4 (Titles)
+   ═══════════════════════════════════════════ */
+
+/* ── RESET & BASE ── */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+body {
+  font-family: 'Source Serif 4', 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+  font-optical-sizing: auto;
+  background-color: #0a0a0a;
+  color: #f5f5f7;
+  overflow-x: hidden;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
+}
+
+.hidden { display: none !important; }
+
+/* Serif font for titles/headings */
+.serif { font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif; }
+
+/* ═══════════════════════════════════════════
+   NAVIGATION — Frosted Glass
+   ═══════════════════════════════════════════ */
+.detail-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 12px 32px;
+  background: rgba(10, 10, 10, 0.65);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  display: flex;
+  align-items: center;
+  transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+  border-bottom: 0.5px solid rgba(255,255,255,0.06);
+}
+
+.detail-nav.scrolled {
+  background: rgba(10, 10, 10, 0.88);
+  border-bottom-color: rgba(255,255,255,0.1);
+}
+
+.nav-back {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  color: #0a84ff;
+  transition: opacity 0.25s ease;
+}
+
+.nav-back:hover { opacity: 0.7; }
+
+.nav-back .material-symbols-outlined {
+  font-size: 28px;
+  font-weight: 300;
+}
+
+.nav-logo {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: #f5f5f7;
+  letter-spacing: -0.02em;
+}
+
+/* ═══════════════════════════════════════════
+   HERO VIDEO — Poster → Video Transition
+   Prominent video area with hover highlight
+   ═══════════════════════════════════════════ */
+.hero-section {
+  position: relative;
+  width: 100%;
+  height: 76vh;
+  min-height: 440px;
+  max-height: 700px;
+  background: #000;
+  overflow: hidden;
+  transition: box-shadow 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* Hover highlight — video stands out */
+.hero-section:hover {
+  box-shadow: 0 0 60px rgba(10, 132, 255, 0.12), 0 0 120px rgba(10, 132, 255, 0.06);
+}
+
+.hero-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  z-index: 1;
+}
+
+/* Poster overlay — fades out after 3s */
+.hero-poster {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 2;
+  transition: opacity 1.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.hero-poster.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Bottom gradient — very subtle so video controls stay visible */
+.hero-gradient-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100px;
+  background: linear-gradient(to top, #0a0a0a 0%, transparent 100%);
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Hero title — extremely subtle, barely visible */
+.hero-title-overlay {
+  position: absolute;
+  bottom: 20px;
+  left: 30px;
+  z-index: 4;
+  max-width: 50%;
+  transition: opacity 1s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* After poster fades — title becomes barely visible */
+.hero-title-overlay.subtle {
+  opacity: 0.1;
+}
+
+/* On hover over hero — title fades back slightly for readability */
+.hero-section:hover .hero-title-overlay.subtle {
+  opacity: 0.25;
+}
+
+.hero-title-text {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: clamp(20px, 2.8vw, 38px);
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 2px 30px rgba(0,0,0,0.5);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+/* Loading spinner */
+.hero-section.loading::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 36px;
+  border: 2.5px solid rgba(255,255,255,0.1);
+  border-top-color: rgba(255,255,255,0.7);
+  border-radius: 50%;
+  animation: apple-spin 0.7s linear infinite;
+  z-index: 5;
+}
+
+@keyframes apple-spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* No-video state */
+.hero-section.no-video-state {
+  height: auto;
+  min-height: unset;
+  max-height: unset;
+  background: linear-gradient(160deg, #1a1a2e 0%, #0f1923 50%, #0a0a0a 100%);
+}
+
+.hero-no-video-content {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  padding: 84px 44px 48px;
+}
+
+.hero-no-video-poster {
+  width: 180px;
+  height: 260px;
+  object-fit: cover;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.3);
+  flex-shrink: 0;
+}
+
+.hero-no-video-info { flex: 1; }
+
+.hero-no-video-info h1 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 34px;
+  font-weight: 700;
+  color: #f5f5f7;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+
+.hero-no-video-info .info-meta { margin-bottom: 16px; }
+
+.hero-no-video-info .info-description {
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.7);
+}
+
+/* ═══════════════════════════════════════════
+   INFO SECTION
+   ═══════════════════════════════════════════ */
+.info-section {
+  padding: 6px 44px 28px;
+  background: #0a0a0a;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 0.5fr;
+  gap: 28px;
+  max-width: 1080px;
+}
+
+.info-left { max-width: 100%; }
+
+.info-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.match-badge {
+  color: #30d158;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+.rating-badge {
+  border: 1px solid rgba(255,255,255,0.25);
+  padding: 2px 8px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.65);
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.category-badge {
+  color: rgba(255,255,255,0.55);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+/* Description — short, max 3 lines */
+.info-description {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 20px;
+  max-width: 580px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════
+   APPLE PILL BUTTONS — Glassmorphism
+   ═══════════════════════════════════════════ */
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-apple-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 28px;
+  background: rgba(255,255,255,0.95);
+  color: #1d1d1f;
+  border: none;
+  border-radius: 980px; /* Apple's pill radius */
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+  letter-spacing: -0.01em;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-apple-primary:hover {
+  background: rgba(255,255,255,1);
+  transform: scale(1.03);
+  box-shadow: 0 4px 20px rgba(255,255,255,0.15);
+}
+
+.btn-apple-primary:active {
+  transform: scale(0.97);
+  background: rgba(255,255,255,0.85);
+}
+
+.btn-apple-primary .material-symbols-outlined { font-size: 20px; }
+
+.btn-apple-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 11px 24px;
+  background: rgba(255,255,255,0.08);
+  color: #f5f5f7;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 980px;
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  letter-spacing: -0.01em;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-apple-secondary:hover {
+  background: rgba(255,255,255,0.14);
+  border-color: rgba(255,255,255,0.3);
+  transform: scale(1.03);
+}
+
+.btn-apple-secondary:active {
+  transform: scale(0.97);
+  background: rgba(255,255,255,0.06);
+}
+
+.btn-apple-secondary .material-symbols-outlined { font-size: 18px; }
+
+/* Info Right column */
+.info-right {
+  padding-top: 2px;
+}
+
+.info-meta-item {
+  margin-bottom: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.meta-label {
+  color: rgba(255,255,255,0.4);
+  margin-right: 6px;
+  font-weight: 500;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.meta-value {
+  color: #f5f5f7;
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════
+   MORE DETAILS — Frosted Glass Cards
+   ═══════════════════════════════════════════ */
+.details-section {
+  padding: 24px 44px;
+  background: #0a0a0a;
+  border-top: 0.5px solid rgba(255,255,255,0.06);
+}
+
+.section-title {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: #f5f5f7;
+  margin-bottom: 16px;
+  letter-spacing: -0.02em;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  max-width: 1080px;
+}
+
+/* Frosted Glass Card */
+.glass-card {
+  background: rgba(255,255,255,0.04);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: 0.5px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 18px 20px;
+  transition: all 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.glass-card:hover {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.14);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+}
+
+.detail-card h3 {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 0.5px solid rgba(255,255,255,0.08);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.detail-label {
+  font-size: 10px;
+  color: rgba(255,255,255,0.35);
+  margin-bottom: 2px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.detail-value {
+  font-size: 13px;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 12px;
+  line-height: 1.45;
+  font-weight: 400;
+}
+
+.detail-tags {
+  color: #30d158;
+  font-style: italic;
+  font-family: 'Source Serif 4', serif;
+}
+
+/* Summary card — max 4 lines */
+.detail-full-desc {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 13px;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════
+   RECOMMENDATIONS — Smooth Scroll
+   ═══════════════════════════════════════════ */
+.recommendations-section {
+  padding: 24px 44px 20px;
+  background: #0a0a0a;
+  border-top: 0.5px solid rgba(255,255,255,0.06);
+}
+
+.reco-row-wrapper {
+  position: relative;
+}
+
+.reco-row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 10px;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+
+.reco-row::-webkit-scrollbar { display: none; }
+
+/* Recommendation Cards — Apple rounded */
+.reco-card {
+  flex: 0 0 170px;
+  cursor: pointer;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+  background: #1c1c1e;
+  scroll-snap-align: start;
+}
+
+.reco-card:hover {
+  transform: scale(1.06);
+  z-index: 10;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+}
+
+.reco-card:active {
+  transform: scale(0.98);
+}
+
+.reco-card img {
+  width: 100%;
+  height: 245px;
+  object-fit: cover;
+  display: block;
+  transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.reco-card:hover img {
+  filter: brightness(0.6);
+  transform: scale(1.05);
+}
+
+.reco-card-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 10px 10px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.92));
+  opacity: 0;
+  transform: translateY(6px);
+  transition: all 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.reco-card:hover .reco-card-info {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reco-card-title {
+  font-family: 'Source Serif 4', serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 3px;
+  line-height: 1.3;
+}
+
+.reco-card-author {
+  font-size: 10px;
+  color: rgba(255,255,255,0.6);
+}
+
+.reco-card-category {
+  display: inline-block;
+  font-size: 9px;
+  color: #30d158;
+  background: rgba(48,209,88,0.1);
+  padding: 2px 6px;
+  border-radius: 6px;
+  margin-top: 3px;
+  font-weight: 500;
+}
+
+/* Scroll Arrows — Apple style */
+.reco-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 38px;
+  height: 38px;
+  background: rgba(255,255,255,0.08);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 0.5px solid rgba(255,255,255,0.12);
+  border-radius: 50%;
+  color: #f5f5f7;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.reco-arrow:hover {
+  background: rgba(255,255,255,0.16);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.reco-arrow:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.reco-arrow .material-symbols-outlined { font-size: 22px; }
+
+.reco-arrow-left { left: -6px; }
+.reco-arrow-right { right: -6px; }
+
+/* ── FOOTER ── */
+.detail-footer {
+  padding: 28px 44px;
+  background: #000;
+  border-top: 0.5px solid rgba(255,255,255,0.04);
+  text-align: center;
+  color: rgba(255,255,255,0.3);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .info-grid { grid-template-columns: 1fr; gap: 16px; }
+  .details-grid { grid-template-columns: 1fr; }
+  .info-section, .details-section, .recommendations-section { padding-left: 20px; padding-right: 20px; }
+  .hero-title-overlay { left: 20px; max-width: 75%; }
+  .hero-no-video-content { flex-direction: column; text-align: center; padding: 76px 20px 36px; }
+  .hero-no-video-poster { width: 140px; height: 200px; }
+  .hero-no-video-info h1 { font-size: 26px; }
+  .detail-nav { padding: 10px 16px; }
+}
+
+@media (max-width: 600px) {
+  .hero-section { height: 48vh; min-height: 260px; }
+  .reco-card { flex: 0 0 140px; }
+  .reco-card img { height: 200px; }
+  .hero-title-text { font-size: 22px; }
+  .section-title { font-size: 18px; }
+  .action-buttons { gap: 8px; }
+  .btn-apple-primary { padding: 9px 20px; font-size: 14px; }
+  .btn-apple-secondary { padding: 9px 18px; font-size: 13px; }
+}
+
+/* ═══════════════════════════════════════════
+   APPLE-STYLE ANIMATIONS
+   ═══════════════════════════════════════════ */
+
+/* Fade-in on load */
+.info-section,
+.details-section,
+.recommendations-section {
+  animation: apple-fade-in 0.6s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+
+.details-section { animation-delay: 0.1s; }
+.recommendations-section { animation-delay: 0.2s; }
+
+@keyframes apple-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
