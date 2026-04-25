@@ -1,6 +1,6 @@
 window.PDF_LIBRARY_CONFIG = {
   // Leave blank for local testing. Set this to your hosted backend URL before public deployment.
-  API_ORIGIN: "",
+  API_ORIGIN: "https://e-library-dtx4.onrender.com",
 
   // Google OAuth Client ID — change this when deploying under a new Google Cloud project.
   GOOGLE_CLIENT_ID:
