@@ -1,0 +1,11 @@
+node_modules
+npm-debug.log
+*.log
+.env
+.env.*
+src/config/firebase-key.json
+logs
+perf-test.err.log
+perf-test.out.log
+server.err.log
+server.out.log

@@ -1,59 +1,1217 @@
 const CLIENT_ID =
+  window.PDF_LIBRARY_CONFIG?.GOOGLE_CLIENT_ID ||
   "492249193220-e9hpnb9hgnmsrdi68m64mvuomg8589n3.apps.googleusercontent.com";
 
 let tokenClient;
 let accounts = [];
 let activeEmail = null;
 let isAccordionExpanded = false;
+const READING_PROGRESS_KEY_PREFIX = "pdf_lib_reading_progress_v1";
+const RECENT_HISTORY_KEY_PREFIX = "pdf_lib_recent_books";
+const MY_LIST_KEY_PREFIX = "pdf_lib_my_list_v1";
+const LIBRARY_SETTINGS_KEY_PREFIX = "pdf_lib_user_settings_v1";
+const DB_USER_ID_KEY_PREFIX = "db_user_id";
+const SESSION_TOKEN_KEY_PREFIX = "pdf_lib_session_token_v1";
+const ACCESS_TOKEN_KEY_PREFIX = "pdf_lib_google_access_token_v1";
+const ACCESS_TOKEN_EXPIRY_KEY_PREFIX = "pdf_lib_google_access_token_expiry_v1";
+const STORAGE_MIGRATION_META_KEY = "pdf_lib_storage_migration_v2";
+function resolveApiOrigin() {
+  const configured = String(
+    window.PDF_LIBRARY_CONFIG?.API_ORIGIN ||
+      window.PDF_LIBRARY_API_BASE_URL ||
+      "",
+  ).trim();
+  if (configured) return configured.replace(/\/+$/, "");
+
+  const host = String(window.location.hostname || "").toLowerCase();
+  const isLocal = host === "localhost" || host === "127.0.0.1";
+  return isLocal
+    ? `${window.location.protocol}//${window.location.hostname}:3000`
+    : String(window.location.origin || "").replace(/\/+$/, "");
+}
+
+const API_ORIGIN = resolveApiOrigin();
 
 // DOM Elements
 const signInBtn = document.getElementById("sign-in-btn");
 const profileBtn = document.getElementById("profile-btn");
+const sitePremiumBtn = document.getElementById("site-premium-btn");
 const profileImg = document.getElementById("profile-img");
 const profileInitials = document.getElementById("profile-initials");
+const profileName = document.getElementById("profile-name");
 const profilePopup = document.getElementById("profile-popup");
 const closePopupBtn = document.getElementById("close-popup-btn");
+const globalSearchBtn = document.getElementById("search-open-btn");
 
 const popupEmail = document.getElementById("popup-email");
 const popupImg = document.getElementById("popup-img");
 const popupInitials = document.getElementById("popup-initials");
 const popupGreeting = document.getElementById("popup-greeting");
+const trainingMegaShell = document.getElementById("training-mega-shell");
+const trainingNavBar = document.getElementById("training-nav-bar");
+const trainingMegaPanel = document.getElementById("training-mega-panel");
+const trainingMegaBackdrop = document.getElementById("training-mega-backdrop");
+const trainingPanelLinks = document.getElementById("training-panel-links");
+const trainingPanelTitle = document.getElementById("training-panel-title");
+const trainingBookGrid = document.getElementById("training-book-grid");
+const openSettingsBtn = document.getElementById("open-settings-btn");
+const settingsBackdrop = document.getElementById("settings-backdrop");
+const settingsPanel = document.getElementById("settings-panel");
+const closeSettingsBtn = document.getElementById("close-settings-btn");
+const settingsDetail = document.getElementById("settings-detail");
+const settingsMyListCount = document.getElementById("settings-my-list-count");
 
-// Initialize Google Identity Services
-window.onload = function () {
+let allLibraryBooks = [];
+let searchableBooks = [];
+let currentSearchResults = [];
+let searchCloseTimer = null;
+let hasRestoredSession = false;
+let currentSettingsSection = "my-list";
+let pendingSitePremiumCheckout = false;
+const HOME_ROW_SIZE = 10;
+const HOME_PAGE_BOOK_LIMIT = 68;
+const HOME_MAX_ROWS = Math.ceil(HOME_PAGE_BOOK_LIMIT / HOME_ROW_SIZE);
+const HOME_TRENDING_ROW_SIZE = 10;
+const SEARCH_PANEL_LIMIT = 15;
+const HOME_FIXED_TITLES = [
+  "Editor Picks",
+  "Trending Fiction & Masterpieces",
+  "Critically Acclaimed & Drama",
+  "Fascinating Reads & Non-Fiction",
+  "Academic, Science & History",
+  "Fresh Discoveries",
+  "More Top Picks",
+  "Explore More Books",
+];
+const TRAINING_BOOK_COUNT = 10;
+const TRAINING_TAB_CONFIG = [
+  {
+    id: "training",
+    label: "Training",
+    title: "Training Essentials",
+    terms: [
+      "training",
+      "study",
+      "education",
+      "academic",
+      "science",
+      "engineering",
+      "business",
+      "technology",
+      "skills",
+      "programming",
+    ],
+  },
+  {
+    id: "fiction",
+    label: "Fiction Books",
+    title: "Fiction Books",
+    terms: ["fiction", "literature", "fantasy", "drama", "romance", "adventure"],
+  },
+  {
+    id: "novels",
+    label: "Novels",
+    title: "Novel Collection",
+    terms: ["novel", "novella", "literary"],
+  },
+  {
+    id: "trending",
+    label: "Trending",
+    title: "Trending Right Now",
+    terms: [],
+  },
+  {
+    id: "mystery",
+    label: "Mystery",
+    title: "Mystery & Thriller",
+    terms: ["mystery", "thriller", "crime", "detective", "suspense", "horror"],
+  },
+  {
+    id: "classics",
+    label: "Classics",
+    title: "Classic Masterpieces",
+    terms: [
+      "classic",
+      "classics",
+      "shakespeare",
+      "jane austen",
+      "mark twain",
+      "jules verne",
+      "dickens",
+      "poe",
+    ],
+  },
+];
+let trainingCategoryBooks = {};
+let activeTrainingCategoryId = TRAINING_TAB_CONFIG[0].id;
+let trainingMegaInitialized = false;
+let trainingCloseTimer = null;
+let restoreSessionPromise = null;
+let authStateVersion = 0;
+
+function buildApiUrl(path) {
+  return `${API_ORIGIN}${path}`;
+}
+
+function normalizeText(value) {
+  return String(value || "").trim();
+}
+
+function hasPosterAsset(book) {
+  if (book?.poster_url || book?.cover_url) return true;
+  const posterId = normalizeText(book?.poster_drive_id).toLowerCase();
+  return Boolean(posterId) && posterId !== "no poster available";
+}
+
+function normalizeDriveAssetId(value) {
+  const id = normalizeText(value);
+  if (!id) return "";
+  const lowered = id.toLowerCase();
+  if (
+    lowered === "no poster available" ||
+    lowered === "no cover available" ||
+    lowered === "no image available" ||
+    lowered === "no pdf available" ||
+    lowered === "no epub available" ||
+    lowered === "null" ||
+    lowered === "undefined" ||
+    lowered === "n/a" ||
+    lowered === "na"
+  ) {
+    return "";
+  }
+  return id;
+}
+
+function getNumericBookId(value) {
+  const parsed = Number.parseInt(String(value ?? "").trim(), 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function buildReaderDocumentId(bookOrId, format, fallbackValue = "") {
+  const normalizedFallback = normalizeDriveAssetId(fallbackValue);
+  if (normalizedFallback && /^book:\d+:(pdf|epub)$/i.test(normalizedFallback)) {
+    return normalizedFallback;
+  }
+
+  const book =
+    bookOrId && typeof bookOrId === "object"
+      ? bookOrId
+      : null;
+  const bookId =
+    book
+      ? getNumericBookId(book?.id)
+      : getNumericBookId(bookOrId);
+  const hasReadableFormat = format === "epub"
+    ? Boolean(book?.has_epub || normalizedFallback)
+    : Boolean(book?.has_pdf || normalizedFallback);
+
+  if (bookId && hasReadableFormat) {
+    return `book:${bookId}:${format}`;
+  }
+
+  return normalizedFallback;
+}
+
+function getBookCoverDriveId(book) {
+  return (
+    normalizeDriveAssetId(book?.poster_url) ||
+    normalizeDriveAssetId(book?.cover_url) ||
+    normalizeDriveAssetId(book?.poster_drive_id) ||
+    normalizeDriveAssetId(book?.cover_drive_id)
+  );
+}
+
+function hasDisplayableCoverArt(book) {
+  return Boolean(getBookCoverDriveId(book));
+}
+
+function buildDriveThumbnailUrl(driveId, size = "w800") {
+  const safeId = normalizeDriveAssetId(driveId);
+  if (!safeId) return "";
+  if (safeId.startsWith("/api/")) return buildApiUrl(safeId);
+  if (/^https?:\/\//i.test(safeId)) return safeId;
+  return `https://drive.google.com/thumbnail?id=${encodeURIComponent(safeId)}&sz=${size}`;
+}
+
+function hasReadablePdf(book) {
+  return Boolean(book?.has_pdf || normalizeDriveAssetId(book?.pdf_drive_id));
+}
+
+function hasReadableEpub(book) {
+  return Boolean(book?.has_epub || normalizeDriveAssetId(book?.epub_drive_id));
+}
+
+function hasReadableBook(book) {
+  return hasReadablePdf(book) || hasReadableEpub(book);
+}
+
+function formatMoney(amountPaise, currency = "INR") {
+  const amount = Number(amountPaise || 0) / 100;
+  try {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: String(currency || "INR").toUpperCase(),
+      maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    }).format(amount);
+  } catch {
+    return `INR ${amount.toFixed(amount % 1 === 0 ? 0 : 2)}`;
+  }
+}
+
+function getBookPremiumDetails(book) {
+  const paymentsEnabled = Boolean(book?.payments_enabled);
+  const bookPremiumEnabled = Boolean(book?.book_premium_enabled);
+  const currency = String(book?.payment_currency || "INR").trim().toUpperCase() || "INR";
+
+  if (!paymentsEnabled || !bookPremiumEnabled) {
+    return {
+      paymentRequired: false,
+      badgeText: "",
+      priceText: "",
+    };
+  }
+
+  return {
+    paymentRequired: true,
+    badgeText: "Premium",
+    priceText: Number(book?.book_price_paise || 0) > 0
+      ? formatMoney(book.book_price_paise, currency)
+      : "",
+  };
+}
+
+function getSitePremiumDetails() {
+  const sourceBook = allLibraryBooks.find(
+    (book) => Boolean(book?.payments_enabled && book?.site_premium_enabled),
+  );
+
+  if (!sourceBook) {
+    return {
+      enabled: false,
+      planKey: "monthly",
+      priceText: "",
+    };
+  }
+
+  const currency = String(sourceBook?.payment_currency || "INR").trim().toUpperCase() || "INR";
+  const monthly = Number(sourceBook?.site_monthly_price_paise || 0);
+  const annual = Number(sourceBook?.site_annual_price_paise || 0);
+
+  return {
+    enabled: true,
+    planKey: monthly > 0 || annual <= 0 ? "monthly" : "annual",
+    priceText: monthly > 0
+      ? `${formatMoney(monthly, currency)}/month`
+      : annual > 0
+        ? `${formatMoney(annual, currency)}/year`
+        : "",
+  };
+}
+
+function getActiveUser() {
+  return activeEmail ? accounts.find((account) => account.email === activeEmail) : null;
+}
+
+function renderSitePremiumButton() {
+  if (!sitePremiumBtn) return;
+
+  const sitePremium = getSitePremiumDetails();
+  if (!sitePremium.enabled) {
+    sitePremiumBtn.classList.add("hidden");
+    sitePremiumBtn.disabled = true;
+    sitePremiumBtn.removeAttribute("data-plan-key");
+    sitePremiumBtn.title = "Join Premium";
+    return;
+  }
+
+  sitePremiumBtn.disabled = false;
+  sitePremiumBtn.classList.remove("hidden");
+  sitePremiumBtn.dataset.planKey = sitePremium.planKey;
+  sitePremiumBtn.title = sitePremium.priceText
+    ? `Join Premium - ${sitePremium.priceText}`
+    : "Join Premium";
+}
+
+async function startSitePremiumCheckout() {
+  const sitePremium = getSitePremiumDetails();
+  if (!sitePremium.enabled) return;
+
+  const activeUser = getActiveUser();
+  if (!activeUser) {
+    pendingSitePremiumCheckout = true;
+    requestGoogleAccessToken();
+    return;
+  }
+
+  if (!window.PdfLibraryPayments?.startCheckout) {
+    console.error("Payment checkout is not ready yet.");
+    return;
+  }
+
+  if (sitePremiumBtn) {
+    sitePremiumBtn.disabled = true;
+    sitePremiumBtn.classList.add("is-loading");
+  }
+
+  try {
+    await window.PdfLibraryPayments.startCheckout({
+      scope: "site_subscription",
+      planKey: sitePremium.planKey || "monthly",
+      bookId: 0,
+      title: "Premium subscription",
+      user: activeUser,
+    });
+  } catch (error) {
+    console.warn("Premium checkout was not completed:", error);
+  } finally {
+    if (sitePremiumBtn) {
+      sitePremiumBtn.classList.remove("is-loading");
+    }
+    renderSitePremiumButton();
+  }
+}
+
+function createPremiumBadgeNode(book) {
+  const premium = getBookPremiumDetails(book);
+  if (!premium.paymentRequired) return null;
+
+  const badge = document.createElement("span");
+  badge.className = "pdf-premium-badge";
+  badge.textContent = premium.priceText
+    ? `${premium.badgeText} â€¢ ${premium.priceText}`
+    : premium.badgeText;
+  badge.title = premium.priceText || premium.badgeText;
+  return badge;
+}
+
+function shuffleArray(items) {
+  const copy = Array.isArray(items) ? [...items] : [];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function getNormalizedCategory(book) {
+  const raw = normalizeText(book?.category);
+  return raw || "Uncategorized";
+}
+
+function getRowTitle(index, rowBooks) {
+  if (index < HOME_FIXED_TITLES.length) return HOME_FIXED_TITLES[index];
+  const cat = normalizeText(rowBooks?.[0]?.category);
+  if (cat && cat.toLowerCase() !== "uncategorized") {
+    return `${cat} & Similar Reads`;
+  }
+  return "More Top Picks";
+}
+
+function getHomeBookKey(book) {
+  const id = String(book?.id ?? "").trim();
+  if (id) return `id:${id}`;
+
+  const pdfId = normalizeDriveAssetId(book?.pdf_drive_id);
+  if (pdfId) return `pdf:${pdfId}`;
+
+  const epubId = normalizeDriveAssetId(book?.epub_drive_id);
+  if (epubId) return `epub:${epubId}`;
+
+  return `title:${normalizeText(book?.title).toLowerCase()}`;
+}
+
+function getFriendlyCategoryTitle(category, fallbackIndex) {
+  const cleanCategory = normalizeText(category);
+  if (cleanCategory && cleanCategory.toLowerCase() !== "uncategorized") {
+    return `${cleanCategory} & Similar Reads`;
+  }
+  return HOME_FIXED_TITLES[fallbackIndex % HOME_FIXED_TITLES.length];
+}
+
+function getUniqueHomeRowTitle(title, usedTitles, fallbackIndex) {
+  let cleanTitle = normalizeText(title) || HOME_FIXED_TITLES[fallbackIndex % HOME_FIXED_TITLES.length];
+  if (!usedTitles.has(cleanTitle.toLowerCase())) return cleanTitle;
+
+  const fallbackTitle = HOME_FIXED_TITLES.find(
+    (candidate) => !usedTitles.has(candidate.toLowerCase()),
+  );
+  if (fallbackTitle) return fallbackTitle;
+
+  return `More Library Picks ${fallbackIndex + 1}`;
+}
+
+function getBookActivityScore(book) {
+  const key = getHomeBookKey(book);
+  const bookId = String(book?.id ?? "").trim();
+  let score = Number(book?.trending_score || book?.read_count || book?.view_count || 0);
+
+  if (Array.isArray(userHistory)) {
+    userHistory.forEach((item, index) => {
+      const itemKey = getHomeBookKey(item);
+      if (itemKey === key || (bookId && String(item?.id ?? "").trim() === bookId)) {
+        score += Math.max(1, 12 - index);
+      }
+    });
+  }
+
+  if (typeof loadReadingProgressMap === "function") {
+    const progressMap = loadReadingProgressMap();
+    const progressKeys = [
+      buildReaderDocumentId(book, "pdf", book?.pdf_drive_id),
+      buildReaderDocumentId(book, "epub", book?.epub_drive_id),
+      normalizeDriveAssetId(book?.pdf_drive_id),
+      normalizeDriveAssetId(book?.epub_drive_id),
+    ].filter(Boolean);
+
+    progressKeys.forEach((progressKey) => {
+      const progress = progressMap[progressKey];
+      if (!progress) return;
+      score += 2 + Math.max(0, Math.min(100, Number(progress.progress || 0))) / 10;
+    });
+  }
+
+  return score;
+}
+
+function getTrendingHomeBooks(source, usedBookKeys) {
+  return source
+    .map((book) => ({
+      book,
+      score: getBookActivityScore(book),
+    }))
+    .filter((entry) => entry.score > 0 && !usedBookKeys.has(getHomeBookKey(entry.book)))
+    .sort((a, b) => b.score - a.score)
+    .map((entry) => entry.book)
+    .slice(0, HOME_TRENDING_ROW_SIZE);
+}
+
+function takeUniqueBooks(source, usedBookKeys, count) {
+  const picked = [];
+  for (const book of source) {
+    if (picked.length >= count) break;
+    const key = getHomeBookKey(book);
+    if (!key || usedBookKeys.has(key)) continue;
+    usedBookKeys.add(key);
+    picked.push(book);
+  }
+  return picked;
+}
+
+function fillHomeRow(primaryBooks, fallbackBooks, usedBookKeys) {
+  const rowBooks = takeUniqueBooks(primaryBooks, usedBookKeys, HOME_ROW_SIZE);
+  if (rowBooks.length < HOME_ROW_SIZE) {
+    rowBooks.push(
+      ...takeUniqueBooks(fallbackBooks, usedBookKeys, HOME_ROW_SIZE - rowBooks.length),
+    );
+  }
+  return rowBooks;
+}
+
+function buildHomeRows(sourceBooks) {
+  const sourcePool = shuffleArray(sourceBooks).slice(0, HOME_PAGE_BOOK_LIMIT);
+  const shuffledBooks = shuffleArray(sourcePool);
+  const displayLimit = Math.min(HOME_PAGE_BOOK_LIMIT, shuffledBooks.length);
+  const usedBookKeys = new Set();
+  const usedTitles = new Set();
+  const rows = [];
+  let displayedBookCount = 0;
+
+  const addRow = (title, books) => {
+    if (displayedBookCount >= displayLimit) return;
+    if (!Array.isArray(books) || books.length === 0) return;
+
+    const remainingSlots = displayLimit - displayedBookCount;
+    const rowBooks = books.slice(0, Math.min(HOME_ROW_SIZE, remainingSlots));
+    if (rowBooks.length === 0) return;
+
+    const cleanTitle = getUniqueHomeRowTitle(title, usedTitles, rows.length);
+    usedTitles.add(cleanTitle.toLowerCase());
+    rows.push({
+      title: cleanTitle,
+      books: rowBooks,
+    });
+    displayedBookCount += rowBooks.length;
+  };
+
+  const categoryMap = new Map();
+  for (const book of shuffledBooks) {
+    const category = getNormalizedCategory(book);
+    if (!categoryMap.has(category)) {
+      categoryMap.set(category, []);
+    }
+    categoryMap.get(category).push(book);
+  }
+
+  addRow("Editor Picks", fillHomeRow(shuffledBooks, shuffledBooks, usedBookKeys));
+
+  const categoryNames = shuffleArray(Array.from(categoryMap.keys()));
+
+  const trendingBooks = getTrendingHomeBooks(shuffledBooks, usedBookKeys);
+  if (trendingBooks.length > 0 && rows.length < HOME_MAX_ROWS) {
+    const trendingRowBooks = fillHomeRow(trendingBooks, shuffledBooks, usedBookKeys);
+    addRow("Trending Now", trendingRowBooks);
+  }
+
+  for (const category of categoryNames) {
+    if (rows.length >= HOME_MAX_ROWS || displayedBookCount >= displayLimit) break;
+    addRow(
+      getFriendlyCategoryTitle(category, rows.length),
+      fillHomeRow(shuffleArray(categoryMap.get(category)), shuffledBooks, usedBookKeys),
+    );
+  }
+
+  let fallbackIndex = 0;
+  while (
+    rows.length < HOME_MAX_ROWS &&
+    displayedBookCount < displayLimit &&
+    usedBookKeys.size < shuffledBooks.length
+  ) {
+    const title = HOME_FIXED_TITLES[fallbackIndex % HOME_FIXED_TITLES.length];
+    fallbackIndex += 1;
+    addRow(title, fillHomeRow(shuffledBooks, shuffledBooks, usedBookKeys));
+  }
+
+  return rows.slice(0, HOME_MAX_ROWS);
+}
+
+function getSearchSourceBooks() {
+  const source = Array.isArray(allLibraryBooks) ? allLibraryBooks : [];
+  return source.filter((book) => {
+    if (!book || typeof book !== "object") return false;
+    if (!normalizeText(book.title)) return false;
+    return hasReadableBook(book);
+  });
+}
+
+function getBookInitials(title) {
+  const words = normalizeText(title).split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "BK";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return `${words[0][0]}${words[1][0]}`.toUpperCase();
+}
+
+function createBookCoverFallbackElement(title, className = "") {
+  const fallback = document.createElement("div");
+  fallback.className = `${className} book-cover-fallback`.trim();
+  fallback.setAttribute("aria-hidden", "true");
+
+  const initials = document.createElement("span");
+  initials.textContent = getBookInitials(title);
+  fallback.appendChild(initials);
+  return fallback;
+}
+
+function createBookCoverNode(book, options = {}) {
+  const {
+    className = "",
+    fallbackClassName = "",
+    size = "w800",
+    altText = normalizeText(book?.title) || "Book cover",
+    fallbackBehavior = "show",
+    onMissingCover = null,
+    onCoverError = null,
+  } = options;
+
+  const coverId = getBookCoverDriveId(book);
+  if (!coverId) {
+    if (fallbackBehavior === "none") {
+      if (typeof onMissingCover === "function") onMissingCover();
+      return null;
+    }
+    return createBookCoverFallbackElement(altText, `${className} ${fallbackClassName}`.trim());
+  }
+
+  const img = document.createElement("img");
+  img.className = className;
+  img.alt = altText;
+  img.loading = "lazy";
+  img.referrerPolicy = "no-referrer";
+  img.src = buildDriveThumbnailUrl(coverId, size);
+  img.addEventListener(
+    "error",
+    () => {
+      if (fallbackBehavior === "none") {
+        if (typeof onCoverError === "function") onCoverError();
+        img.remove();
+        return;
+      }
+      const fallback = createBookCoverFallbackElement(
+        altText,
+        `${className} ${fallbackClassName}`.trim(),
+      );
+      img.replaceWith(fallback);
+    },
+    { once: true },
+  );
+
+  return img;
+}
+
+function getSearchCoverMarkup(book) {
+  const safeTitle = escapeHtml(book?.title || "Book");
+  const coverId = getBookCoverDriveId(book);
+  if (coverId) {
+    const posterUrl = buildDriveThumbnailUrl(coverId, "w260");
+    return `<img src="${posterUrl}" alt="${safeTitle}" class="search-result-cover" loading="lazy" referrerpolicy="no-referrer" />`;
+  }
+
+  const initials = escapeHtml(getBookInitials(book?.title));
+  return `
+    <div class="search-result-cover search-result-cover-fallback" aria-hidden="true">
+      <span>${initials}</span>
+    </div>
+  `;
+}
+
+function getSearchPremiumMarkup(book) {
+  const premium = getBookPremiumDetails(book);
+  if (!premium.paymentRequired) return "";
+  return `<small class="search-premium-badge">${escapeHtml(premium.priceText || premium.badgeText)}</small>`;
+}
+
+function getTrainingTabById(categoryId) {
+  return TRAINING_TAB_CONFIG.find((tab) => tab.id === categoryId) || TRAINING_TAB_CONFIG[0];
+}
+
+function getTrainingBookKey(book) {
+  if (!book || typeof book !== "object") return "";
+  const id = normalizeText(book.id);
+  if (id) return `id:${id}`;
+  const driveId = normalizeDriveAssetId(book.pdf_drive_id) || normalizeDriveAssetId(book.epub_drive_id);
+  if (driveId) return `drive:${driveId}`;
+  return `title:${normalizeText(book.title).toLowerCase()}`;
+}
+
+function getTrainingSourceBooks() {
+  const source = Array.isArray(allLibraryBooks) ? allLibraryBooks : [];
+  return source.filter(
+    (book) =>
+      book &&
+      typeof book === "object" &&
+      hasReadableBook(book) &&
+      hasDisplayableCoverArt(book) &&
+      normalizeText(book.title).length > 0,
+  );
+}
+
+function matchesAnyTerm(book, terms) {
+  if (!Array.isArray(terms) || terms.length === 0) return false;
+  const haystack = `${normalizeText(book?.title)} ${normalizeText(book?.author)} ${normalizeText(book?.category)}`.toLowerCase();
+  return terms.some((term) => haystack.includes(String(term || "").toLowerCase()));
+}
+
+function pickTrainingBooks(source, matcher, count = TRAINING_BOOK_COUNT) {
+  const primary = shuffleArray(source.filter((book) => matcher(book)));
+  const fallback = shuffleArray(source);
+  const picked = [];
+  const seen = new Set();
+
+  const addBook = (book) => {
+    const key = getTrainingBookKey(book);
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    picked.push(book);
+  };
+
+  for (const book of primary) {
+    if (picked.length >= count) break;
+    addBook(book);
+  }
+
+  for (const book of fallback) {
+    if (picked.length >= count) break;
+    addBook(book);
+  }
+
+  return picked;
+}
+
+function buildTrainingCategoryBooks(source) {
+  const bookSource = Array.isArray(source) ? source : [];
+  const map = {};
+
+  for (const config of TRAINING_TAB_CONFIG) {
+    if (config.id === "trending") {
+      map[config.id] = shuffleArray(bookSource).slice(0, TRAINING_BOOK_COUNT);
+      continue;
+    }
+    map[config.id] = pickTrainingBooks(
+      bookSource,
+      (book) => matchesAnyTerm(book, config.terms),
+      TRAINING_BOOK_COUNT,
+    );
+  }
+
+  return map;
+}
+
+function updateTrainingActiveStates() {
+  if (!trainingMegaShell) return;
+
+  trainingMegaShell
+    .querySelectorAll(".training-nav-item, .training-panel-link")
+    .forEach((node) => {
+      const isActive = node.dataset.categoryId === activeTrainingCategoryId;
+      node.classList.toggle("active", isActive);
+      if (node.classList.contains("training-nav-item")) {
+        node.setAttribute("aria-selected", isActive ? "true" : "false");
+      }
+    });
+}
+
+function renderTrainingBooks(categoryId) {
+  if (!trainingBookGrid) return;
+  const books = Array.isArray(trainingCategoryBooks[categoryId])
+    ? trainingCategoryBooks[categoryId]
+    : [];
+
+  trainingBookGrid.innerHTML = "";
+
+  for (const book of books) {
+    const card = document.createElement("button");
+    const title = normalizeText(book.title) || "Untitled";
+    const resumePage =
+      typeof getResumePageForBook === "function" ? getResumePageForBook(book) : null;
+
+    card.type = "button";
+    card.className = "training-book-card";
+    card.setAttribute("aria-label", `Open ${title}`);
+
+    const img = createBookCoverNode(book, {
+      className: "training-book-cover",
+      fallbackClassName: "training-book-cover-fallback",
+      size: "w800",
+      altText: title,
+      fallbackBehavior: "none",
+      onMissingCover: () => card.remove(),
+      onCoverError: () => card.remove(),
+    });
+    if (!img) continue;
+
+    const label = document.createElement("span");
+    label.className = "training-book-title";
+    label.textContent = title;
+
+    card.appendChild(img);
+    card.appendChild(label);
+    card.addEventListener("click", () => {
+      if (typeof window.openBook === "function") {
+        window.openBook(book.id, title, book.pdf_drive_id, resumePage);
+        return;
+      }
+      window.location.href = `book-detail.html?id=${encodeURIComponent(book.id ?? "")}&title=${encodeURIComponent(title)}`;
+    });
+
+    trainingBookGrid.appendChild(card);
+  }
+}
+
+function setActiveTrainingCategory(categoryId) {
+  const config = getTrainingTabById(categoryId);
+  activeTrainingCategoryId = config.id;
+  if (trainingPanelTitle) {
+    trainingPanelTitle.textContent = config.title;
+  }
+  updateTrainingActiveStates();
+  renderTrainingBooks(config.id);
+}
+
+function renderTrainingPanelLinks() {
+  if (!trainingPanelLinks) return;
+  trainingPanelLinks.innerHTML = "";
+
+  for (const config of TRAINING_TAB_CONFIG) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "training-panel-link";
+    button.dataset.categoryId = config.id;
+    button.textContent = config.label;
+    button.addEventListener("mouseenter", () => setActiveTrainingCategory(config.id));
+    button.addEventListener("focus", () => setActiveTrainingCategory(config.id));
+    button.addEventListener("click", () => setActiveTrainingCategory(config.id));
+    trainingPanelLinks.appendChild(button);
+  }
+}
+
+function renderTrainingNavTabs() {
+  if (!trainingNavBar) return;
+  trainingNavBar.innerHTML = "";
+
+  for (const config of TRAINING_TAB_CONFIG) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "training-nav-item";
+    button.dataset.categoryId = config.id;
+    button.setAttribute("role", "tab");
+    button.setAttribute("aria-selected", "false");
+    button.textContent = config.label;
+    button.addEventListener("mouseenter", () => openTrainingMegaPanel(config.id));
+    button.addEventListener("focus", () => openTrainingMegaPanel(config.id));
+    button.addEventListener("click", () => openTrainingMegaPanel(config.id));
+
+    trainingNavBar.appendChild(button);
+  }
+}
+
+function openTrainingMegaPanel(categoryId = activeTrainingCategoryId) {
+  if (!trainingMegaShell || !trainingMegaPanel) return;
+  if (trainingCloseTimer) {
+    clearTimeout(trainingCloseTimer);
+    trainingCloseTimer = null;
+  }
+  if (trainingMegaBackdrop && trainingNavBar) {
+    const navRect = trainingNavBar.getBoundingClientRect();
+    const overlayTop = Math.max(0, Math.floor(navRect.bottom + 8));
+    trainingMegaBackdrop.style.top = `${overlayTop}px`;
+  }
+  setActiveTrainingCategory(categoryId);
+  trainingMegaShell.classList.add("open");
+  trainingMegaPanel.setAttribute("aria-hidden", "false");
+}
+
+function closeTrainingMegaPanel() {
+  if (!trainingMegaShell || !trainingMegaPanel) return;
+  trainingMegaShell.classList.remove("open");
+  trainingMegaPanel.setAttribute("aria-hidden", "true");
+}
+
+function scheduleCloseTrainingMegaPanel() {
+  if (!trainingMegaShell) return;
+  if (trainingCloseTimer) {
+    clearTimeout(trainingCloseTimer);
+  }
+  trainingCloseTimer = window.setTimeout(() => {
+    closeTrainingMegaPanel();
+    trainingCloseTimer = null;
+  }, 130);
+}
+
+function ensureTrainingMegaInteractions() {
+  if (trainingMegaInitialized || !trainingMegaShell) return;
+  trainingMegaInitialized = true;
+
+  trainingMegaShell.addEventListener("mouseenter", () => {
+    if (trainingCloseTimer) {
+      clearTimeout(trainingCloseTimer);
+      trainingCloseTimer = null;
+    }
+  });
+  trainingMegaShell.addEventListener("mouseleave", scheduleCloseTrainingMegaPanel);
+
+  if (trainingMegaBackdrop) {
+    trainingMegaBackdrop.addEventListener("click", closeTrainingMegaPanel);
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && trainingMegaShell.classList.contains("open")) {
+      closeTrainingMegaPanel();
+    }
+  });
+}
+
+function renderTrainingMegaSection() {
+  if (!trainingMegaShell) return;
+
+  const sourceBooks = getTrainingSourceBooks();
+  if (!sourceBooks.length) {
+    trainingMegaShell.classList.add("hidden");
+    return;
+  }
+
+  trainingMegaShell.classList.remove("hidden");
+  ensureTrainingMegaInteractions();
+  trainingCategoryBooks = buildTrainingCategoryBooks(sourceBooks);
+
+  if (!trainingCategoryBooks[activeTrainingCategoryId]?.length) {
+    activeTrainingCategoryId = TRAINING_TAB_CONFIG[0].id;
+  }
+
+  renderTrainingNavTabs();
+  renderTrainingPanelLinks();
+  setActiveTrainingCategory(activeTrainingCategoryId);
+}
+
+function rerenderLibraryRowsForFreshLayout() {
+  if (!Array.isArray(allLibraryBooks) || allLibraryBooks.length === 0) return;
+  renderPDFRows(allLibraryBooks);
+  renderTrainingMegaSection();
+}
+
+function normalizeEmailKey(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+function emitActiveUserChanged() {
+  window.dispatchEvent(
+    new CustomEvent("pdf-lib:active-user-changed", {
+      detail: { activeEmail: normalizeEmailKey(activeEmail) || null },
+    }),
+  );
+}
+
+function getPreferredLegacyOwnerEmailKey(fallbackEmail) {
+  const fallback = normalizeEmailKey(fallbackEmail);
+  try {
+    const parsed = JSON.parse(localStorage.getItem("pdf_lib_accounts") || "[]");
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      const first = normalizeEmailKey(parsed[0]?.email);
+      if (first) return first;
+    }
+  } catch {
+    // Ignore malformed account cache.
+  }
+  return fallback;
+}
+
+function getScopedStorageKey(prefix, email = activeEmail) {
+  const emailKey = normalizeEmailKey(email);
+  if (!emailKey) return null;
+  return `${prefix}::${emailKey}`;
+}
+
+function readStorageMigrationState() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_MIGRATION_META_KEY) || "{}");
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return {};
+    }
+    return parsed;
+  } catch {
+    return {};
+  }
+}
+
+function writeStorageMigrationState(state) {
+  try {
+    localStorage.setItem(STORAGE_MIGRATION_META_KEY, JSON.stringify(state || {}));
+  } catch {
+    // Ignore storage write errors (quota/private mode).
+  }
+}
+
+function readRawStorageValue(key) {
+  if (!key) return null;
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function migrateLegacyValueIfNeeded(prefix, email = activeEmail) {
+  const scopedKey = getScopedStorageKey(prefix, email);
+  if (!scopedKey) return null;
+
+  const scopedRaw = readRawStorageValue(scopedKey);
+  if (scopedRaw !== null) return scopedRaw;
+
+  const legacyRaw = readRawStorageValue(prefix);
+  if (legacyRaw === null) return null;
+
+  const migrationState = readStorageMigrationState();
+  const owner = normalizeEmailKey(migrationState[prefix]);
+  const emailKey = normalizeEmailKey(email);
+  const preferredOwner = owner || getPreferredLegacyOwnerEmailKey(emailKey);
+  if (preferredOwner && preferredOwner !== emailKey) return null;
+
+  try {
+    localStorage.setItem(scopedKey, legacyRaw);
+  } catch {
+    return null;
+  }
+
+  migrationState[prefix] = preferredOwner || emailKey;
+  writeStorageMigrationState(migrationState);
+  return legacyRaw;
+}
+
+function readScopedJSON(prefix, fallbackValue, email = activeEmail) {
+  const scopedKey = getScopedStorageKey(prefix, email);
+  if (!scopedKey) return fallbackValue;
+
+  const rawValue = readRawStorageValue(scopedKey);
+  const valueToParse =
+    rawValue !== null ? rawValue : migrateLegacyValueIfNeeded(prefix, email);
+  if (valueToParse === null || valueToParse === undefined) return fallbackValue;
+
+  try {
+    const parsed = JSON.parse(valueToParse);
+    return parsed === null || parsed === undefined ? fallbackValue : parsed;
+  } catch {
+    return fallbackValue;
+  }
+}
+
+function writeScopedJSON(prefix, value, email = activeEmail) {
+  const scopedKey = getScopedStorageKey(prefix, email);
+  if (!scopedKey) return;
+  try {
+    localStorage.setItem(scopedKey, JSON.stringify(value));
+  } catch {
+    // Ignore storage write errors (quota/private mode).
+  }
+}
+
+function writeScopedValue(prefix, value, email = activeEmail) {
+  const scopedKey = getScopedStorageKey(prefix, email);
+  if (!scopedKey) return;
+  try {
+    localStorage.setItem(scopedKey, String(value));
+  } catch {
+    // Ignore storage write errors (quota/private mode).
+  }
+}
+
+function readScopedValue(prefix, email = activeEmail) {
+  const scopedKey = getScopedStorageKey(prefix, email);
+  if (!scopedKey) return null;
+  const scopedRaw = readRawStorageValue(scopedKey);
+  if (scopedRaw !== null) return scopedRaw;
+  return migrateLegacyValueIfNeeded(prefix, email);
+}
+
+function removeScopedValue(prefix, email = activeEmail) {
+  const scopedKey = getScopedStorageKey(prefix, email);
+  if (!scopedKey) return;
+  try {
+    localStorage.removeItem(scopedKey);
+  } catch {
+    // Ignore storage write errors (quota/private mode).
+  }
+}
+
+function initializeGoogleIdentityClient() {
+  if (tokenClient) return;
+  if (!window.google || !google.accounts || !google.accounts.oauth2) return;
+
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID,
-    scope: "email profile",
+    scope: "openid email profile",
     prompt: "select_account",
     callback: async (tokenResponse) => {
+      const requestVersion = authStateVersion;
       if (tokenResponse && tokenResponse.access_token) {
         try {
-          const res = await fetch(
-            "https://www.googleapis.com/oauth2/v3/userinfo",
-            {
-              headers: {
-                Authorization: `Bearer ${tokenResponse.access_token}`,
-              },
-            },
+          await handleLogin(
+            tokenResponse.access_token,
+            Number(tokenResponse.expires_in || 0),
+            { requestVersion },
           );
-          const userInfo = await res.json();
-          handleLogin(userInfo);
         } catch (error) {
           console.error("Failed to fetch user info", error);
         }
       }
     },
   });
+}
+
+async function fetchServerSessionUser() {
+  try {
+    const response = await fetch(buildApiUrl("/api/auth/session"), {
+      credentials: "include",
+    });
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    return data?.user?.email ? data.user : null;
+  } catch {
+    return null;
+  }
+}
+
+function clearLegacyReaderTokens(email = activeEmail) {
+  if (!email) return;
+  removeScopedValue(SESSION_TOKEN_KEY_PREFIX, email);
+  removeScopedValue(ACCESS_TOKEN_KEY_PREFIX, email);
+  removeScopedValue(ACCESS_TOKEN_EXPIRY_KEY_PREFIX, email);
+}
+
+function syncScopedLibraryStateDeferred() {
+  if (typeof window.syncScopedLibraryState === "function") {
+    window.syncScopedLibraryState();
+  } else {
+    setTimeout(() => {
+      if (typeof window.syncScopedLibraryState === "function") {
+        window.syncScopedLibraryState();
+      }
+    }, 0);
+  }
+}
+
+function restoreSavedSession() {
+  if (hasRestoredSession) return restoreSessionPromise;
+  hasRestoredSession = true;
 
   const savedAccounts = localStorage.getItem("pdf_lib_accounts");
-  const savedActive = localStorage.getItem("pdf_lib_active_email");
-
-  if (savedAccounts && savedActive) {
-    accounts = JSON.parse(savedAccounts);
-    activeEmail = savedActive;
-    updateUI();
+  if (savedAccounts) {
+    try {
+      const parsed = JSON.parse(savedAccounts);
+      accounts = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      accounts = [];
+    }
+  } else {
+    accounts = [];
   }
-};
+
+  updateUI();
+
+  restoreSessionPromise = (async () => {
+    const restoreVersion = authStateVersion;
+    const sessionUser = await fetchServerSessionUser();
+    if (restoreVersion !== authStateVersion) {
+      return;
+    }
+
+    if (sessionUser?.email) {
+      const exists = accounts.find((account) => account.email === sessionUser.email);
+      if (!exists) {
+        accounts.push(sessionUser);
+      } else {
+        Object.assign(exists, sessionUser);
+      }
+      activeEmail = sessionUser.email;
+      localStorage.setItem("pdf_lib_accounts", JSON.stringify(accounts));
+      localStorage.setItem("pdf_lib_active_email", activeEmail);
+      clearLegacyReaderTokens(activeEmail);
+    } else {
+      accounts.forEach((account) => clearLegacyReaderTokens(account?.email));
+      activeEmail = null;
+      localStorage.removeItem("pdf_lib_active_email");
+    }
+
+    updateUI();
+    syncScopedLibraryStateDeferred();
+  })();
+
+  return restoreSessionPromise;
+}
+
+function requestGoogleAccessToken() {
+  initializeGoogleIdentityClient();
+  if (!tokenClient) {
+    console.error("Google Identity client is not ready yet.");
+    return;
+  }
+  authStateVersion += 1;
+  tokenClient.requestAccessToken();
+}
+
+window.addEventListener("load", () => {
+  initializeGoogleIdentityClient();
+  restoreSavedSession();
+});
+
+if (document.readyState !== "loading") {
+  restoreSavedSession();
+  initializeGoogleIdentityClient();
+} else {
+  document.addEventListener("DOMContentLoaded", () => {
+    restoreSavedSession();
+    initializeGoogleIdentityClient();
+  });
+}
 
 function getInitials(name, email) {
   if (name)
@@ -67,38 +1225,153 @@ function getInitials(name, email) {
   return "U";
 }
 
-function handleLogin(user) {
-  const exists = accounts.find((a) => a.email === user.email);
-  if (!exists) {
-    accounts.push(user);
+async function handleLogin(accessToken, _expiresInSeconds = 0, context = {}) {
+  if (!accessToken) {
+    throw new Error("Missing Google access token.");
   }
+
+  const response = await fetch(buildApiUrl("/api/auth/login"), {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      accessToken,
+    }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.error || "Backend login verification failed.");
+  }
+
+  const user = data?.user;
+  if (!user?.email) {
+    throw new Error("Verified user profile is missing from backend response.");
+  }
+
+  const requestVersion = Number(context?.requestVersion || 0);
+  if (requestVersion && requestVersion < authStateVersion) {
+    return;
+  }
+
+  // Move the newly-logged-in account to position 0 (top of list = active)
+  const existingIndex = accounts.findIndex((a) => a.email === user.email);
+  if (existingIndex === -1) {
+    accounts.unshift(user); // New account â€” add to top
+  } else {
+    Object.assign(accounts[existingIndex], user);
+    // Move to top if not already there
+    if (existingIndex !== 0) {
+      const updated = accounts.splice(existingIndex, 1)[0];
+      accounts.unshift(updated);
+    }
+  }
+  authStateVersion = Math.max(authStateVersion, requestVersion || 0);
   activeEmail = user.email;
   localStorage.setItem("pdf_lib_accounts", JSON.stringify(accounts));
   localStorage.setItem("pdf_lib_active_email", activeEmail);
+  clearLegacyReaderTokens(user.email);
+
+  console.log("Backend Response:", data.message);
+
+  // Save the internal Database User ID for future features (like history)
+  if (data.userId) {
+      localStorage.setItem("db_user_id", data.userId);
+      writeScopedValue(DB_USER_ID_KEY_PREFIX, data.userId, user.email);
+  } else if (data.user && data.user.id) {
+      localStorage.setItem("db_user_id", data.user.id);
+      writeScopedValue(DB_USER_ID_KEY_PREFIX, data.user.id, user.email);
+  }
   updateUI();
+
+  if (typeof window.syncScopedLibraryState === "function") {
+    window.syncScopedLibraryState();
+  }
+
+  if (pendingSitePremiumCheckout) {
+    pendingSitePremiumCheckout = false;
+    startSitePremiumCheckout();
+  }
 }
 
 window.switchAccount = function (email) {
+  if (!email || email === activeEmail) {
+    profilePopup.classList.add("hidden");
+    isAccordionExpanded = false;
+    return;
+  }
+
+  const targetIndex = accounts.findIndex((a) => a.email === email);
+  if (targetIndex === -1) {
+    // Not stored locally â€” fall back to Google picker
+    profilePopup.classList.add("hidden");
+    isAccordionExpanded = false;
+    requestGoogleAccessToken();
+    return;
+  }
+
+  // Reorder: move clicked account to position 0, keep rest in order
+  const targetAccount = accounts[targetIndex];
+  accounts.splice(targetIndex, 1);      // remove from current spot
+  accounts.unshift(targetAccount);      // place at top
   activeEmail = email;
+
+  localStorage.setItem("pdf_lib_accounts", JSON.stringify(accounts));
   localStorage.setItem("pdf_lib_active_email", activeEmail);
+
   isAccordionExpanded = false;
+  profilePopup.classList.add("hidden");
   updateUI();
+  syncScopedLibraryStateDeferred();
 };
 
-window.handleLogout = function () {
-  accounts = accounts.filter((a) => a.email !== activeEmail);
-  localStorage.setItem("pdf_lib_accounts", JSON.stringify(accounts));
+window.handleLogout = async function () {
+  try {
+    await fetch(buildApiUrl("/api/auth/logout"), {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch (error) {
+    console.warn("Logout request failed:", error);
+  }
+
+  // Remove only the currently-active account from the stored list
+  const prevEmail = activeEmail;
+  clearLegacyReaderTokens(prevEmail);
+  accounts = accounts.filter((a) => a.email !== prevEmail);
+  authStateVersion += 1;
+  isAccordionExpanded = false;
+  profilePopup.classList.add("hidden");
 
   if (accounts.length > 0) {
+    // Auto-activate the next account in the list (the one that was below)
     activeEmail = accounts[0].email;
+    localStorage.setItem("pdf_lib_accounts", JSON.stringify(accounts));
     localStorage.setItem("pdf_lib_active_email", activeEmail);
   } else {
+    // No more accounts â€” fully sign out
     activeEmail = null;
     localStorage.removeItem("pdf_lib_active_email");
-    profilePopup.classList.add("hidden");
+    localStorage.removeItem("pdf_lib_accounts");
   }
-  isAccordionExpanded = false;
+
   updateUI();
+  syncScopedLibraryStateDeferred();
+
+  // If auto-switched to next account, silently re-sync with backend
+  // so server session reflects the new active account (best-effort)
+  if (accounts.length > 0) {
+    fetchServerSessionUser().then((sessionUser) => {
+      if (sessionUser?.email && sessionUser.email === activeEmail) {
+        const exists = accounts.find((a) => a.email === sessionUser.email);
+        if (exists) Object.assign(exists, sessionUser);
+        localStorage.setItem("pdf_lib_accounts", JSON.stringify(accounts));
+        updateUI();
+      }
+    }).catch(() => { /* network error â€” UI already updated locally */ });
+  }
 };
 
 window.toggleAccordion = function () {
@@ -107,7 +1380,7 @@ window.toggleAccordion = function () {
 };
 
 window.addAccount = function () {
-  tokenClient.requestAccessToken();
+  requestGoogleAccessToken();
 };
 
 function renderAuthActions() {
@@ -117,7 +1390,7 @@ function renderAuthActions() {
   const inactiveAccounts = accounts.filter((a) => a.email !== activeEmail);
 
   if (inactiveAccounts.length === 0) {
-    // Single Account View
+    // â”€â”€ Single Account View â”€â”€ (original design)
     container.innerHTML = `
       <div class="single-account-actions">
         <button class="action-btn" onclick="addAccount()">
@@ -132,14 +1405,16 @@ function renderAuthActions() {
       </div>
     `;
   } else {
-    // Multiple Accounts View
+    // â”€â”€ Multiple Accounts View â”€â”€ (original accordion design)
     if (!isAccordionExpanded) {
+      // Collapsed: show avatar previews of other accounts
       const avatarsHtml = inactiveAccounts
         .slice(0, 2)
         .map((acc) => {
-          const initials = getInitials(acc.name, acc.email);
-          return acc.picture
-            ? `<div class="collapsed-avatar"><img src="${acc.picture}" referrerpolicy="no-referrer"></div>`
+          const initials = escapeHtml(getInitials(acc.name, acc.email));
+          const pictureSrc = safeImageSrc(acc.picture);
+          return pictureSrc
+            ? `<div class="collapsed-avatar"><img src="${escapeHtml(pictureSrc)}" referrerpolicy="no-referrer" alt=""></div>`
             : `<div class="collapsed-avatar"><span>${initials}</span></div>`;
         })
         .join("");
@@ -156,19 +1431,22 @@ function renderAuthActions() {
         </div>
       `;
     } else {
+      // Expanded: show full account list
       let listHtml = "";
       inactiveAccounts.forEach((acc) => {
-        const initials = getInitials(acc.name, acc.email);
-        const avatarHtml = acc.picture
-          ? `<img src="${acc.picture}" referrerpolicy="no-referrer">`
+        const initials = escapeHtml(getInitials(acc.name, acc.email));
+        const pictureSrc = safeImageSrc(acc.picture);
+        const avatarHtml = pictureSrc
+          ? `<img src="${escapeHtml(pictureSrc)}" referrerpolicy="no-referrer" alt="">`
           : `<span>${initials}</span>`;
+        const safeEmail = escapeJsString(acc.email || "");
 
         listHtml += `
-          <button class="secondary-account-item" onclick="switchAccount('${acc.email}')">
+          <button class="secondary-account-item" onclick="switchAccount('${safeEmail}')">
             <div class="secondary-account-avatar">${avatarHtml}</div>
             <div class="secondary-account-info">
-              <div class="secondary-account-name">${acc.name || "User"}</div>
-              <div class="secondary-account-email">${acc.email}</div>
+              <div class="secondary-account-name">${escapeHtml(acc.name || "User")}</div>
+              <div class="secondary-account-email">${escapeHtml(acc.email)}</div>
             </div>
           </button>
         `;
@@ -198,7 +1476,9 @@ function renderAuthActions() {
 }
 
 function updateUI() {
-  const activeUser = accounts.find((a) => a.email === activeEmail);
+  const activeUser = activeEmail
+    ? accounts.find((a) => a.email === activeEmail)
+    : null;
 
   if (activeUser) {
     signInBtn.classList.add("hidden");
@@ -209,13 +1489,15 @@ function updateUI() {
       activeUser.given_name ||
       (activeUser.name ? activeUser.name.split(" ")[0] : "User");
     popupGreeting.textContent = `Hi, ${firstName}!`;
+    if (profileName) profileName.textContent = firstName;
 
-    if (activeUser.picture) {
-      profileImg.src = activeUser.picture;
+    const pictureSrc = safeImageSrc(activeUser.picture);
+    if (pictureSrc) {
+      profileImg.src = pictureSrc;
       profileImg.classList.remove("hidden");
       profileInitials.classList.add("hidden");
 
-      popupImg.src = activeUser.picture;
+      popupImg.src = pictureSrc;
       popupImg.classList.remove("hidden");
       popupInitials.classList.add("hidden");
     } else {
@@ -234,13 +1516,24 @@ function updateUI() {
     signInBtn.classList.remove("hidden");
     profileBtn.classList.add("hidden");
     profilePopup.classList.add("hidden");
+    if (profileName) profileName.textContent = "User";
   }
+
+  renderSitePremiumButton();
 }
 
 // Event Listeners
-signInBtn.addEventListener("click", () => tokenClient.requestAccessToken());
+signInBtn.addEventListener("click", () => requestGoogleAccessToken());
+if (sitePremiumBtn) {
+  sitePremiumBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    startSitePremiumCheckout();
+  });
+}
 profileBtn.addEventListener("click", (e) => {
   e.stopPropagation();
+  // Always collapse "other accounts" list when re-opening the popup
+  isAccordionExpanded = false;
   profilePopup.classList.toggle("hidden");
 });
 profilePopup.addEventListener("click", (e) => {
@@ -401,6 +1694,340 @@ function updateProfilePicture(newImageUrl) {
     updateUI();
   }
 }
+
+function sanitizeReadingProgressMap(rawMap) {
+  if (!rawMap || typeof rawMap !== "object" || Array.isArray(rawMap)) {
+    return {};
+  }
+
+  const cleaned = {};
+
+  for (const [driveId, value] of Object.entries(rawMap)) {
+    if (!value || typeof value !== "object") continue;
+
+    const key = String(driveId || "").trim();
+    if (!key) continue;
+
+    const totalPages = Math.max(0, Math.floor(Number(value.totalPages || 0)));
+    const lastPage = Math.max(1, Math.floor(Number(value.lastPage || 1)));
+    const progress =
+      totalPages > 0
+        ? Math.round((Math.min(lastPage, totalPages) / totalPages) * 100)
+        : Math.max(0, Math.min(100, Math.floor(Number(value.progress || 0))));
+    const updatedAt = Number(value.updatedAt || Date.now());
+    const rawFormat = String(value.format || (key.startsWith("epub:") ? "epub" : "pdf")).toLowerCase();
+    const format = rawFormat === "epub" ? "epub" : "pdf";
+    const documentId = String(
+      value.documentId || key.replace(/^epub:/, "").replace(/^pdf:/, ""),
+    ).trim();
+
+    cleaned[key] = {
+      title: String(value.title || "").trim(),
+      format,
+      documentId,
+      lastPage,
+      totalPages,
+      progress,
+      locationLabel: String(value.locationLabel || "").trim(),
+      updatedAt: Number.isFinite(updatedAt) ? updatedAt : Date.now(),
+    };
+  }
+
+  return cleaned;
+}
+
+function loadReadingProgressMap() {
+  return sanitizeReadingProgressMap(readScopedJSON(READING_PROGRESS_KEY_PREFIX, {}, activeEmail));
+}
+
+function saveReadingProgressMap(progressMap) {
+  const cleaned = sanitizeReadingProgressMap(progressMap);
+  writeScopedJSON(READING_PROGRESS_KEY_PREFIX, cleaned, activeEmail);
+}
+
+function removeFromContinueReading(driveId) {
+  const normalized = String(driveId || "").trim();
+  if (!normalized) return;
+
+  const progressMap = loadReadingProgressMap();
+  if (!progressMap[normalized]) return;
+  delete progressMap[normalized];
+  saveReadingProgressMap(progressMap);
+
+  const books = getContinueReadingBooks();
+  if (books.length) {
+    renderContinueReadingSection(books);
+  }
+}
+
+function getResumePageForBook(book) {
+  const progressMap = loadReadingProgressMap();
+  const readerDocumentId = buildReaderDocumentId(book, "pdf", book?.pdf_drive_id);
+  const rawDriveId = normalizeDriveAssetId(book?.pdf_drive_id);
+  const entry =
+    progressMap[readerDocumentId] ||
+    (rawDriveId ? progressMap[rawDriveId] : null);
+  if (!entry) return null;
+
+  const page = Math.floor(Number(entry.lastPage || 0));
+  return Number.isFinite(page) && page > 1 ? page : null;
+}
+
+function formatRelativeTime(timestamp) {
+  const value = Number(timestamp || 0);
+  if (!Number.isFinite(value) || value <= 0) return "";
+
+  const seconds = Math.max(0, Math.floor((Date.now() - value) / 1000));
+  if (seconds < 60) return "Just now";
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} hr ago`;
+  if (seconds < 172800) return "Yesterday";
+  return `${Math.floor(seconds / 86400)} days ago`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function safeImageSrc(value) {
+  const src = String(value || "").trim();
+  if (!src) return "";
+
+  if (/^data:image\/(?:png|jpe?g|gif|webp);base64,/i.test(src)) {
+    return src;
+  }
+
+  try {
+    const url = new URL(src, window.location.href);
+    return ["https:", "http:"].includes(url.protocol) ? src : "";
+  } catch {
+    return "";
+  }
+}
+
+function getProgressFormat(progressKey, state) {
+  const rawFormat = String(state?.format || "").toLowerCase();
+  if (rawFormat === "epub") return "epub";
+  if (String(progressKey || "").startsWith("epub:")) return "epub";
+  return "pdf";
+}
+
+function getProgressDocumentId(progressKey, state) {
+  return String(
+    state?.documentId || String(progressKey || "").replace(/^epub:/, "").replace(/^pdf:/, ""),
+  ).trim();
+}
+
+function getProgressLookupKey(format, documentId) {
+  return format === "epub" ? `epub:${documentId}` : documentId;
+}
+
+function getContinueReadingBooks() {
+  return Array.isArray(allLibraryBooks) && allLibraryBooks.length
+    ? allLibraryBooks
+    : Array.isArray(searchableBooks)
+      ? searchableBooks
+      : [];
+}
+
+function openContinueReadingEntry(entry) {
+  const book = entry?.book || {};
+  const state = entry?.state || {};
+  const page = Math.max(1, Math.floor(Number(state.lastPage || 1)));
+  const title = normalizeText(book.title) || normalizeText(state.title) || "Untitled Book";
+
+  if (entry.format === "epub") {
+    const readerDocumentId = buildReaderDocumentId(
+      book,
+      "epub",
+      entry.documentId || book.epub_drive_id,
+    );
+    closeSidebar();
+    closeSearch();
+    if (window.saveToRecentHistory) {
+      window.saveToRecentHistory({
+        id: book.id,
+        title,
+        pdf_drive_id: normalizeDriveAssetId(book.pdf_drive_id) || null,
+        epub_drive_id: readerDocumentId || null,
+      });
+    }
+    const pageQuery = page > 1 ? `&page=${encodeURIComponent(page)}` : "";
+    window.location.href = `view-epub.html?id=${encodeURIComponent(readerDocumentId)}&title=${encodeURIComponent(title)}${pageQuery}`;
+    return;
+  }
+
+  window.openBook(book.id, title, entry.documentId || book.pdf_drive_id, page);
+}
+
+function renderContinueReadingSection(books) {
+  const section = document.getElementById("continue-reading-section");
+  if (!section) return;
+
+  const validBooks = Array.isArray(books) ? books : [];
+  const byProgressKey = new Map();
+  for (const book of validBooks) {
+    const pdfDriveId = normalizeDriveAssetId(book?.pdf_drive_id);
+    const epubDriveId = normalizeDriveAssetId(book?.epub_drive_id);
+    const premiumPdfId = buildReaderDocumentId(book, "pdf", pdfDriveId);
+    const premiumEpubId = buildReaderDocumentId(book, "epub", epubDriveId);
+    if (pdfDriveId) {
+      byProgressKey.set(pdfDriveId, book);
+      byProgressKey.set(`pdf:${pdfDriveId}`, book);
+    }
+    if (premiumPdfId) {
+      byProgressKey.set(premiumPdfId, book);
+      byProgressKey.set(`pdf:${premiumPdfId}`, book);
+    }
+    if (epubDriveId) {
+      byProgressKey.set(`epub:${epubDriveId}`, book);
+    }
+    if (premiumEpubId) {
+      byProgressKey.set(`epub:${premiumEpubId}`, book);
+    }
+  }
+
+  const progressMap = loadReadingProgressMap();
+  const entries = Object.entries(progressMap)
+    .map(([progressKey, state]) => {
+      const format = getProgressFormat(progressKey, state);
+      const documentId = getProgressDocumentId(progressKey, state);
+      const lookupKey = getProgressLookupKey(format, documentId);
+      return {
+        progressKey,
+        format,
+        documentId,
+        state,
+        book: byProgressKey.get(lookupKey),
+      };
+    })
+    .filter((entry) => {
+      if (!entry.book) return false;
+      if (entry.state.progress >= 100) return false;
+      if (!entry.documentId) return false;
+      return Number(entry.state.lastPage || 0) > 0;
+    })
+    .sort((a, b) => Number(b.state.updatedAt || 0) - Number(a.state.updatedAt || 0))
+    .slice(0, 8);
+
+  if (!entries.length) {
+    section.classList.add("hidden");
+    section.innerHTML = "";
+    return;
+  }
+
+  section.classList.remove("hidden");
+  section.innerHTML = `
+    <div class="continue-reading-head">
+      <h2 class="row-title">Continue Reading</h2>
+      <p>Jump back to where you stopped.</p>
+    </div>
+    <div class="continue-reading-list"></div>
+  `;
+
+  const list = section.querySelector(".continue-reading-list");
+  if (!list) return;
+
+  for (const entry of entries) {
+    const book = entry.book;
+    const state = entry.state;
+    const safeProgress = Math.max(0, Math.min(100, Number(state.progress || 0)));
+    const page = Math.max(1, Math.floor(Number(state.lastPage || 1)));
+    const total = Math.max(0, Math.floor(Number(state.totalPages || 0)));
+    const displayTotal = total > 0 ? total : "--";
+    const formatLabel = entry.format === "epub" ? "EPUB" : "PDF";
+    const locationLabel =
+      entry.format === "epub"
+        ? `Section ${page} / ${displayTotal}`
+        : `Page ${page} / ${displayTotal}`;
+    const card = document.createElement("article");
+    card.className = "continue-reading-card";
+    card.dataset.driveId = entry.documentId;
+    card.dataset.progressKey = entry.progressKey;
+    card.dataset.format = entry.format;
+    card.dataset.resumePage = String(page);
+    card.innerHTML = `
+      <button type="button" class="continue-remove-btn" aria-label="Remove ${escapeHtml(book.title)} from Continue Reading">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      <div class="continue-cover-slot"></div>
+      <div class="continue-meta">
+        <h3>${escapeHtml(book.title)}</h3>
+        <p>${escapeHtml(book.author || "Unknown Author")}</p>
+        <div class="continue-progress-track">
+          <span style="width:${safeProgress}%"></span>
+        </div>
+        <div class="continue-foot">
+          <span>${escapeHtml(locationLabel)}</span>
+          <span>${escapeHtml(formatLabel)} - ${safeProgress}%</span>
+        </div>
+      </div>
+      <div class="continue-time-wrap">
+        <small class="continue-time">${formatRelativeTime(state.updatedAt)}</small>
+      </div>
+    `;
+
+    const coverSlot = card.querySelector(".continue-cover-slot");
+    if (coverSlot) {
+      const coverNode = createBookCoverNode(book, {
+        className: "continue-cover",
+        fallbackClassName: "continue-cover-fallback",
+        size: "w520",
+        altText: normalizeText(book.title) || "Book cover",
+        fallbackBehavior: "show",
+      });
+      if (!coverNode) {
+        card.remove();
+        continue;
+      }
+      coverSlot.replaceWith(coverNode);
+    }
+
+    card.addEventListener("click", () => {
+      openContinueReadingEntry(entry);
+    });
+    card.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openContinueReadingEntry(entry);
+      }
+    });
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
+
+    const removeBtn = card.querySelector(".continue-remove-btn");
+    if (removeBtn) {
+      removeBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        removeFromContinueReading(entry.progressKey);
+      });
+      removeBtn.addEventListener("keydown", (event) => {
+        event.stopPropagation();
+      });
+    }
+
+    list.appendChild(card);
+  }
+}
+
+window.addEventListener("focus", () => {
+  const books = getContinueReadingBooks();
+  if (books.length) {
+    renderContinueReadingSection(books);
+  }
+});
+
+document.addEventListener("visibilitychange", () => {
+  const books = getContinueReadingBooks();
+  if (!document.hidden && books.length) {
+    renderContinueReadingSection(books);
+  }
+});
 // =========================================
 // SIDEBAR & HISTORY FUNCTIONALITY
 // =========================================
@@ -411,16 +2038,779 @@ const sidebar = document.getElementById("sidebar");
 const sidebarOverlay = document.getElementById("sidebar-overlay");
 const historyList = document.getElementById("history-list");
 
-// Dummy History Data (Simulating recently read books)
-let userHistory = [
-  { id: 1, title: "The Great Gatsby" },
-  { id: 2, title: "1984 by George Orwell" },
-  { id: 3, title: "Introduction to Algorithms" },
-  { id: 4, title: "Atomic Habits" },
-];
+function historyKey(item) {
+  const driveId = String(item?.pdf_drive_id || "").trim();
+  if (driveId) return `drive:${driveId}`;
 
-// 1. Open Sidebar
+  const epubDriveId = String(item?.epub_drive_id || "").trim();
+  if (epubDriveId) return `epub:${epubDriveId}`;
+
+  const id = String(item?.id ?? "").trim();
+  if (id) return `id:${id}`;
+
+  return `title:${String(item?.title || "").trim().toLowerCase()}`;
+}
+
+function sanitizeHistory(list) {
+  if (!Array.isArray(list)) return [];
+
+  const seen = new Set();
+  const sanitized = [];
+
+  for (const raw of list) {
+    if (!raw || typeof raw !== "object") continue;
+
+    const title = String(raw.title || "").trim();
+    if (!title) continue;
+
+    const item = {
+      id: raw.id ?? Date.now(),
+      title,
+      pdf_drive_id: raw.pdf_drive_id ? String(raw.pdf_drive_id).trim() : null,
+      epub_drive_id: raw.epub_drive_id ? String(raw.epub_drive_id).trim() : null,
+    };
+
+    const key = historyKey(item);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    sanitized.push(item);
+  }
+
+  return sanitized.slice(0, 200);
+}
+
+function persistHistory(nextHistory) {
+  userHistory = sanitizeHistory(nextHistory);
+  writeScopedJSON(RECENT_HISTORY_KEY_PREFIX, userHistory, activeEmail);
+}
+
+function buildHistoryEntry(book, fallbackId) {
+  return {
+    id: book?.id ?? fallbackId ?? Date.now(),
+    title: String(book?.title || "").trim() || "Untitled",
+    pdf_drive_id: buildReaderDocumentId(book, "pdf", book?.pdf_drive_id) || null,
+    epub_drive_id: buildReaderDocumentId(book, "epub", book?.epub_drive_id) || null,
+  };
+}
+
+function escapeJsString(value) {
+  return String(value ?? "")
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'");
+}
+
+function deleteMenuId(rawId) {
+  const safe = String(rawId ?? "").replace(/[^a-zA-Z0-9_-]/g, "_");
+  return `delete-menu-${safe}`;
+}
+
+function loadHistoryForActiveUser() {
+  return sanitizeHistory(readScopedJSON(RECENT_HISTORY_KEY_PREFIX, [], activeEmail));
+}
+
+// Retrieve Recent History from the active account's storage or start empty
+let userHistory = loadHistoryForActiveUser();
+persistHistory(userHistory);
+
+function getLibraryStorageOwner() {
+  return normalizeEmailKey(activeEmail) || "guest";
+}
+
+function myListKey(item) {
+  const pdfDriveId = normalizeDriveAssetId(item?.pdf_drive_id);
+  if (pdfDriveId) return `pdf:${pdfDriveId}`;
+
+  const epubDriveId = normalizeDriveAssetId(item?.epub_drive_id);
+  if (epubDriveId) return `epub:${epubDriveId}`;
+
+  const id = String(item?.id ?? "").trim();
+  if (id) return `id:${id}`;
+
+  return `title:${String(item?.title || "").trim().toLowerCase()}`;
+}
+
+function sanitizeMyList(list) {
+  if (!Array.isArray(list)) return [];
+
+  const seen = new Set();
+  const sanitized = [];
+
+  for (const raw of list) {
+    if (!raw || typeof raw !== "object") continue;
+
+    const title = normalizeText(raw.title);
+    if (!title) continue;
+
+    const item = {
+      id: raw.id ?? "",
+      title,
+      author: normalizeText(raw.author) || "Unknown Author",
+      category: normalizeText(raw.category) || "Book",
+      pdf_drive_id: normalizeDriveAssetId(raw.pdf_drive_id) || null,
+      epub_drive_id: normalizeDriveAssetId(raw.epub_drive_id) || null,
+      poster_url: normalizeText(raw.poster_url) || null,
+      cover_url: normalizeText(raw.cover_url) || null,
+      poster_drive_id: normalizeDriveAssetId(raw.poster_drive_id) || null,
+      cover_drive_id: normalizeDriveAssetId(raw.cover_drive_id) || null,
+      addedAt: Number(raw.addedAt || Date.now()),
+    };
+
+    const key = myListKey(item);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    sanitized.push(item);
+  }
+
+  return sanitized.slice(0, 500);
+}
+
+function loadMyList() {
+  return sanitizeMyList(
+    readScopedJSON(MY_LIST_KEY_PREFIX, [], getLibraryStorageOwner()),
+  );
+}
+
+function saveMyList(nextList) {
+  writeScopedJSON(
+    MY_LIST_KEY_PREFIX,
+    sanitizeMyList(nextList),
+    getLibraryStorageOwner(),
+  );
+  updateMyListCount();
+}
+
+function buildMyListEntry(book) {
+  return {
+    id: book?.id ?? "",
+    title: normalizeText(book?.title) || "Untitled",
+    author: normalizeText(book?.author) || "Unknown Author",
+    category: normalizeText(book?.category) || "Book",
+    pdf_drive_id: normalizeDriveAssetId(book?.pdf_drive_id) || null,
+    epub_drive_id: normalizeDriveAssetId(book?.epub_drive_id) || null,
+    poster_url: normalizeText(book?.poster_url) || null,
+    cover_url: normalizeText(book?.cover_url) || null,
+    poster_drive_id: normalizeDriveAssetId(book?.poster_drive_id) || null,
+    cover_drive_id: normalizeDriveAssetId(book?.cover_drive_id) || null,
+    addedAt: Date.now(),
+  };
+}
+
+function findLibraryBookForMyListItem(item) {
+  const source = Array.isArray(allLibraryBooks) ? allLibraryBooks : [];
+  const itemId = String(item?.id ?? "").trim();
+  const itemPdfId = normalizeDriveAssetId(item?.pdf_drive_id);
+  const itemEpubId = normalizeDriveAssetId(item?.epub_drive_id);
+  const itemTitle = normalizeText(item?.title).toLowerCase();
+
+  return (
+    source.find((book) => itemId && String(book?.id ?? "").trim() === itemId) ||
+    source.find((book) => itemPdfId && normalizeDriveAssetId(book?.pdf_drive_id) === itemPdfId) ||
+    source.find((book) => itemEpubId && normalizeDriveAssetId(book?.epub_drive_id) === itemEpubId) ||
+    source.find((book) => itemTitle && normalizeText(book?.title).toLowerCase() === itemTitle) ||
+    null
+  );
+}
+
+function hydrateMyListItem(item) {
+  const match = findLibraryBookForMyListItem(item);
+  if (!match) return item;
+
+  const hydrated = { ...item };
+  [
+    "id",
+    "title",
+    "author",
+    "category",
+    "pdf_drive_id",
+    "epub_drive_id",
+    "poster_url",
+    "cover_url",
+    "poster_drive_id",
+    "cover_drive_id",
+  ].forEach((field) => {
+    if (!normalizeText(hydrated[field]) && normalizeText(match[field])) {
+      hydrated[field] = match[field];
+    }
+  });
+  return hydrated;
+}
+
+function addBookToMyList(book) {
+  const entry = buildMyListEntry(book);
+  if (!entry.title) return false;
+
+  const entryKey = myListKey(entry);
+  const nextList = loadMyList().filter((item) => myListKey(item) !== entryKey);
+  nextList.unshift(entry);
+  saveMyList(nextList);
+
+  if (settingsPanel && !settingsPanel.classList.contains("hidden")) {
+    renderSettingsSection(currentSettingsSection);
+  }
+
+  return true;
+}
+
+function removeBookFromMyList(key) {
+  const normalizedKey = String(key || "");
+  if (!normalizedKey) return;
+
+  const nextList = loadMyList().filter((item) => myListKey(item) !== normalizedKey);
+  saveMyList(nextList);
+
+  if (settingsPanel && !settingsPanel.classList.contains("hidden")) {
+    renderSettingsSection(currentSettingsSection);
+  }
+}
+
+function isBookInMyList(book) {
+  const key = myListKey(buildMyListEntry(book));
+  return loadMyList().some((item) => myListKey(item) === key);
+}
+
+function updateMyListCount() {
+  if (!settingsMyListCount) return;
+  settingsMyListCount.textContent = String(loadMyList().length);
+}
+
+function extractDriveIdFromUrl(value) {
+  const raw = normalizeDriveAssetId(value);
+  if (!raw) return "";
+  if (!/^https?:\/\//i.test(raw)) return raw.startsWith("/api/") ? "" : raw;
+
+  try {
+    const url = new URL(raw);
+    const byQuery = url.searchParams.get("id");
+    if (byQuery) return normalizeDriveAssetId(byQuery);
+
+    const match = url.pathname.match(/\/d\/([^/]+)/);
+    return match ? normalizeDriveAssetId(match[1]) : "";
+  } catch {
+    return "";
+  }
+}
+
+function resolveCoverCandidate(value, size = "w240") {
+  const raw = normalizeDriveAssetId(value);
+  if (!raw) return "";
+
+  if (raw.startsWith("/api/")) return buildApiUrl(raw);
+
+  const driveId = extractDriveIdFromUrl(raw);
+  if (driveId) return buildDriveThumbnailUrl(driveId, size);
+
+  if (/^data:image\//i.test(raw)) return safeImageSrc(raw);
+  if (/^https?:\/\//i.test(raw) && /\.(png|jpe?g|gif|webp|avif)(?:[?#].*)?$/i.test(raw)) {
+    return safeImageSrc(raw);
+  }
+
+  return "";
+}
+
+function getMyListCoverSource(item) {
+  const hydrated = hydrateMyListItem(item);
+  const candidates = [
+    hydrated?.poster_drive_id,
+    hydrated?.cover_drive_id,
+    hydrated?.poster_url,
+    hydrated?.cover_url,
+  ];
+
+  for (const candidate of candidates) {
+    const resolved = resolveCoverCandidate(candidate);
+    if (resolved) return resolved;
+  }
+
+  const coverId = getBookCoverDriveId(hydrated);
+  return coverId ? safeImageSrc(buildDriveThumbnailUrl(coverId, "w240")) : "";
+}
+
+function renderMyListCover(item) {
+  const hydrated = hydrateMyListItem(item);
+  const coverSource = getMyListCoverSource(item);
+  const fallback = getBookInitials(hydrated.title);
+  if (coverSource) {
+    return `<img class="my-list-cover" src="${escapeHtml(coverSource)}" alt="${escapeHtml(hydrated.title)} cover" loading="lazy" data-fallback="${escapeHtml(fallback)}">`;
+  }
+
+  return `<div class="my-list-cover-fallback">${escapeHtml(fallback)}</div>`;
+}
+
+function sanitizeLibrarySettings(settings) {
+  const source = settings && typeof settings === "object" ? settings : {};
+  return {
+    saveActivity:
+      typeof source.saveActivity === "boolean" ? source.saveActivity : true,
+    showContinueReading:
+      typeof source.showContinueReading === "boolean"
+        ? source.showContinueReading
+        : true,
+    reduceMotion: Boolean(source.reduceMotion),
+  };
+}
+
+function loadLibrarySettings() {
+  return sanitizeLibrarySettings(
+    readScopedJSON(
+      LIBRARY_SETTINGS_KEY_PREFIX,
+      sanitizeLibrarySettings({}),
+      getLibraryStorageOwner(),
+    ),
+  );
+}
+
+function saveLibrarySettings(nextSettings) {
+  const cleaned = sanitizeLibrarySettings(nextSettings);
+  writeScopedJSON(LIBRARY_SETTINGS_KEY_PREFIX, cleaned, getLibraryStorageOwner());
+  applyLibrarySettings();
+}
+
+function applyLibrarySettings() {
+  const settings = loadLibrarySettings();
+  document.body.classList.toggle(
+    "hide-continue-reading",
+    !settings.showContinueReading || !settings.saveActivity,
+  );
+  document.body.classList.remove("library-compact-mode");
+  document.body.classList.toggle("library-reduce-motion", settings.reduceMotion);
+}
+
+function renderSettingsToggle(key, title, description, checked) {
+  return `
+    <div class="settings-row">
+      <div>
+        <strong>${escapeHtml(title)}</strong>
+        <span>${escapeHtml(description)}</span>
+      </div>
+      <label class="settings-toggle" aria-label="${escapeHtml(title)}">
+        <input type="checkbox" data-setting-key="${escapeHtml(key)}" ${checked ? "checked" : ""}>
+        <span></span>
+      </label>
+    </div>
+  `;
+}
+
+function renderMyListSettings() {
+  const items = loadMyList();
+
+  if (items.length === 0) {
+    return `
+      <h3 class="settings-section-title">My List</h3>
+      <p class="settings-section-copy">Books you save will appear here.</p>
+      <div class="settings-empty">No saved books yet.</div>
+    `;
+  }
+
+  const itemMarkup = items
+    .map((item) => {
+      const displayItem = hydrateMyListItem(item);
+      const key = myListKey(item);
+      return `
+        <article class="my-list-item">
+          ${renderMyListCover(displayItem)}
+          <div>
+            <h4 class="my-list-title">${escapeHtml(displayItem.title)}</h4>
+            <p class="my-list-meta">${escapeHtml(displayItem.author)} - ${escapeHtml(displayItem.category)}</p>
+          </div>
+          <div class="my-list-actions">
+            <button class="settings-action-btn" type="button" data-settings-action="open-my-list-book" data-my-list-key="${escapeHtml(key)}">
+              <span class="material-symbols-outlined">menu_book</span>
+              Open
+            </button>
+            <button class="settings-action-btn danger" type="button" data-settings-action="remove-my-list-book" data-my-list-key="${escapeHtml(key)}">
+              <span class="material-symbols-outlined">delete</span>
+              Remove
+            </button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+
+  return `
+    <h3 class="settings-section-title">My List</h3>
+    <p class="settings-section-copy">Saved books are private to this signed-in profile on this browser.</p>
+    <div class="my-list-items">${itemMarkup}</div>
+  `;
+}
+
+function getActiveAccount() {
+  return activeEmail
+    ? accounts.find((account) => normalizeEmailKey(account.email) === activeEmail) || null
+    : null;
+}
+
+function renderAccountAvatar(account) {
+  const picture = safeImageSrc(account?.picture || "");
+  const name = account?.name || account?.email || "Guest";
+  if (picture) {
+    return `<img src="${escapeHtml(picture)}" alt="${escapeHtml(name)}" referrerpolicy="no-referrer">`;
+  }
+
+  return `<span>${escapeHtml(getInitials(account?.name, account?.email))}</span>`;
+}
+
+function getDeviceSummary() {
+  const ua = navigator.userAgent || "";
+  const browser = ua.includes("Edg/")
+    ? "Microsoft Edge"
+    : ua.includes("Chrome/")
+      ? "Google Chrome"
+      : ua.includes("Firefox/")
+        ? "Firefox"
+        : ua.includes("Safari/")
+          ? "Safari"
+          : "Current browser";
+  const system = ua.includes("Windows")
+    ? "Windows"
+    : ua.includes("Mac OS")
+      ? "macOS"
+      : ua.includes("Android")
+        ? "Android"
+        : ua.includes("iPhone") || ua.includes("iPad")
+          ? "iOS"
+          : "This device";
+  return `${browser} on ${system}`;
+}
+
+function renderSettingsSection(section = "my-list") {
+  if (!settingsDetail) return;
+
+  currentSettingsSection = section;
+  document.querySelectorAll("[data-settings-section]").forEach((button) => {
+    button.classList.toggle(
+      "active",
+      button.getAttribute("data-settings-section") === section,
+    );
+  });
+
+  const settings = loadLibrarySettings();
+  const progressCount = Object.keys(loadReadingProgressMap()).length;
+  const recentCount = userHistory.length;
+  const myListCount = loadMyList().length;
+
+  if (section === "my-list") {
+    settingsDetail.innerHTML = renderMyListSettings();
+  } else if (section === "reading") {
+    settingsDetail.innerHTML = `
+      <h3 class="settings-section-title">Reading</h3>
+      <p class="settings-section-copy">Keep only the reading controls that matter.</p>
+      <div class="settings-card">
+        ${renderSettingsToggle("showContinueReading", "Continue Reading", "Show saved reading progress on the home page.", settings.showContinueReading && settings.saveActivity)}
+        ${renderSettingsToggle("reduceMotion", "Reduce motion", "Use calmer motion while browsing and reading.", settings.reduceMotion)}
+      </div>
+    `;
+  } else if (section === "privacy") {
+    settingsDetail.innerHTML = `
+      <h3 class="settings-section-title">Privacy & security</h3>
+      <p class="settings-section-copy">Your reading activity stays in this browser unless you choose to clear it.</p>
+      <div class="settings-card">
+        ${renderSettingsToggle("saveActivity", "Save reading activity", "Allow Recent and Continue Reading to save on this browser.", settings.saveActivity)}
+      </div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div><strong>Recent books</strong><span>${recentCount} saved item${recentCount === 1 ? "" : "s"}</span></div>
+          <button class="settings-action-btn danger" type="button" data-settings-action="clear-recent">Clear</button>
+        </div>
+        <div class="settings-row">
+          <div><strong>Continue Reading</strong><span>${progressCount} saved item${progressCount === 1 ? "" : "s"}</span></div>
+          <button class="settings-action-btn danger" type="button" data-settings-action="clear-progress">Clear</button>
+        </div>
+        <div class="settings-row">
+          <div><strong>My List</strong><span>${myListCount} saved item${myListCount === 1 ? "" : "s"}</span></div>
+          <button class="settings-action-btn danger" type="button" data-settings-action="clear-my-list">Clear</button>
+        </div>
+        <div class="settings-row">
+          <div><strong>Library settings</strong><span>Reset display preferences to default.</span></div>
+          <button class="settings-action-btn" type="button" data-settings-action="reset-settings">Reset</button>
+        </div>
+        <div class="settings-row">
+          <div><strong>All local library data</strong><span>Clear Recent, Continue Reading, My List, and settings from this browser.</span></div>
+          <button class="settings-action-btn danger" type="button" data-settings-action="clear-all-local-data">Clear all</button>
+        </div>
+      </div>
+    `;
+  } else if (section === "account") {
+    const account = getActiveAccount();
+    const displayName = account?.name || (activeEmail ? activeEmail.split("@")[0] : "Guest profile");
+    const connectedLabel = activeEmail ? `Google - ${activeEmail}` : "No account connected";
+    settingsDetail.innerHTML = `
+      <h3 class="settings-section-title">Account</h3>
+      <p class="settings-section-copy">Profile, connected account, and active device details.</p>
+      <div class="settings-profile-card">
+        <div class="settings-avatar">${renderAccountAvatar(account)}</div>
+        <div>
+          <h4>${escapeHtml(displayName)}</h4>
+          <p>${escapeHtml(activeEmail || "Not signed in")}</p>
+        </div>
+        <span class="settings-pill">${activeEmail ? "Signed in" : "Guest"}</span>
+      </div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div><strong>Email address</strong><span>${escapeHtml(activeEmail || "Sign in to keep your library profile separate.")}</span></div>
+          ${
+            activeEmail
+              ? ""
+              : '<button class="settings-action-btn" type="button" data-settings-action="sign-in">Sign in</button>'
+          }
+        </div>
+        <div class="settings-row">
+          <div><strong>Connected account</strong><span>${escapeHtml(connectedLabel)}</span></div>
+          ${activeEmail ? '<button class="settings-action-btn danger" type="button" data-settings-action="sign-out">Sign out</button>' : ""}
+        </div>
+      </div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div><strong>Active device</strong><span>${escapeHtml(getDeviceSummary())} - this device</span></div>
+          <span class="settings-pill">Active</span>
+        </div>
+        <div class="settings-row">
+          <div><strong>Saved library data</strong><span>${recentCount} recent, ${progressCount} progress, ${myListCount} My List</span></div>
+          <button class="settings-action-btn" type="button" data-settings-action="refresh-library">Refresh</button>
+        </div>
+      </div>
+    `;
+  } else {
+    settingsDetail.innerHTML = `
+      <h3 class="settings-section-title">Help</h3>
+      <p class="settings-section-copy">Quick actions for common library work.</p>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div><strong>Find a book</strong><span>Open the search box.</span></div>
+          <button class="settings-action-btn" type="button" data-settings-action="open-search">Search</button>
+        </div>
+        <div class="settings-row">
+          <div><strong>Return to top</strong><span>Go back to the top of the library.</span></div>
+          <button class="settings-action-btn" type="button" data-settings-action="back-to-top">Top</button>
+        </div>
+        <div class="settings-row">
+          <div><strong>Reload library data</strong><span>Fetch the latest books from the backend.</span></div>
+          <button class="settings-action-btn" type="button" data-settings-action="refresh-library">Refresh</button>
+        </div>
+      </div>
+    `;
+  }
+
+  attachSettingsDetailEvents();
+  updateMyListCount();
+}
+
+function closeSettings() {
+  if (!settingsPanel || !settingsBackdrop) return;
+  settingsPanel.classList.add("hidden");
+  settingsPanel.setAttribute("aria-hidden", "true");
+  settingsBackdrop.classList.add("hidden");
+}
+
+function openSettings(section = "my-list") {
+  if (!settingsPanel || !settingsBackdrop) return;
+  closeSidebar();
+  applyLibrarySettings();
+  renderSettingsSection(section);
+  settingsPanel.classList.remove("hidden");
+  settingsPanel.setAttribute("aria-hidden", "false");
+  settingsBackdrop.classList.remove("hidden");
+}
+
+function findMyListItemByKey(key) {
+  return loadMyList().find((item) => myListKey(item) === String(key || ""));
+}
+
+function handleSettingsAction(action, target) {
+  if (action === "open-my-list-book") {
+    const savedItem = findMyListItemByKey(target.getAttribute("data-my-list-key"));
+    const item = savedItem ? hydrateMyListItem(savedItem) : null;
+    if (!item) return;
+    closeSettings();
+    window.openSavedBook(item.id, item.title, item.pdf_drive_id, item.epub_drive_id);
+    return;
+  }
+
+  if (action === "remove-my-list-book") {
+    removeBookFromMyList(target.getAttribute("data-my-list-key"));
+    return;
+  }
+
+  if (action === "clear-recent") {
+    persistHistory([]);
+    renderHistory();
+    renderSettingsSection(currentSettingsSection);
+    return;
+  }
+
+  if (action === "clear-progress") {
+    saveReadingProgressMap({});
+    renderContinueReadingSection(getContinueReadingBooks());
+    renderSettingsSection(currentSettingsSection);
+    return;
+  }
+
+  if (action === "clear-my-list") {
+    saveMyList([]);
+    renderSettingsSection(currentSettingsSection);
+    return;
+  }
+
+  if (action === "clear-all-local-data") {
+    persistHistory([]);
+    saveReadingProgressMap({});
+    saveMyList([]);
+    removeScopedValue(LIBRARY_SETTINGS_KEY_PREFIX, getLibraryStorageOwner());
+    applyLibrarySettings();
+    renderHistory();
+    renderContinueReadingSection(getContinueReadingBooks());
+    renderSettingsSection("privacy");
+    return;
+  }
+
+  if (action === "reset-settings") {
+    removeScopedValue(LIBRARY_SETTINGS_KEY_PREFIX, getLibraryStorageOwner());
+    applyLibrarySettings();
+    renderSettingsSection(currentSettingsSection);
+    return;
+  }
+
+  if (action === "open-search") {
+    closeSettings();
+    openSearch("");
+    return;
+  }
+
+  if (action === "back-to-top") {
+    closeSettings();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
+
+  if (action === "refresh-library") {
+    fetchPDFs();
+    renderSettingsSection(currentSettingsSection);
+    return;
+  }
+
+  if (action === "sign-in") {
+    closeSettings();
+    requestGoogleAccessToken();
+    return;
+  }
+
+  if (action === "sign-out") {
+    closeSettings();
+    if (typeof window.handleLogout === "function") {
+      window.handleLogout();
+    }
+  }
+}
+
+function attachSettingsDetailEvents() {
+  if (!settingsDetail) return;
+
+  settingsDetail.querySelectorAll(".my-list-cover").forEach((image) => {
+    image.addEventListener("error", () => {
+      const fallback = document.createElement("div");
+      fallback.className = "my-list-cover-fallback";
+      fallback.textContent = image.getAttribute("data-fallback") || "BK";
+      image.replaceWith(fallback);
+    });
+  });
+
+  settingsDetail.querySelectorAll("[data-setting-key]").forEach((input) => {
+    input.addEventListener("change", () => {
+      const key = input.getAttribute("data-setting-key");
+      const settings = loadLibrarySettings();
+      settings[key] = Boolean(input.checked);
+      saveLibrarySettings(settings);
+      if (key === "saveActivity" && !settings.saveActivity) {
+        persistHistory([]);
+        saveReadingProgressMap({});
+        renderHistory();
+        renderContinueReadingSection(getContinueReadingBooks());
+      }
+      renderSettingsSection(currentSettingsSection);
+    });
+  });
+
+  settingsDetail.querySelectorAll("[data-settings-action]").forEach((button) => {
+    button.addEventListener("click", () => {
+      handleSettingsAction(button.getAttribute("data-settings-action"), button);
+    });
+  });
+}
+
+if (openSettingsBtn) {
+  openSettingsBtn.addEventListener("click", () => openSettings("my-list"));
+}
+
+if (closeSettingsBtn) {
+  closeSettingsBtn.addEventListener("click", closeSettings);
+}
+
+if (settingsBackdrop) {
+  settingsBackdrop.addEventListener("click", closeSettings);
+}
+
+document.querySelectorAll("[data-settings-section]").forEach((button) => {
+  button.addEventListener("click", () => {
+    renderSettingsSection(button.getAttribute("data-settings-section") || "my-list");
+  });
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && settingsPanel && !settingsPanel.classList.contains("hidden")) {
+    closeSettings();
+  }
+});
+
+window.addBookToMyList = addBookToMyList;
+window.removeBookFromMyList = removeBookFromMyList;
+window.isBookInMyList = isBookInMyList;
+
+window.syncScopedLibraryState = function () {
+  userHistory = loadHistoryForActiveUser();
+  renderHistory();
+  applyLibrarySettings();
+  updateMyListCount();
+  const books = getContinueReadingBooks();
+  if (books.length) {
+    renderContinueReadingSection(books);
+  }
+  rerenderLibraryRowsForFreshLayout();
+  if (searchModal && !searchModal.classList.contains("hidden")) {
+    runSearch(searchInput.value);
+  }
+  if (settingsPanel && !settingsPanel.classList.contains("hidden")) {
+    renderSettingsSection(currentSettingsSection);
+  }
+  emitActiveUserChanged();
+};
+
+// Global Save Function
+window.saveToRecentHistory = function(book) {
+  if (!loadLibrarySettings().saveActivity) return;
+  const baseHistory = sanitizeHistory(userHistory);
+  const entry = buildHistoryEntry(book, Date.now());
+  const entryKey = historyKey(entry);
+  const existing = baseHistory.find((item) => historyKey(item) === entryKey);
+
+  if (existing && (entry.id === undefined || entry.id === null || entry.id === "")) {
+    entry.id = existing.id;
+  }
+
+  const nextHistory = baseHistory.filter((item) => historyKey(item) !== entryKey);
+  nextHistory.unshift(entry);
+  persistHistory(nextHistory);
+
+  if (typeof renderHistory === "function") {
+    renderHistory();
+  }
+};
+
+  // 1. Open Sidebar
 openSidebarBtn.addEventListener("click", () => {
+  if (typeof window.closeAiSidebarForBookPanel === "function") {
+    window.closeAiSidebarForBookPanel();
+  }
+  document.body.classList.add("book-sidebar-open");
   sidebar.classList.add("active");
   sidebarOverlay.classList.add("active");
   renderHistory(); // Refresh list when opened
@@ -430,6 +2820,7 @@ openSidebarBtn.addEventListener("click", () => {
 function closeSidebar() {
   sidebar.classList.remove("active");
   sidebarOverlay.classList.remove("active");
+  document.body.classList.remove("book-sidebar-open");
   // Close any open delete menus
   document
     .querySelectorAll(".delete-dropdown")
@@ -439,28 +2830,52 @@ function closeSidebar() {
 closeSidebarBtn.addEventListener("click", closeSidebar);
 sidebarOverlay.addEventListener("click", closeSidebar);
 
+window.openSavedBook = function (id, title, pdfDriveId, epubDriveId) {
+  const pdfId = buildReaderDocumentId(id, "pdf", pdfDriveId);
+  if (pdfId) {
+    window.openBook(id, title, pdfId);
+    return;
+  }
+
+  const epubId = buildReaderDocumentId(id, "epub", epubDriveId);
+  if (epubId) {
+    closeSidebar();
+    closeSearch();
+    window.location.href = `view-epub.html?id=${encodeURIComponent(epubId)}&title=${encodeURIComponent(title)}`;
+    return;
+  }
+
+  window.location.href = `book-detail.html?id=${encodeURIComponent(id)}&title=${encodeURIComponent(title)}`;
+};
+
 // 3. Render History Items (With Tooltips)
 function renderHistory() {
   historyList.innerHTML = ""; // Clear current list
 
   userHistory.forEach((item) => {
+    const safeId = escapeJsString(item.id);
+    const safeTitle = escapeJsString(item.title || "");
+    const safeDriveId = escapeJsString(item.pdf_drive_id || "");
+    const safeEpubDriveId = escapeJsString(item.epub_drive_id || "");
+    const menuId = deleteMenuId(item.id);
+
     const wrapper = document.createElement("div");
     wrapper.className = "history-item-wrapper";
-    wrapper.setAttribute("data-tooltip", item.title); // Adds the sophisticated hover tooltip
+    wrapper.setAttribute("data-tooltip", item.title || ""); // Adds the sophisticated hover tooltip
 
     // Note: Clicking the left side opens the book. Clicking the 3 dots opens the delete menu.
-    wrapper.innerHTML = `
+        wrapper.innerHTML = `
             <div class="history-item">
-                <div class="history-item-left" onclick="openBook(${item.id}, '${item.title.replace(/'/g, "\\'")}')">
+                <div class="history-item-left" onclick="openSavedBook('${safeId}', '${safeTitle}', '${safeDriveId}', '${safeEpubDriveId}')">
                     <span class="material-symbols-outlined">menu_book</span>
-                    <span class="history-text">${item.title}</span>
+                    <span class="history-text">${escapeHtml(item.title || "")}</span>
                 </div>
-                <button class="icon-btn history-more-btn" onclick="toggleDeleteMenu(event, ${item.id})">
+                <button class="icon-btn history-more-btn" onclick="toggleDeleteMenu(event, '${safeId}')">
                     <span class="material-symbols-outlined">more_vert</span>
                 </button>
             </div>
-            <div id="delete-menu-${item.id}" class="delete-dropdown hidden">
-                <button class="delete-btn" onclick="deleteHistoryItem(${item.id}, event)">
+            <div id="${menuId}" class="delete-dropdown hidden">
+                <button class="delete-btn" onclick="deleteHistoryItem('${safeId}', event)">
                     <span class="material-symbols-outlined">delete</span>
                     Delete
                 </button>
@@ -470,35 +2885,65 @@ function renderHistory() {
   });
 }
 
-// 4. Open Book (Closes sidebar and simulates opening)
-window.openBook = function (id, title) {
-  alert(`Opening eBook: ${title}`);
+// 4. Open Book (Closes sidebar/search and navigates to reader)
+window.openBook = function (id, title, pdfDriveId, resumePage = null) {
   closeSidebar(); // Automatically close the sidebar
   closeSearch(); // Automatically close search if it's open
+  const readerDocumentId = buildReaderDocumentId(id, "pdf", pdfDriveId);
+
+  if (window.saveToRecentHistory) {
+    window.saveToRecentHistory({
+      id,
+      title,
+      pdf_drive_id: readerDocumentId || null,
+    });
+  }
+
+  if (readerDocumentId && readerDocumentId !== 'null' && readerDocumentId !== 'undefined' && readerDocumentId.trim() !== '') {
+    const resume = Math.floor(Number(resumePage || 0));
+    const pageQuery =
+      Number.isFinite(resume) && resume > 1
+        ? `&page=${encodeURIComponent(resume)}`
+        : "";
+    window.location.href = `view-pdf.html?id=${encodeURIComponent(readerDocumentId)}&title=${encodeURIComponent(title)}${pageQuery}`;
+  } else {
+    // Fallback if no PDF ID saved
+    window.location.href = `book-detail.html?id=${id}&title=${encodeURIComponent(title)}`;
+  }
 };
 
 // 5. Toggle Delete Menu
 window.toggleDeleteMenu = function (event, id) {
   event.stopPropagation(); // Prevent opening the book accidentally
+  const currentMenuId = deleteMenuId(id);
 
   // Close all other open menus first
   document.querySelectorAll(".delete-dropdown").forEach((menu) => {
-    if (menu.id !== `delete-menu-${id}`) {
+    if (menu.id !== currentMenuId) {
       menu.classList.add("hidden");
     }
   });
 
-  const menu = document.getElementById(`delete-menu-${id}`);
+  const menu = document.getElementById(currentMenuId);
+  if (!menu) return;
   menu.classList.toggle("hidden");
 };
 
 // 6. Delete History Item (Permanently removes from list)
 window.deleteHistoryItem = function (id, event) {
   if (event) event.stopPropagation(); // Prevent opening the book
+  const normalizedId = String(id);
 
   // Filter out the deleted item from the array
-  userHistory = userHistory.filter((item) => item.id !== id);
+  userHistory = userHistory.filter((item) => String(item.id) !== normalizedId);
+  persistHistory(userHistory);
+
   renderHistory(); // Re-render the UI immediately
+
+  // Re-render search if open
+  if (searchModal && !searchModal.classList.contains("hidden")) {
+      runSearch(searchInput.value);
+  }
 };
 
 // Close delete menus if clicking anywhere else inside the sidebar
@@ -523,508 +2968,211 @@ const closeSearchBtn = document.getElementById("close-search-btn");
 const searchInput = document.getElementById("search-input");
 const searchResults = document.getElementById("search-results");
 
-// All available books (Mock database for searching)
-const allBooksDatabase = [
-  { id: 1, title: "The Great Gatsby" },
-  { id: 2, title: "1984 by George Orwell" },
-  { id: 3, title: "Introduction to Algorithms" },
-  { id: 4, title: "Atomic Habits" },
-  { id: 5, title: "Clean Code" },
-  { id: 6, title: "The Pragmatic Programmer" },
-];
-
-// Open Search Modal
-sidebarSearchBtn.addEventListener("click", () => {
-  searchBackdrop.classList.remove("hidden");
-  searchBackdrop.classList.add("active"); // Reuse the dark overlay styling
-  searchModal.classList.remove("hidden");
-  searchInput.value = "";
-  renderSearchResults(allBooksDatabase); // Show all books initially
-  searchInput.focus(); // Automatically put cursor in the search box
-});
-
-// Close Search Modal
-function closeSearch() {
-  searchBackdrop.classList.add("hidden");
-  searchBackdrop.classList.remove("active");
-  searchModal.classList.add("hidden");
+function normalizeSearchValue(value) {
+  return String(value || "").trim().toLowerCase();
 }
 
-closeSearchBtn.addEventListener("click", closeSearch);
-searchBackdrop.addEventListener("click", closeSearch);
+function getSearchResults(queryText) {
+  const query = normalizeSearchValue(queryText);
+  const source = getSearchSourceBooks();
 
-// Filter books as you type
+  if (!query) {
+    return shuffleArray(source).slice(0, SEARCH_PANEL_LIMIT);
+  }
+
+  const scored = source
+    .map((book) => {
+      const title = normalizeSearchValue(book.title);
+      const author = normalizeSearchValue(book.author);
+      const category = normalizeSearchValue(book.category);
+
+      let score = 0;
+
+      if (title === query) score += 100;
+      else if (title.startsWith(query)) score += 75;
+      else if (title.includes(query)) score += 60;
+
+      if (author === query) score += 50;
+      else if (author.startsWith(query)) score += 35;
+      else if (author.includes(query)) score += 25;
+
+      if (category === query) score += 20;
+      else if (category.startsWith(query)) score += 10;
+      else if (category.includes(query)) score += 5;
+
+      return { book, score };
+    })
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return String(a.book.title || "").localeCompare(String(b.book.title || ""));
+    });
+
+  return scored.slice(0, SEARCH_PANEL_LIMIT).map((entry) => entry.book);
+}
+
+function runSearch(rawQuery = searchInput.value) {
+  currentSearchResults = getSearchResults(rawQuery);
+  renderSearchResults(currentSearchResults, rawQuery);
+}
+
+function openSearch(initialQuery = "") {
+  if (searchCloseTimer) {
+    clearTimeout(searchCloseTimer);
+    searchCloseTimer = null;
+  }
+  searchBackdrop.classList.remove("hidden");
+  searchModal.classList.remove("hidden");
+  searchBackdrop.classList.add("show");
+  searchModal.classList.add("open");
+  searchInput.value = String(initialQuery || "");
+  runSearch(searchInput.value);
+  requestAnimationFrame(() => {
+    searchInput.focus();
+    searchInput.select();
+  });
+}
+
+function closeSearch() {
+  searchBackdrop.classList.remove("show");
+  searchModal.classList.remove("open");
+
+  searchCloseTimer = window.setTimeout(() => {
+    searchBackdrop.classList.add("hidden");
+    searchModal.classList.add("hidden");
+    searchCloseTimer = null;
+  }, 120);
+}
+
+function openSearchResultDetail(book) {
+  if (!book) return;
+  const params = new URLSearchParams();
+  const id = String(book.id ?? "").trim();
+  const title = normalizeText(book.title) || "Untitled";
+  if (id) params.set("id", id);
+  params.set("title", title);
+  window.location.href = `book-detail.html?${params.toString()}`;
+}
+
+if (sidebarSearchBtn) {
+  sidebarSearchBtn.addEventListener("click", () => {
+    closeSidebar();
+    openSearch("");
+  });
+}
+
+if (globalSearchBtn) {
+  globalSearchBtn.addEventListener("click", () => openSearch(""));
+}
+
+closeSearchBtn.addEventListener("click", () => closeSearch());
+searchBackdrop.addEventListener("click", () => closeSearch());
+
 searchInput.addEventListener("input", (e) => {
-  const query = e.target.value.toLowerCase();
-  const filtered = allBooksDatabase.filter((book) =>
-    book.title.toLowerCase().includes(query),
-  );
-  renderSearchResults(filtered);
+  runSearch(e.target.value);
 });
 
-// Render the search results
-function renderSearchResults(results) {
+searchInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    const topResult = currentSearchResults[0];
+    if (!topResult) return;
+    openSearchResultDetail(topResult);
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  const activeTag = document.activeElement?.tagName?.toLowerCase() || "";
+  const typingInField =
+    activeTag === "input" || activeTag === "textarea" || document.activeElement?.isContentEditable;
+
+  if (event.key === "Escape" && searchModal.classList.contains("open")) {
+    closeSearch();
+    return;
+  }
+
+  if (typingInField) return;
+  if (event.key === "/" && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    event.preventDefault();
+    openSearch("");
+  }
+});
+
+function renderSearchResults(results, queryText) {
   searchResults.innerHTML = "";
 
   if (results.length === 0) {
     searchResults.innerHTML =
-      '<div style="padding: 16px 24px; color: #9aa0a6; font-size: 14px;">No books found matching your search.</div>';
+      '<div class="search-empty-state">No books found for your search.</div>';
     return;
   }
 
-  results.forEach((book) => {
-    const div = document.createElement("div");
-    div.className = "search-result-item";
-    div.innerHTML = `
-            <span class="material-symbols-outlined">menu_book</span>
-            <span class="history-text">${book.title}</span>
-        `;
-    // Clicking a search result opens the book
-    div.onclick = () => {
-      openBook(book.id, book.title);
-    };
-    searchResults.appendChild(div);
-  });
+  const progressMap = loadReadingProgressMap();
+  const fragment = document.createDocumentFragment();
+  const limitedResults = results.slice(0, SEARCH_PANEL_LIMIT);
+
+  for (const book of limitedResults) {
+    const result = document.createElement("button");
+    result.type = "button";
+    result.className = "search-result-item rich-search-item";
+
+    const driveId = String(book.pdf_drive_id || "").trim();
+    const progress = progressMap[driveId];
+    const resumePage = getResumePageForBook(book);
+    const resumeText =
+      resumePage && progress
+        ? `Continue from page ${resumePage} â€¢ ${Math.max(0, Math.min(100, Number(progress.progress || 0)))}%`
+        : "View details first";
+    const coverMarkup = getSearchCoverMarkup(book);
+    const premiumMarkup = getSearchPremiumMarkup(book);
+
+    result.innerHTML = `
+      ${coverMarkup}
+      <div class="search-result-main">
+        <strong>${escapeHtml(book.title)}</strong>
+        <p>${escapeHtml(book.author || "Unknown Author")} â€¢ ${escapeHtml(book.category || "Book")}</p>
+        ${premiumMarkup}
+        <small>${escapeHtml(resumeText)}</small>
+      </div>
+      <span class="search-result-open">Details</span>
+    `;
+
+    result.addEventListener("click", () => {
+      openSearchResultDetail(book);
+    });
+
+    fragment.appendChild(result);
+  }
+
+  searchResults.appendChild(fragment);
 }
-// =========================================
-// PREMIUM AI SIDEBAR FUNCTIONALITY
-// =========================================
-
-document.addEventListener("DOMContentLoaded", () => {
-  const aiChatBtn = document.getElementById("ai-chat-btn");
-  const aiSidebar = document.getElementById("ai-sidebar");
-  const aiCloseBtn = document.getElementById("ai-close-btn");
-  const aiChatBody = document.getElementById("ai-chat-body");
-  const aiChatInput = document.getElementById("ai-chat-input");
-  const aiSendBtn = document.getElementById("ai-send-btn");
-
-  if (!aiChatBtn || !aiSidebar) return; // Safety check
-
-  // 1. Open Sidebar
-  aiChatBtn.addEventListener("click", () => {
-    aiSidebar.classList.add("active");
-    aiChatInput.focus(); // Auto-focus the typing area
-  });
-
-  // 2. Close Sidebar
-  aiCloseBtn.addEventListener("click", () => {
-    aiSidebar.classList.remove("active");
-  });
-  // 3. Append Message to UI (Now with Markdown formatting!)
-  function appendMessage(text, sender) {
-    const msgDiv = document.createElement("div");
-    msgDiv.className = sender === "user" ? "ai-msg-user" : "ai-msg-bot";
-
-    if (sender === "bot") {
-      // If it's the AI speaking, use the marked.js tool to format it beautifully
-      if (typeof marked !== "undefined") {
-        msgDiv.innerHTML = marked.parse(text);
-      } else {
-        // Fallback just in case
-        msgDiv.innerHTML = text.replace(/\n/g, "<br>");
-      }
-    } else {
-      // If it's the user speaking, just show normal text
-      msgDiv.textContent = text;
-    }
-
-    aiChatBody.appendChild(msgDiv);
-    aiChatBody.scrollTop = aiChatBody.scrollHeight;
-  }
-
-  // 4. Send Message to Backend (NOW WITH FILE SUPPORT)
-  async function sendChatMessage() {
-    const text = aiChatInput.value.trim();
-    // Grab the files from the global array
-    const filesToSend = window.attachedFiles || [];
-
-    // Stop if there is no text AND no files
-    if (!text && filesToSend.length === 0) return;
-
-    // Create the visual message for the user
-    let displayMsg = text;
-    if (filesToSend.length > 0) {
-      const fileNames = filesToSend.map((f) => f.name).join(", ");
-      displayMsg += `\n\n*[Attached: ${fileNames}]*`;
-    }
-
-    // Show user message
-    appendMessage(displayMsg, "user");
-    aiChatInput.value = "";
-
-    // Show loading state
-    const loadingId = "loading-" + Date.now();
-    const loadingDiv = document.createElement("div");
-    loadingDiv.className = "ai-msg-bot";
-    loadingDiv.id = loadingId;
-    loadingDiv.innerHTML =
-      '<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">sync</span>';
-    aiChatBody.appendChild(loadingDiv);
-    aiChatBody.scrollTop = aiChatBody.scrollHeight;
-
-    try {
-      // Convert all attached files to Base64 format so the server can read them
-      const filePromises = filesToSend.map((file) => {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.readAsDataURL(file);
-          reader.onload = () => {
-            resolve({
-              inlineData: {
-                data: reader.result.split(",")[1], // Extracts the raw Base64 data
-                mimeType: file.type, // Tells Gemini if it's a PDF, PNG, JPEG, etc.
-              },
-            });
-          };
-          reader.onerror = (error) => reject(error);
-        });
-      });
-
-      const processedFiles = await Promise.all(filePromises);
-
-      // Clear the attachments UI now that they are being sent
-      window.attachedFiles = [];
-      if (typeof window.renderFilePreviews === "function")
-        window.renderFilePreviews();
-
-      // Call your Node.js backend, sending BOTH text and files
-      const response = await fetch("http://localhost:3000/api/ai/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: text,
-          files: processedFiles,
-        }),
-      });
-
-      const data = await response.json();
-      document.getElementById(loadingId).remove(); // Remove loading icon
-      if (data.answer) {
-        appendMessage(data.answer, "bot");
-        // NEW: Save this interaction to our persistent history
-        if (window.saveInteractionToHistory) {
-          window.saveInteractionToHistory(displayMsg, data.answer);
-        }
-      } else {
-        appendMessage("Error: " + (data.error || "Unknown error"), "bot");
-      }
-    } catch (error) {
-      console.error("AI Error:", error);
-      if (document.getElementById(loadingId))
-        document.getElementById(loadingId).remove();
-      appendMessage(
-        "Connection error. Ensure backend is running on port 3000.",
-        "bot",
-      );
-    }
-  }
-  // 5. Event Listeners for Input
-  // 5. Event Listeners for Input & Dynamic Send Button
-  if (aiSendBtn) {
-    // Triggers the Enter action when the button is clicked
-    aiSendBtn.addEventListener("click", () => {
-      sendChatMessage();
-      aiSendBtn.classList.add("hidden-send"); // Hides button after sending
-    });
-  }
-
-  if (aiChatInput) {
-    // Triggers the Enter action when the Enter key is pressed
-    aiChatInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        sendChatMessage();
-        aiSendBtn.classList.add("hidden-send"); // Hides button after sending
-      }
-    });
-
-    // Constantly monitors typing to show/hide the button
-    aiChatInput.addEventListener("input", () => {
-      // Checks if there is at least one character typed
-      if (aiChatInput.value.trim().length > 0) {
-        aiSendBtn.classList.remove("hidden-send"); // Shows the button
-      } else {
-        aiSendBtn.classList.add("hidden-send"); // Hides the button if empty
-      }
-    });
-  }
-
-  // Add spin animation for the loading icon
-  const style = document.createElement("style");
-  style.innerHTML = `@keyframes spin { 100% { transform: rotate(360deg); } }`;
-  document.head.appendChild(style);
-});
-//* --- START OF COMPLETE UPLOAD & FILE CHIP LOGIC --- */
-// Make these global so sendChatMessage can access them
-window.attachedFiles = [];
-window.renderFilePreviews = function () {
-  const filePreviewContainer = document.getElementById(
-    "file-preview-container",
-  );
-  if (!filePreviewContainer) return;
-  filePreviewContainer.innerHTML = "";
-
-  window.attachedFiles.forEach((file, index) => {
-    const chip = document.createElement("div");
-    chip.className = "file-chip";
-    const icon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>`;
-
-    chip.innerHTML = `
-        ${icon}
-        <span class="file-chip-name" title="${file.name}">${file.name}</span>
-        <button class="file-chip-remove" data-index="${index}" type="button" title="Remove file">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
-      `;
-    filePreviewContainer.appendChild(chip);
-  });
-
-  document.querySelectorAll(".file-chip-remove").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      const indexToRemove = parseInt(
-        e.currentTarget.getAttribute("data-index"),
-      );
-      window.attachedFiles.splice(indexToRemove, 1);
-      window.renderFilePreviews();
-    });
-  });
-};
-
-document.addEventListener("DOMContentLoaded", () => {
-  const plusBtn = document.getElementById("ai-plus-btn");
-  const uploadPopup = document.getElementById("ai-upload-popup");
-  const aiUploadDeviceBtn = document.getElementById("ai-upload-device-btn");
-  const fileInput = document.getElementById("ai-file-input");
-
-  if (plusBtn && uploadPopup) {
-    plusBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      uploadPopup.classList.toggle("show");
-    });
-  }
-
-  document.addEventListener("click", (e) => {
-    if (
-      uploadPopup &&
-      uploadPopup.classList.contains("show") &&
-      !e.target.closest(".upload-container")
-    ) {
-      uploadPopup.classList.remove("show");
-    }
-  });
-
-  if (aiUploadDeviceBtn && fileInput) {
-    aiUploadDeviceBtn.addEventListener("click", () => {
-      fileInput.click();
-      uploadPopup.classList.remove("show");
-    });
-  }
-
-  if (fileInput) {
-    fileInput.addEventListener("change", (e) => {
-      const files = Array.from(e.target.files);
-      if (files.length > 0) {
-        window.attachedFiles = window.attachedFiles.concat(files);
-        window.renderFilePreviews();
-        fileInput.value = "";
-      }
-    });
-  }
-});
-/* --- END OF COMPLETE UPLOAD & FILE CHIP LOGIC --- */
-
-/* --- START OF AI HISTORY LOGIC --- */
-document.addEventListener("DOMContentLoaded", () => {
-  const historyBtn = document.getElementById("ai-history-btn");
-  const historyDropdown = document.getElementById("ai-history-dropdown");
-  const historyList = document.getElementById("ai-history-list");
-  const aiChatBody = document.getElementById("ai-chat-body");
-
-  // 1. PERMANENT STORAGE: Load history from the browser's local storage
-  let chatHistory = JSON.parse(localStorage.getItem("ai_chat_history")) || [];
-
-  // Expose save function globally so sendChatMessage can use it
-  window.saveInteractionToHistory = function (userText, botText) {
-    const interaction = {
-      id: Date.now(),
-      date: new Date().toLocaleString(),
-      user: userText,
-      bot: botText,
-    };
-    chatHistory.unshift(interaction); // Add newest to the top
-    // PERMANENTLY SAVE to browser
-    localStorage.setItem("ai_chat_history", JSON.stringify(chatHistory));
-    renderHistoryDropdown();
-  };
-
-  function renderHistoryDropdown() {
-    if (!historyList) return;
-    historyList.innerHTML = "";
-
-    if (chatHistory.length === 0) {
-      historyList.innerHTML =
-        '<div style="padding: 12px 16px; color: #9aa0a6; font-size: 12px;">No history yet.</div>';
-      return;
-    }
-
-    chatHistory.forEach((item) => {
-      const div = document.createElement("div");
-      div.className = "ai-history-item";
-
-      // Injecting the text, the 3 dots, and the hidden delete menu
-      div.innerHTML = `
-                <div class="ai-history-item-content">
-                    <div class="ai-history-item-query">${item.user.replace(/\n/g, " ")}</div>
-                    <div class="ai-history-item-date">${item.date}</div>
-                </div>
-                <button class="ai-history-more-btn" title="More options">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">more_vert</span>
-                </button>
-                <div class="ai-history-delete-menu hidden">
-                    <button class="ai-history-delete-btn">
-                        <span class="material-symbols-outlined">delete</span>
-                        Delete
-                    </button>
-                </div>
-            `;
-
-      const contentArea = div.querySelector(".ai-history-item-content");
-      const moreBtn = div.querySelector(".ai-history-more-btn");
-      const deleteMenu = div.querySelector(".ai-history-delete-menu");
-      const deleteBtn = div.querySelector(".ai-history-delete-btn");
-
-      // Action A: Click the text area to load the chat
-      contentArea.addEventListener("click", () => {
-        loadInteraction(item);
-        historyDropdown.classList.add("hidden-dropdown");
-      });
-
-      // Action B: Click the 3 dots to open the delete menu
-      moreBtn.addEventListener("click", (e) => {
-        e.stopPropagation(); // Prevents the chat from loading
-        // Close any other open delete menus first
-        document.querySelectorAll(".ai-history-delete-menu").forEach((menu) => {
-          if (menu !== deleteMenu) menu.classList.add("hidden");
-        });
-        deleteMenu.classList.toggle("hidden");
-      });
-
-      // Action C: Click "Delete" to PERMANENTLY remove the item
-      deleteBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        // Remove this specific item from the array
-        chatHistory = chatHistory.filter((h) => h.id !== item.id);
-        // Save the updated array to local storage PERMANENTLY
-        localStorage.setItem("ai_chat_history", JSON.stringify(chatHistory));
-        // Redraw the list
-        renderHistoryDropdown();
-      });
-
-      historyList.appendChild(div);
-    });
-  }
-
-  function loadInteraction(item) {
-    if (!aiChatBody) return;
-    aiChatBody.innerHTML = ""; // Clear current chat screen
-
-    // Re-create user message bubble
-    const userDiv = document.createElement("div");
-    userDiv.className = "ai-msg-user";
-    userDiv.textContent = item.user;
-    aiChatBody.appendChild(userDiv);
-
-    // Re-create AI message bubble (with Markdown formatting)
-    const botDiv = document.createElement("div");
-    botDiv.className = "ai-msg-bot";
-    if (typeof marked !== "undefined") {
-      botDiv.innerHTML = marked.parse(item.bot);
-    } else {
-      botDiv.innerHTML = item.bot.replace(/\n/g, "<br>");
-    }
-    aiChatBody.appendChild(botDiv);
-
-    aiChatBody.scrollTop = aiChatBody.scrollHeight; // Scroll to bottom
-  }
-
-  // Handle opening and closing the main history menu
-  if (historyBtn && historyDropdown) {
-    historyBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      historyDropdown.classList.toggle("hidden-dropdown");
-      renderHistoryDropdown(); // Refresh list when opened
-    });
-
-    // Close dropdowns if user clicks anywhere else on the screen
-    document.addEventListener("click", (e) => {
-      // Close main history dropdown
-      if (
-        !e.target.closest("#ai-history-dropdown") &&
-        !e.target.closest("#ai-history-btn")
-      ) {
-        historyDropdown.classList.add("hidden-dropdown");
-      }
-      // Close individual delete menus if clicking outside them
-      if (
-        !e.target.closest(".ai-history-more-btn") &&
-        !e.target.closest(".ai-history-delete-menu")
-      ) {
-        document.querySelectorAll(".ai-history-delete-menu").forEach((menu) => {
-          menu.classList.add("hidden");
-        });
-      }
-    });
-  }
-
-  // Initial render on page load
-  renderHistoryDropdown();
-});
-/* --- END OF AI HISTORY LOGIC --- */
-/* --- START OF NEW CHAT LOGIC --- */
-document.addEventListener("DOMContentLoaded", () => {
-  const newChatBtn = document.getElementById("ai-new-chat-btn");
-  const aiChatBody = document.getElementById("ai-chat-body");
-  const aiChatInput = document.getElementById("ai-chat-input");
-  const aiSendBtn = document.getElementById("ai-send-btn");
-
-  if (newChatBtn) {
-    newChatBtn.addEventListener("click", () => {
-      // 1. Clear the chat screen (closes previous session visually)
-      if (aiChatBody) {
-        aiChatBody.innerHTML = "";
-      }
-
-      // 2. Clear the text input box
-      if (aiChatInput) {
-        aiChatInput.value = "";
-      }
-
-      // 3. Clear any attached files from the upload array
-      window.attachedFiles = [];
-      if (typeof window.renderFilePreviews === "function") {
-        window.renderFilePreviews();
-      }
-
-      // 4. Hide the Royal Send button (since the input is now empty)
-      if (aiSendBtn) {
-        aiSendBtn.classList.add("hidden-send");
-      }
-    });
-  }
-});
-/* --- END OF NEW CHAT LOGIC --- */
-
 /* =========================================
    PREMIUM PDF LIBRARY FETCH & RENDER LOGIC
    ========================================= */
 document.addEventListener("DOMContentLoaded", () => {
+  applyLibrarySettings();
+  updateMyListCount();
   fetchPDFs();
 });
 
 async function fetchPDFs() {
   try {
-    const response = await fetch("http://localhost:3000/api/pdfs");
+    const response = await fetch(buildApiUrl("/api/pdfs"));
     const pdfs = await response.json();
-    renderPDFRows(pdfs);
+    allLibraryBooks = Array.isArray(pdfs)
+      ? pdfs.filter(
+          (book) =>
+            book &&
+            typeof book === "object" &&
+            normalizeText(book.title).length > 0,
+        )
+      : [];
+    window.PDF_LIBRARY_BOOKS = allLibraryBooks;
+    searchableBooks = allLibraryBooks.filter((book) => hasReadableBook(book));
+    renderSitePremiumButton();
+    renderContinueReadingSection(allLibraryBooks);
+    runSearch("");
+    rerenderLibraryRowsForFreshLayout();
   } catch (error) {
     console.error("Error fetching PDFs:", error);
   }
@@ -1035,103 +3183,116 @@ function renderPDFRows(pdfs) {
   if (!container) return;
   container.innerHTML = "";
 
-  // 1. FILTER: Keep ONLY books with posters. Hidden books stay safely in the backend.
-  const visiblePdfs = pdfs.filter(
-    (pdf) =>
-      pdf.poster_drive_id && pdf.poster_drive_id !== "No Poster Available",
+  const source = Array.isArray(pdfs) ? pdfs : [];
+  const visiblePdfs = source.filter(
+    (book) =>
+      book &&
+      typeof book === "object" &&
+      hasReadableBook(book) &&
+      hasDisplayableCoverArt(book) &&
+      normalizeText(book.title).length > 0,
   );
 
-  // 2. SORT: Prioritize Videos first, then Fiction, then alphabetical.
-  // This ensures your first row is packed with Fiction and Video content.
-  visiblePdfs.sort((a, b) => {
-    const aVideo =
-      a.video_drive_id && a.video_drive_id !== "No Video Available" ? 1 : 0;
-    const bVideo =
-      b.video_drive_id && b.video_drive_id !== "No Video Available" ? 1 : 0;
-    if (bVideo !== aVideo) return bVideo - aVideo;
-
-    const aFic =
-      a.category && a.category.toLowerCase().includes("fiction") ? 1 : 0;
-    const bFic =
-      b.category && b.category.toLowerCase().includes("fiction") ? 1 : 0;
-    if (bFic !== aFic) return bFic - aFic;
-
-    return (a.category || "").localeCompare(b.category || "");
-  });
-
-  // 3. CHUNK: Force exactly 10 books per row!
-  // This lumps all remaining books together to fill empty spaces.
-  const chunkedRows = [];
-  for (let i = 0; i < visiblePdfs.length; i += 10) {
-    chunkedRows.push(visiblePdfs.slice(i, i + 10));
+  if (visiblePdfs.length === 0) {
+    container.innerHTML =
+      '<div class="search-empty-state">No books available right now.</div>';
+    return;
   }
 
-  // 4. BUILD THE UI
-  chunkedRows.forEach((rowBooks, index) => {
+  const homeRows = buildHomeRows(visiblePdfs);
+  const initialHomeKeys = new Set();
+  homeRows.forEach((homeRow) => {
+    homeRow.books.forEach((book) => {
+      initialHomeKeys.add(getHomeBookKey(book));
+    });
+  });
+  const spareHomeBooks = shuffleArray(visiblePdfs).filter(
+    (book) => !initialHomeKeys.has(getHomeBookKey(book)),
+  );
+
+  const createHomeBookCard = (pdf, row) => {
+    const card = document.createElement("div");
+    card.className = "pdf-card";
+    card.dataset.bookId = String(pdf.id ?? "");
+    card.dataset.title = normalizeText(pdf.title) || "";
+    card.dataset.author = normalizeText(pdf.author || pdf.creator) || "";
+    card.dataset.category = normalizeText(pdf.category || pdf.genre) || "";
+
+    const hasVideo =
+      Boolean(pdf.video_url || pdf.has_video) ||
+      (normalizeText(pdf.video_drive_id).toLowerCase() !== "no video available" &&
+        normalizeText(pdf.video_drive_id).length > 0);
+    const coverId = getBookCoverDriveId(pdf);
+
+    const replaceBrokenCard = () => {
+      card.remove();
+      const replacement = spareHomeBooks.shift();
+      if (replacement && row) {
+        row.appendChild(createHomeBookCard(replacement, row));
+      }
+    };
+
+    const coverNode = createBookCoverNode(pdf, {
+      className: "pdf-thumbnail",
+      fallbackClassName: "pdf-thumbnail-fallback",
+      size: "w800",
+      altText: normalizeText(pdf.title) || "Book cover",
+      fallbackBehavior: "none",
+      onMissingCover: replaceBrokenCard,
+      onCoverError: replaceBrokenCard,
+    });
+    if (!coverNode) return null;
+    const premiumBadge = createPremiumBadgeNode(pdf);
+
+    const info = document.createElement("div");
+    info.className = "pdf-info";
+
+    const titleEl = document.createElement("p");
+    titleEl.className = "pdf-title";
+    titleEl.textContent = normalizeText(pdf.title) || "Untitled";
+
+    const authorEl = document.createElement("p");
+    authorEl.className = "pdf-author";
+    authorEl.textContent = normalizeText(pdf.author) || "Unknown Author";
+
+    info.appendChild(titleEl);
+    info.appendChild(authorEl);
+    if (premiumBadge) {
+      card.appendChild(premiumBadge);
+    }
+    card.appendChild(coverNode);
+    card.appendChild(info);
+
+    if (hasVideo && coverId) {
+      card.addEventListener("mouseenter", () => {
+        const preloadImg = new Image();
+        preloadImg.src = buildDriveThumbnailUrl(coverId, "w1200");
+      });
+    }
+
+    card.addEventListener("click", () => {
+      window.location.href = `book-detail.html?id=${pdf.id}&title=${encodeURIComponent(pdf.title)}`;
+    });
+
+    return card;
+  };
+
+  homeRows.forEach((homeRow, index) => {
+    const rowBooks = homeRow.books;
     const rowContainer = document.createElement("div");
     rowContainer.className = "pdf-row-container";
 
-    // 5. ASSIGN PREMIUM TITLES BASED ON ROW NUMBER
     const title = document.createElement("h2");
     title.className = "row-title";
-
-    if (index === 0) title.textContent = "Trending Fiction & Masterpieces";
-    else if (index === 1) title.textContent = "Critically Acclaimed & Drama";
-    else if (index === 2) title.textContent = "Fascinating Reads & Non-Fiction";
-    else if (index === 3) title.textContent = "Academic, Science & History";
-    else {
-      // For any extra rows, generate a title based on the first book in that row
-      let cat = rowBooks[0].category;
-      title.textContent =
-        cat && cat !== "Uncategorized"
-          ? `${cat} & Similar Reads`
-          : "More Top Picks";
-    }
-
+    title.textContent = homeRow.title || getRowTitle(index, rowBooks);
     rowContainer.appendChild(title);
 
     const row = document.createElement("div");
     row.className = "pdf-row";
 
-    // 6. RENDER THE EXACT 10 BOOKS FOR THIS ROW
     rowBooks.forEach((pdf) => {
-      const card = document.createElement("div");
-      card.className = "pdf-card";
-
-      const hasVideo =
-        pdf.video_drive_id && pdf.video_drive_id !== "No Video Available";
-      const imageUrl = `https://drive.google.com/thumbnail?id=${pdf.poster_drive_id}&sz=w800`;
-
-      card.innerHTML = `
-          <img src="${imageUrl}" alt="Cover" class="pdf-thumbnail" referrerpolicy="no-referrer">
-          <div class="pdf-info">
-              <p class="pdf-title">${pdf.title}</p>
-              <p class="pdf-author">${pdf.author}</p>
-          </div>
-      `;
-
-      // ── HOVER PRELOADING ──
-      // Preloads the high-resolution poster image on hover so the
-      // cinematic modal opens instantly without a blank image delay.
-      if (hasVideo) {
-        card.addEventListener("mouseenter", () => {
-          const preloadImg = new Image();
-          preloadImg.src = `https://drive.google.com/thumbnail?id=${pdf.poster_drive_id}&sz=w1200`;
-        });
-      }
-
-      // CLICK LOGIC: Navigate to Netflix-style detail page
-      card.addEventListener("click", () => {
-        if (hasVideo) {
-          // Books with video → Full detail page with video player + recommendations
-          window.location.href = `book-detail.html?id=${pdf.id}&title=${encodeURIComponent(pdf.title)}`;
-        } else {
-          // Books without video → Also go to detail page (shows poster + info + recommendations)
-          window.location.href = `book-detail.html?id=${pdf.id}&title=${encodeURIComponent(pdf.title)}`;
-        }
-      });
-
-      row.appendChild(card);
+      const card = createHomeBookCard(pdf, row);
+      if (card) row.appendChild(card);
     });
 
     rowContainer.appendChild(row);
@@ -1139,7 +3300,7 @@ function renderPDFRows(pdfs) {
   });
 }
 /* =========================================
-   CINEMATIC MODAL LOGIC (Google Drive Iframe — Direct, No Backend Auth)
+   CINEMATIC MODAL LOGIC (Google Drive Iframe Ã¢â‚¬â€ Direct, No Backend Auth)
    ========================================= */
 const cinematicBackdrop = document.getElementById("cinematic-modal-backdrop");
 const closeCinematicBtn = document.getElementById("close-cinematic-btn");
@@ -1166,19 +3327,26 @@ function openCinematicModal(pdf) {
   cinematicDesc.textContent = pdf.description || "No description available.";
 
   // 2. Set Poster Image (high resolution)
-  cinematicPoster.src = `https://drive.google.com/thumbnail?id=${pdf.poster_drive_id}&sz=w1200`;
+  cinematicPoster.src = buildDriveThumbnailUrl(getBookCoverDriveId(pdf), "w1200");
 
   // 3. Setup "Read PDF" button
-  if (cinematicReadBtn) {
-    cinematicReadBtn.onclick = () => {
+    if (cinematicReadBtn) {
+      cinematicReadBtn.onclick = () => {
+      const readerDocumentId = buildReaderDocumentId(pdf, "pdf", pdf?.pdf_drive_id);
+      if (window.saveToRecentHistory) {
+        window.saveToRecentHistory({
+          ...pdf,
+          pdf_drive_id: readerDocumentId || pdf?.pdf_drive_id || null,
+        });
+      }
       window.open(
-        `view-pdf.html?id=${encodeURIComponent(pdf.pdf_drive_id)}&title=${encodeURIComponent(pdf.title)}`,
+        `view-pdf.html?id=${encodeURIComponent(readerDocumentId)}&title=${encodeURIComponent(pdf.title)}`,
         "_blank",
       );
-    };
-  }
+      };
+    }
 
-  // 4. Reset visual state — show poster, hide video
+  // 4. Reset visual state Ã¢â‚¬â€ show poster, hide video
   cinematicPoster.classList.remove("hidden");
   cinematicVideo.classList.add("hidden");
 
@@ -1189,7 +3357,7 @@ function openCinematicModal(pdf) {
   }
   clearTimeout(videoFallbackTimeout);
 
-  // 6. Listen for iframe load event — this fires when Google Drive's
+  // 6. Listen for iframe load event Ã¢â‚¬â€ this fires when Google Drive's
   //    preview page has finished loading its HTML (player is ready)
   iframeLoadHandler = () => {
     clearTimeout(videoFallbackTimeout);
@@ -1198,8 +3366,10 @@ function openCinematicModal(pdf) {
   };
   cinematicVideo.addEventListener("load", iframeLoadHandler);
 
-  // 7. Set iframe source — Google Drive /preview URL
-  cinematicVideo.src = `https://drive.google.com/file/d/${pdf.video_drive_id}/preview`;
+  // 7. Set iframe source Ã¢â‚¬â€ Google Drive /preview URL
+  cinematicVideo.src = pdf.video_url
+    ? buildApiUrl(pdf.video_url)
+    : `https://drive.google.com/file/d/${encodeURIComponent(pdf.video_drive_id)}/preview`;
 
   // 8. Show Modal
   cinematicBackdrop.classList.remove("hidden");
@@ -1224,7 +3394,7 @@ function closeCinematicModal() {
     iframeLoadHandler = null;
   }
 
-  // Stop the iframe — clear src to halt video playback and download
+  // Stop the iframe Ã¢â‚¬â€ clear src to halt video playback and download
   cinematicVideo.src = "";
   cinematicVideo.classList.add("hidden");
   cinematicPoster.classList.remove("hidden");

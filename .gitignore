@@ -1,0 +1,35 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Dependencies
+**/node_modules/
+
+# Environment files
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Secrets / credentials
+**/*firebase-key*.json
+**/*service-account*.json
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+
+# Logs
+*.log
+**/*.log
+npm-debug.log*
+
+# Local reports / generated artifacts
+tree.json
+b_files.txt
+Website_Code_Analysis_Report.*
+test-artifacts/
+PDF-Library-Backup-*/

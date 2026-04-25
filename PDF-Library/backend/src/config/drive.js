@@ -1,7 +1,5 @@
 import { google } from "googleapis";
-import dotenv from "dotenv";
-
-dotenv.config();
+import "./loadEnv.js";
 
 // Set up the Google OAuth2 client using your .env credentials
 const oauth2Client = new google.auth.OAuth2(
@@ -21,6 +19,6 @@ const drive = google.drive({
   auth: oauth2Client,
 });
 
-console.log("Google Drive API connected successfully.");
+console.log("[Drive] Google Drive API client configured.");
 
 export default drive;

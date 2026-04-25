@@ -1,2 +1,41 @@
 node_modules/
+
+# Environment files — never commit real secrets
 .env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Firebase service account key — NEVER commit this
+backend/src/config/firebase-key.json
+**/firebase-key.json
+**/service-account*.json
+**/serviceAccount*.json
+backend/aiven-ca.pem
+
+# Logs
+*.log
+logs/
+
+# Build artifacts & temp files
+tree.json
+b_files.txt
+dist/
+.cache/
+db-backups/
+*.sql.gz
+
+# Temporary Python fix scripts (frontend utility scripts)
+frontend/fix_ai.py
+frontend/fix_ai2.py
+frontend/fix_ai3.py
+*.py
+
+# Test artifacts
+test-artifacts/
+
+# OS files
+.DS_Store
+Thumbs.db

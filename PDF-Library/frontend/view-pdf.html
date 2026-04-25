@@ -1,117 +1,1029 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PDF Viewer - PDF Library</title>
-    <link rel="stylesheet" href="assets/css/styles.css" />
+    <title>Reading â€” PDF Library</title>
+    <meta name="description" content="Read books from the PDF Library. Sign in to unlock the full reading experience." />
+    <meta name="version" content="3.0" />
 
-    <!-- Source Serif 4 Font -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 
-    <style>
-      body,
-      html {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        overflow: hidden;
-        background-color: #f4f4f9;
-        font-family: "Source Serif 4", -apple-system, sans-serif;
-      }
-      .viewer-header {
-        display: flex;
-        align-items: center;
-        padding: 10px 20px;
-        background-color: white;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        height: 60px;
-        box-sizing: border-box;
-      }
-      .back-button {
-        text-decoration: none;
-        color: #333;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        font-size: 16px;
-        font-family: "Source Serif 4", Georgia, serif;
-      }
-      .back-button:hover {
-        color: #007bff;
-      }
-      .pdf-title-display {
-        margin-left: 20px;
-        font-size: 18px;
-        font-weight: 600;
-        color: #333;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-family: "Source Serif 4", Georgia, serif;
-        letter-spacing: -0.02em;
-      }
-      .iframe-container {
-        height: calc(100% - 60px);
-        width: 100%;
-      }
-      iframe {
-        width: 100%;
-        height: 100%;
-        border: none;
-      }
-    </style>
+    <!-- PDF Reader Styles (dedicated, clean) -->
+    <link rel="stylesheet" href="assets/css/pdf-reader.css" />
+    <link rel="stylesheet" href="assets/css/theme-toggle.css" />
+    <link rel="stylesheet" href="assets/css/theme-toggle-reader.css" />
+
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="assets/js/config.js"></script>
   </head>
+
   <body>
-    <div class="viewer-header">
-      <a href="javascript:void(0)" onclick="history.back()" class="back-button">
-        <!-- Simple back arrow SVG -->
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M19 12H5M12 19l-7-7 7-7" />
-        </svg>
-        Back
+
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+         NAVIGATION BAR
+         â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <nav class="reader-nav" id="reader-nav">
+      <!-- Back Button -->
+      <a href="javascript:void(0)" onclick="history.back()" class="reader-back" id="reader-back">
+        <span class="material-symbols-outlined">chevron_left</span>
+        <span>Library</span>
       </a>
-      <div class="pdf-title-display" id="pdf-title-display">Loading PDF...</div>
-    </div>
 
-    <div class="iframe-container">
-      <iframe id="pdf-iframe" src="" allow="autoplay"></iframe>
-    </div>
+      <!-- Book Title (center) -->
+      <div class="reader-title" id="reader-title">Loadingâ€¦</div>
 
+      <!-- Right slot: user chip OR sign-in pill -->
+      <div id="nav-right-slot"></div>
+    </nav>
+
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+         MAIN PAGE WRAPPER
+         â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <div class="reader-page" id="reader-page">
+
+      <!-- â”€â”€ Custom PDF Viewer Container (Replaces Remote Framework) â”€â”€ -->
+      <div class="pdf-wrapper hidden" id="custom-pdf-wrapper">
+        
+        <!-- Left Sidebar (Thumbnails / Chapters) -->
+        <aside class="pdf-sidebar" id="pdf-sidebar">
+          <div class="pdf-sidebar-tabs">
+            <button class="tab-btn active" id="tab-thumbnails">
+              <span class="material-symbols-outlined">grid_view</span>
+            </button>
+            <button class="tab-btn" id="tab-chapters">
+              <span class="material-symbols-outlined">format_list_bulleted</span>
+            </button>
+            <button class="tab-btn reader-quick-btn" id="reader-quick-btn" aria-label="Reader Controls">
+              <span class="reader-quick-glyph" aria-hidden="true">
+                <span class="reader-quick-dot"></span>
+                <span class="reader-quick-line"></span>
+                <span class="reader-quick-dot"></span>
+                <span class="reader-quick-line"></span>
+                <span class="reader-quick-dot"></span>
+              </span>
+            </button>
+            <div class="spacer"></div>
+            <button class="tab-btn toggle-btn" id="hide-sidebar-btn">
+              <span class="material-symbols-outlined">chevron_left</span>
+            </button>
+          </div>
+          <div class="pdf-sidebar-content">
+            <div id="thumbnails-view" class="sidebar-view active"></div>
+            <div id="chapters-view" class="sidebar-view"></div>
+          </div>
+        </aside>
+
+        <!-- Main Viewer Area -->
+        <main class="pdf-main">
+          
+          <!-- Transparent Pill Toolbar -->
+          <div class="pdf-toolbar">
+            <div class="toolbar-center">
+              <span class="toolbar-label">Page</span>
+              <input type="number" id="page-num" class="toolbar-input" value="1" min="1">
+              <span class="toolbar-label" style="opacity: 0.6">/ <span id="page-count">--</span></span>
+              
+              <div class="toolbar-divider"></div>
+
+              <button class="icon-btn" id="zoom-out">
+                <span class="material-symbols-outlined">remove</span>
+              </button>
+              
+              <div class="zoom-select-wrapper">
+                <select id="zoom-select" class="toolbar-select">
+                  <option value="fit">Fit</option>
+                  <option value="0.5">50%</option>
+                  <option value="0.75">75%</option>
+                  <option value="1" selected>100%</option>
+                  <option value="1.25">125%</option>
+                  <option value="1.5">150%</option>
+                  <option value="2">200%</option>
+                </select>
+              </div>
+
+              <button class="icon-btn" id="zoom-in">
+                <span class="material-symbols-outlined">add</span>
+              </button>
+            </div>
+            
+            <button class="sidebar-show-btn hidden" id="show-sidebar-btn">
+              <span class="material-symbols-outlined">view_sidebar</span>
+            </button>
+          </div>
+
+          <!-- Canvas Container -->
+          <div class="pdf-page-container" id="pdf-page-container">
+            <canvas id="pdf-render-canvas"></canvas>
+          </div>
+
+        </main>
+        
+        <!-- Loading Overlay -->
+      <div id="pdf-loading" class="pdf-loading">
+        <div class="spinner"></div>
+      </div>
+
+      </div>
+
+      <!-- Gradient fade â€” visible in gated mode, hides after unlock -->
+      <div class="pdf-preview-fade hidden" id="pdf-preview-fade"></div>
+
+      <!-- â”€â”€ Sign-In Gate (hidden when authenticated) â”€â”€ -->
+      <section class="reader-gate" id="reader-gate" style="display: none;">
+        <div class="gate-card">
+
+          <!-- Book context (title + icon) -->
+          <div class="gate-book-context">
+            <div class="gate-book-icon-wrap">
+              <span class="material-symbols-outlined">auto_stories</span>
+            </div>
+            <div class="gate-book-meta">
+              <span class="gate-book-label">Now Reading</span>
+              <span class="gate-book-name" id="gate-book-name">This Book</span>
+            </div>
+          </div>
+
+          <hr class="gate-rule" />
+
+          <!-- Heading -->
+          <h1 class="gate-heading">Sign in to read the full book</h1>
+          <p class="gate-subtext">
+            It's free. Takes seconds. The secure reader opens the full book right here.
+          </p>
+
+          <!-- Benefits -->
+          <ul class="gate-benefits">
+            <li class="gate-benefit">
+              <span class="material-symbols-outlined">check_circle</span>
+              Instant access to every page
+            </li>
+            <li class="gate-benefit">
+              <span class="material-symbols-outlined">check_circle</span>
+              AI research assistant while you read
+            </li>
+            <li class="gate-benefit">
+              <span class="material-symbols-outlined">check_circle</span>
+              Your reading history saved automatically
+            </li>
+          </ul>
+
+          <!-- Account Sign-In Button -->
+          <button
+            id="gate-google-btn"
+            class="gate-google-btn"
+            onclick="triggerGoogleSignIn()"
+          >
+            <!-- Native Account "G" color logo -->
+            <svg class="google-g-svg" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.83c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            Continue with Account
+          </button>
+
+          <!-- Footer note -->
+          <p class="gate-footer-note">
+            Free forever Â· No credit card Â· No password needed
+          </p>
+
+        </div>
+      </section>
+
+    </div><!-- /reader-page -->
+
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+         JAVASCRIPT â€” Auth Check + Google Sign-In
+         â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <script src="assets/js/payments.js?v=1"></script>
     <script>
-      // When the page loads, get the Drive ID and Title from the URL
+      // â”€â”€ Shared Client ID (same as auth.js on index.html) â”€â”€
+      const CLIENT_ID =
+        window.PDF_LIBRARY_CONFIG?.GOOGLE_CLIENT_ID ||
+        "492249193220-e9hpnb9hgnmsrdi68m64mvuomg8589n3.apps.googleusercontent.com";
+
+      // â”€â”€ localStorage keys (must match auth.js) â”€â”€
+      const LS_ACCOUNTS   = "pdf_lib_accounts";
+      const LS_ACTIVE     = "pdf_lib_active_email";
+      const LS_RECENT_PREFIX = "pdf_lib_recent_books";
+      const LS_READING_PROGRESS_PREFIX = "pdf_lib_reading_progress_v1";
+      const LS_DB_USER_ID_PREFIX = "db_user_id";
+      const LS_SESSION_TOKEN_PREFIX = "pdf_lib_session_token_v1";
+      const LS_ACCESS_TOKEN_PREFIX = "pdf_lib_google_access_token_v1";
+      const LS_ACCESS_TOKEN_EXPIRY_PREFIX = "pdf_lib_google_access_token_expiry_v1";
+      const LS_STORAGE_MIGRATION_META = "pdf_lib_storage_migration_v2";
+      function resolveApiOrigin() {
+        const configured = String(
+          window.PDF_LIBRARY_CONFIG?.API_ORIGIN ||
+            window.PDF_LIBRARY_API_BASE_URL ||
+            "",
+        ).trim();
+        if (configured) return configured.replace(/\/+$/, "");
+
+        const host = String(window.location.hostname || "").toLowerCase();
+        const isLocal = host === "localhost" || host === "127.0.0.1";
+        return isLocal
+          ? `${window.location.protocol}//${window.location.hostname}:3000`
+          : String(window.location.origin || "").replace(/\/+$/, "");
+      }
+
+      const API_ORIGIN = resolveApiOrigin();
+
+      // â”€â”€ URL Params â”€â”€
+      const urlParams = new URLSearchParams(window.location.search);
+      const driveId   = urlParams.get("id");
+      const bookTitle = urlParams.get("title") || "PDF Book";
+      const explicitPageParam = Math.floor(Number(urlParams.get("page") || 0));
+      const paymentBookId = window.PdfLibraryPayments?.parseBookId(driveId, "pdf") || 0;
+
+      // â”€â”€ Google token client (lazy-created on first click) â”€â”€
+      let tokenClient = null;
+      let authStateVersion = 0;
+      let currentReaderUser = null;
+      let currentAccess = null;
+      let previewReaderStarted = false;
+
+      function buildApiUrl(path) {
+        return `${API_ORIGIN}${path}`;
+      }
+
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // UTILITIES
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+      function getActiveAccount() {
+        try {
+          const email    = localStorage.getItem(LS_ACTIVE);
+          const accounts = JSON.parse(localStorage.getItem(LS_ACCOUNTS)) || [];
+          return accounts.find(a => a.email === email) || null;
+        } catch {
+          return null;
+        }
+      }
+
+      function normalizeEmailKey(email) {
+        return String(email || "").trim().toLowerCase();
+      }
+
+      function getActiveEmailKey() {
+        return normalizeEmailKey(localStorage.getItem(LS_ACTIVE));
+      }
+
+      function getPreferredLegacyOwnerEmailKey(fallbackEmail) {
+        const fallback = normalizeEmailKey(fallbackEmail);
+        try {
+          const parsed = JSON.parse(localStorage.getItem(LS_ACCOUNTS) || "[]");
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const first = normalizeEmailKey(parsed[0]?.email);
+            if (first) return first;
+          }
+        } catch {
+          // Ignore malformed account cache.
+        }
+        return fallback;
+      }
+
+      function getScopedStorageKey(prefix, emailKey = getActiveEmailKey()) {
+        if (!emailKey) return null;
+        return `${prefix}::${emailKey}`;
+      }
+
+      function readStorageMigrationState() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(LS_STORAGE_MIGRATION_META) || "{}");
+          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+            return {};
+          }
+          return parsed;
+        } catch {
+          return {};
+        }
+      }
+
+      function writeStorageMigrationState(state) {
+        try {
+          localStorage.setItem(LS_STORAGE_MIGRATION_META, JSON.stringify(state || {}));
+        } catch {
+          // Ignore storage write errors.
+        }
+      }
+
+      function migrateLegacyValueIfNeeded(prefix, emailKey = getActiveEmailKey()) {
+        const scopedKey = getScopedStorageKey(prefix, emailKey);
+        if (!scopedKey) return null;
+
+        const scopedRaw = localStorage.getItem(scopedKey);
+        if (scopedRaw !== null) return scopedRaw;
+
+        const legacyRaw = localStorage.getItem(prefix);
+        if (legacyRaw === null) return null;
+
+        const migrationState = readStorageMigrationState();
+        const owner = normalizeEmailKey(migrationState[prefix]);
+        const preferredOwner = owner || getPreferredLegacyOwnerEmailKey(emailKey);
+        if (preferredOwner && preferredOwner !== emailKey) return null;
+
+        try {
+          localStorage.setItem(scopedKey, legacyRaw);
+        } catch {
+          return null;
+        }
+
+        migrationState[prefix] = preferredOwner || emailKey;
+        writeStorageMigrationState(migrationState);
+        return legacyRaw;
+      }
+
+      function readScopedJSON(prefix, fallback, emailKey = getActiveEmailKey()) {
+        const scopedKey = getScopedStorageKey(prefix, emailKey);
+        if (!scopedKey) return fallback;
+
+        const raw = localStorage.getItem(scopedKey) ?? migrateLegacyValueIfNeeded(prefix, emailKey);
+        if (raw === null || raw === undefined) return fallback;
+
+        try {
+          const parsed = JSON.parse(raw);
+          return parsed === null || parsed === undefined ? fallback : parsed;
+        } catch {
+          return fallback;
+        }
+      }
+
+      function writeScopedJSON(prefix, value, emailKey = getActiveEmailKey()) {
+        const scopedKey = getScopedStorageKey(prefix, emailKey);
+        if (!scopedKey) return;
+        try {
+          localStorage.setItem(scopedKey, JSON.stringify(value));
+        } catch {
+          // Ignore storage write errors.
+        }
+      }
+
+      function writeScopedValue(prefix, value, emailKey = getActiveEmailKey()) {
+        const scopedKey = getScopedStorageKey(prefix, emailKey);
+        if (!scopedKey) return;
+        try {
+          localStorage.setItem(scopedKey, String(value));
+        } catch {
+          // Ignore storage write errors.
+        }
+      }
+
+      function readScopedValue(prefix, emailKey = getActiveEmailKey()) {
+        const scopedKey = getScopedStorageKey(prefix, emailKey);
+        if (!scopedKey) return null;
+        const scopedRaw = localStorage.getItem(scopedKey);
+        if (scopedRaw !== null) return scopedRaw;
+        return migrateLegacyValueIfNeeded(prefix, emailKey);
+      }
+
+      function storeAccessToken(accessToken, expiresInSeconds, emailKey = getActiveEmailKey()) {
+        if (!accessToken || !emailKey) return;
+        writeScopedValue(LS_ACCESS_TOKEN_PREFIX, accessToken, emailKey);
+
+        const expiresIn = Number(expiresInSeconds || 0);
+        if (Number.isFinite(expiresIn) && expiresIn > 0) {
+          writeScopedValue(
+            LS_ACCESS_TOKEN_EXPIRY_PREFIX,
+            Date.now() + expiresIn * 1000,
+            emailKey,
+          );
+          return;
+        }
+
+        const expiryKey = getScopedStorageKey(LS_ACCESS_TOKEN_EXPIRY_PREFIX, emailKey);
+        if (expiryKey) localStorage.removeItem(expiryKey);
+      }
+
+      function getValidAccessToken(emailKey = getActiveEmailKey()) {
+        const token = readScopedValue(LS_ACCESS_TOKEN_PREFIX, emailKey);
+        if (!token) return null;
+
+        const expiryRaw = readScopedValue(LS_ACCESS_TOKEN_EXPIRY_PREFIX, emailKey);
+        const expiry = Number(expiryRaw || 0);
+        if (Number.isFinite(expiry) && expiry > 0 && Date.now() >= expiry) {
+          const tokenKey = getScopedStorageKey(LS_ACCESS_TOKEN_PREFIX, emailKey);
+          const expiryKey = getScopedStorageKey(LS_ACCESS_TOKEN_EXPIRY_PREFIX, emailKey);
+          if (tokenKey) localStorage.removeItem(tokenKey);
+          if (expiryKey) localStorage.removeItem(expiryKey);
+          return null;
+        }
+
+        return token;
+      }
+
+      function getReaderToken(emailKey = getActiveEmailKey()) {
+        return readScopedValue(LS_SESSION_TOKEN_PREFIX, emailKey) || getValidAccessToken(emailKey);
+      }
+
+      function getInitials(name, email) {
+        if (name && name.trim()) {
+          const parts = name.trim().split(" ");
+          return parts.length >= 2
+            ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+            : parts[0].slice(0, 2).toUpperCase();
+        }
+        return (email || "U")[0].toUpperCase();
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function safeImageSrc(value) {
+        const src = String(value || "").trim();
+        if (!src) return "";
+        if (/^data:image\/(?:png|jpe?g|gif|webp);base64,/i.test(src)) return src;
+        try {
+          const url = new URL(src, window.location.href);
+          return ["https:", "http:"].includes(url.protocol) ? src : "";
+        } catch {
+          return "";
+        }
+      }
+
+      function resolveInitialPage() {
+        if (explicitPageParam > 0) return explicitPageParam;
+        if (!driveId) return 1;
+
+        try {
+          const raw = readScopedJSON(LS_READING_PROGRESS_PREFIX, {});
+          if (!raw || typeof raw !== "object" || Array.isArray(raw)) return 1;
+          const entry = raw[String(driveId).trim()];
+          if (!entry || typeof entry !== "object") return 1;
+          const page = Math.floor(Number(entry.lastPage || 1));
+          return Number.isFinite(page) && page > 0 ? page : 1;
+        } catch {
+          return 1;
+        }
+      }
+
+      async function fetchSessionUser() {
+        try {
+          const response = await Promise.race([
+            fetch(buildApiUrl("/api/auth/session"), {
+              credentials: "include",
+            }),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("Session check timed out")), 8000)
+            ),
+          ]);
+          if (!response.ok) return null;
+
+          const data = await response.json();
+          return data?.user?.email ? data.user : null;
+        } catch {
+          return null;
+        }
+      }
+
+      async function fetchReaderAccess() {
+        if (!paymentBookId || !window.PdfLibraryPayments) {
+          return {
+            fullAccess: true,
+            requiresPayment: false,
+            previewPageLimit: 10,
+            offers: [],
+          };
+        }
+
+        try {
+          const access = await window.PdfLibraryPayments.getAccess(paymentBookId);
+          window.VIEWER_PREVIEW_PAGE_LIMIT = Number(access.previewPageLimit || 10);
+          return access;
+        } catch (error) {
+          console.warn("Could not check payment access:", error);
+          return {
+            fullAccess: false,
+            requiresPayment: true,
+            paymentsEnabled: false,
+            providerConfigured: false,
+            previewPageLimit: 10,
+            offers: [],
+            reason: "access_check_failed",
+          };
+        }
+      }
+
+      function getGateParts() {
+        const gate = document.getElementById("reader-gate");
+        return {
+          gate,
+          heading: gate?.querySelector(".gate-heading"),
+          subtext: gate?.querySelector(".gate-subtext"),
+          benefits: gate?.querySelector(".gate-benefits"),
+          googleButton: document.getElementById("gate-google-btn"),
+          footer: gate?.querySelector(".gate-footer-note"),
+        };
+      }
+
+      function ensurePremiumActions() {
+        const parts = getGateParts();
+        if (!parts.gate) return null;
+
+        let actions = document.getElementById("premium-payment-actions");
+        if (!actions) {
+          actions = document.createElement("div");
+          actions.id = "premium-payment-actions";
+          actions.style.display = "none";
+          actions.style.gap = "10px";
+          actions.style.flexDirection = "column";
+          actions.style.width = "100%";
+          actions.style.marginTop = "8px";
+          parts.footer?.parentNode?.insertBefore(actions, parts.footer);
+        }
+        return actions;
+      }
+
+      function setGateForSignIn() {
+        const parts = getGateParts();
+        const actions = ensurePremiumActions();
+        if (parts.heading) parts.heading.textContent = "Sign in to read the full book";
+        if (parts.subtext) {
+          parts.subtext.textContent =
+            "It's free. Takes seconds. The secure reader opens the full book right here.";
+        }
+        if (parts.benefits) {
+          parts.benefits.innerHTML = `
+            <li class="gate-benefit"><span class="material-symbols-outlined">check_circle</span>Preview the first ${Number(window.VIEWER_PREVIEW_PAGE_LIMIT || 10)} pages</li>
+            <li class="gate-benefit"><span class="material-symbols-outlined">check_circle</span>AI research assistant while you read</li>
+            <li class="gate-benefit"><span class="material-symbols-outlined">check_circle</span>Your reading history saved automatically</li>`;
+        }
+        if (parts.googleButton) {
+          parts.googleButton.style.display = "";
+          parts.googleButton.classList.remove("loading");
+          parts.googleButton.innerHTML = `
+            <svg class="google-g-svg" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.83c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            Continue with Account`;
+        }
+        if (actions) {
+          actions.style.display = "none";
+          actions.innerHTML = "";
+        }
+        if (parts.footer) parts.footer.textContent = "No password needed. Payment details are handled by Razorpay only when premium is required.";
+      }
+
+      function setGateForPremium(access) {
+        const parts = getGateParts();
+        const actions = ensurePremiumActions();
+        const previewLimit = Number(access?.previewPageLimit || 10);
+        const offers = Array.isArray(access?.offers) ? access.offers : [];
+
+        if (parts.heading) parts.heading.textContent = "Premium access required";
+        if (parts.subtext) {
+          parts.subtext.textContent =
+            `You can preview the first ${previewLimit} pages. Pay securely to unlock the full book.`;
+        }
+        if (parts.benefits) {
+          parts.benefits.innerHTML = `
+            <li class="gate-benefit"><span class="material-symbols-outlined">lock_open</span>Payment unlocks reading inside this website</li>
+            <li class="gate-benefit"><span class="material-symbols-outlined">verified_user</span>Your card, UPI, or bank details are not stored here</li>
+            <li class="gate-benefit"><span class="material-symbols-outlined">workspace_premium</span>Site premium unlocks every book while active</li>`;
+        }
+        if (parts.googleButton) parts.googleButton.style.display = "none";
+        if (parts.footer) {
+          parts.footer.textContent =
+            access?.activeEntitlement?.expiresAt
+              ? `Your access ends on ${new Date(access.activeEntitlement.expiresAt).toLocaleDateString()}.`
+              : "If payment is unavailable, the owner must enable Razorpay keys in the backend.";
+        }
+
+        if (!actions) return;
+        actions.style.display = "flex";
+
+        if (!access?.paymentsEnabled || !access?.providerConfigured || offers.length === 0) {
+          actions.innerHTML = `
+            <div style="font-size:13px;line-height:1.5;color:var(--text-muted);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:12px;">
+              Payments are configured in the website code, but the owner still needs to enable Razorpay keys and prices before users can pay.
+            </div>`;
+          return;
+        }
+
+        actions.innerHTML = offers.map((offer) => {
+          const amount = window.PdfLibraryPayments.formatMoney(offer.amountPaise, offer.currency);
+          const scope = escapeHtml(offer.scope);
+          const plan = escapeHtml(offer.planKey || "");
+          const duration = offer.lifetime
+            ? "Permanent book access"
+            : `${Number(offer.durationDays || 0)} day access`;
+          return `
+            <button class="gate-google-btn" type="button" onclick="startPremiumPayment('${scope}', '${plan}')">
+              <span class="material-symbols-outlined">payments</span>
+              ${escapeHtml(offer.label)} - ${escapeHtml(amount)}
+              <span style="display:block;font-size:12px;font-weight:500;opacity:.78;margin-top:3px;">${escapeHtml(duration)}</span>
+            </button>`;
+        }).join("");
+      }
+
+      function startPreviewReader() {
+        if (previewReaderStarted || !window.initCustomViewer || !window.VIEWER_DOCUMENT_ID) return;
+        previewReaderStarted = true;
+        window.initCustomViewer(window.VIEWER_DOCUMENT_ID, true);
+      }
+
+      async function handleAuthenticatedReader(user, animate = false) {
+        currentReaderUser = user;
+        currentAccess = await fetchReaderAccess();
+        if (!currentAccess.requiresPayment || currentAccess.fullAccess) {
+          unlockReader(user, animate);
+          return;
+        }
+
+        const page = document.getElementById("reader-page");
+        const wrap = document.getElementById("custom-pdf-wrapper");
+        const gate = document.getElementById("reader-gate");
+        const fade = document.getElementById("pdf-preview-fade");
+        const loading = document.getElementById("pdf-loading");
+
+        page.classList.remove("authenticated");
+        document.body.classList.remove("is-authenticated");
+        if (wrap) wrap.classList.remove("hidden");
+        if (gate) {
+          gate.style.display = "";
+          gate.classList.remove("hidden");
+        }
+        if (fade) fade.classList.remove("hidden");
+        if (loading) loading.style.display = "none";
+        setGateForPremium(currentAccess);
+        startPreviewReader();
+      }
+
+      async function startPremiumPayment(scope, planKey) {
+        if (!currentReaderUser?.email) {
+          triggerGoogleSignIn();
+          return;
+        }
+
+        const actions = document.getElementById("premium-payment-actions");
+        if (actions) actions.querySelectorAll("button").forEach((button) => { button.disabled = true; });
+
+        try {
+          await window.PdfLibraryPayments.startCheckout({
+            scope,
+            planKey,
+            bookId: paymentBookId,
+            title: bookTitle,
+            user: currentReaderUser,
+          });
+          previewReaderStarted = false;
+          currentAccess = await fetchReaderAccess();
+          unlockReader(currentReaderUser, false);
+        } catch (error) {
+          alert(error?.message || "Payment could not be completed.");
+          if (actions) actions.querySelectorAll("button").forEach((button) => { button.disabled = false; });
+        }
+      }
+
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // INITIALISE PAGE
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
       document.addEventListener("DOMContentLoaded", () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const driveId = urlParams.get("id");
-        const title = urlParams.get("title");
+        // Set title in UI
+        document.getElementById("reader-title").textContent  = bookTitle;
+        document.getElementById("gate-book-name").textContent = bookTitle;
+        document.title = `${bookTitle} â€” PDF Library`;
 
+        // Signal Custom PDF Engine (loaded via script below)
         if (driveId) {
-          // Set the iframe source to the Google Drive preview URL
-          const iframe = document.getElementById("pdf-iframe");
-          iframe.src = `https://drive.google.com/file/d/${driveId}/preview`;
+          // Store window global for custom script
+          window.VIEWER_DOCUMENT_ID = driveId;
+          window.VIEWER_INITIAL_PAGE = resolveInitialPage();
+          window.VIEWER_DOCUMENT_FORMAT = "pdf";
+          window.VIEWER_BOOK_TITLE = bookTitle;
         } else {
-          document.getElementById("pdf-title-display").textContent =
-            "Error: No PDF ID provided.";
+          localStorage.removeItem(LS_ACTIVE);
+          document.getElementById("reader-title").textContent =
+            "Error: No Document ID provided.";
         }
 
-        if (title) {
-          // Set the title in the header and the browser tab
-          document.getElementById("pdf-title-display").textContent = title;
-          document.title = `${title} - PDF Viewer`;
+        const wrap = document.getElementById("custom-pdf-wrapper");
+        if (wrap) wrap.classList.remove("hidden");
+
+        (async () => {
+          const restoreVersion = authStateVersion;
+          const user = await fetchSessionUser();
+          if (restoreVersion !== authStateVersion) {
+            return;
+          }
+          if (user?.email) {
+            let accounts = JSON.parse(localStorage.getItem(LS_ACCOUNTS) || "[]");
+            if (!Array.isArray(accounts)) accounts = [];
+            const existing = accounts.find((account) => account.email === user.email);
+            if (!existing) {
+              accounts.push(user);
+            } else {
+              Object.assign(existing, user);
+            }
+            localStorage.setItem(LS_ACCOUNTS, JSON.stringify(accounts));
+            localStorage.setItem(LS_ACTIVE, user.email);
+          // â”€â”€ AUTHENTICATED â”€â”€ unlock immediately
+          await handleAuthenticatedReader(user, /* animate = */ false);
+          return;
         }
+
+          localStorage.removeItem(LS_ACTIVE);
+          // â”€â”€ UNAUTHENTICATED â”€â”€ show gate immediately, then silently try to load preview
+          setGateForSignIn();
+          showGatedMode();
+          if (wrap) wrap.classList.remove("hidden");
+          // Attempt preview silently in background (won't block the UI)
+          setTimeout(() => {
+            startPreviewReader();
+          }, 300);
+        })();
       });
+
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // GATED MODE  (not signed in)
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+      function showGatedMode() {
+        // Nav: show sign-in pill
+        document.getElementById("nav-right-slot").innerHTML = `
+          <button class="reader-nav-signin-btn" onclick="triggerGoogleSignIn()" data-hover-label="Sign In" title="Sign In">
+            <span class="material-symbols-outlined" style="font-size:16px">login</span>
+            Sign in
+          </button>`;
+
+        const page = document.getElementById("reader-page");
+        const wrap = document.getElementById("custom-pdf-wrapper");
+        const gate = document.getElementById("reader-gate");
+        const fade = document.getElementById("pdf-preview-fade");
+        const loading = document.getElementById("pdf-loading");
+
+        page.classList.remove("authenticated");
+        document.body.classList.remove("is-authenticated");
+        if (wrap) wrap.classList.remove("hidden");
+        if (gate) {
+          gate.style.display = "";
+          gate.classList.remove("hidden");
+        }
+        if (fade) fade.classList.remove("hidden");
+        // â”€â”€ IMPORTANT: Hide spinner immediately â€” show gate right away â”€â”€
+        // The preview loads in the background; spinner only shows once preview starts.
+        if (loading) {
+          loading.style.display = "none";
+          loading.innerHTML = `<div class="spinner"></div>`;
+        }
+      }
+
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // GOOGLE SIGN-IN TRIGGER
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+      function triggerGoogleSignIn() {
+        const btn = document.getElementById("gate-google-btn");
+        if (btn) {
+          btn.classList.add("loading");
+          btn.textContent = "Opening secure sign-in...";
+        }
+
+        authStateVersion += 1;
+
+        // Lazy-init token client
+        if (!tokenClient) {
+          tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            scope: "openid email profile",
+            callback: onGoogleSuccess,
+          });
+        }
+        tokenClient.requestAccessToken({ prompt: "select_account" });
+      }
+
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // ON GOOGLE SUCCESS
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+      async function onGoogleSuccess(tokenResponse) {
+        const requestVersion = authStateVersion;
+        if (tokenResponse.error) {
+          resetSignInButton();
+          return;
+        }
+
+        try {
+          const newUser = await syncToBackend(
+            tokenResponse.access_token,
+            Number(tokenResponse.expires_in || 0),
+          );
+          if (!newUser || !newUser.email) {
+            throw new Error("Verified Google profile is missing.");
+          }
+
+          if (requestVersion < authStateVersion) {
+            return;
+          }
+
+          // Save to localStorage (same keys as auth.js â€” shared session)
+          let accounts = JSON.parse(localStorage.getItem(LS_ACCOUNTS)) || [];
+          const existing = accounts.find(a => a.email === newUser.email);
+          if (!existing) {
+            accounts.push(newUser);
+          } else {
+            Object.assign(existing, newUser);
+          }
+          authStateVersion = Math.max(authStateVersion, requestVersion);
+          localStorage.setItem(LS_ACCOUNTS, JSON.stringify(accounts));
+          localStorage.setItem(LS_ACTIVE, newUser.email);
+
+          await handleAuthenticatedReader(newUser, /* animate = */ false);
+          return;
+
+        } catch (err) {
+          console.error("Sign-in error:", err);
+          resetSignInButton();
+        }
+      }
+
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // UNLOCK READER (animate gate away, expand iframe)
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+      function unlockReader(user, animate) {
+        // Update nav: show user chip instead of sign-in button
+        const initials = getInitials(user.name, user.email);
+        const firstName =
+          user.given_name ||
+          (user.name ? String(user.name).trim().split(" ")[0] : "User");
+        const navSlot  = document.getElementById("nav-right-slot");
+        const pictureSrc = safeImageSrc(user.picture);
+        const safeInitials = escapeHtml(initials);
+        const safeFirstName = escapeHtml(firstName);
+
+        navSlot.innerHTML = pictureSrc
+          ? `<div class="reader-user-chip"><img class="reader-avatar" src="${escapeHtml(pictureSrc)}" alt="${safeInitials}" referrerpolicy="no-referrer" /><span>${safeFirstName}</span></div>`
+          : `<div class="reader-user-chip"><div class="reader-avatar-initials">${safeInitials}</div><span>${safeFirstName}</span></div>`;
+
+        const page    = document.getElementById("reader-page");
+        const wrap    = document.getElementById("custom-pdf-wrapper");
+        const fade    = document.getElementById("pdf-preview-fade");
+        const gate    = document.getElementById("reader-gate");
+        const loading = document.getElementById("pdf-loading");
+
+        page.classList.add("authenticated");
+        document.body.classList.add("is-authenticated");
+        if (wrap) {
+          wrap.classList.remove("hidden");
+          wrap.classList.add("expanded");
+        }
+        saveToRecentHistory();
+
+        if (animate) {
+          // Switch from preview DOM to full DOM 
+          if (window.unlockPdfEngine) {
+            window.unlockPdfEngine();
+          }
+        } else {
+          // Instant (already signed in on page load)
+          if (fade) fade.classList.add("hidden");
+          if (gate) gate.style.display = "none";
+          if (loading) {
+            loading.innerHTML = `<div class="spinner"></div>`;
+            loading.style.display = "flex";
+          }
+          
+          setTimeout(() => {
+            if (window.initCustomViewer && window.VIEWER_DOCUMENT_ID) {
+              window.initCustomViewer(window.VIEWER_DOCUMENT_ID, false);
+            }
+          }, 0);
+        }
+      }
+
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // SAVE CURRENT BOOK TO RECENT HISTORY
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+      function saveToRecentHistory() {
+        if (!driveId || !bookTitle) return;
+        const emailKey = getActiveEmailKey();
+        if (!emailKey) return;
+        try {
+          const normalizedDriveId = String(driveId).trim();
+          const normalizedTitle = String(bookTitle).trim();
+          let history = readScopedJSON(LS_RECENT_PREFIX, [], emailKey);
+          if (!Array.isArray(history)) history = [];
+
+          history = history
+            .filter((item) => item && typeof item === "object")
+            .map((item) => ({
+              id: item.id,
+              title: String(item.title || "").trim(),
+              pdf_drive_id: item.pdf_drive_id ? String(item.pdf_drive_id).trim() : null,
+            }))
+            .filter((item) => item.title.length > 0);
+
+          const byDrive = new Map();
+          for (const item of history) {
+            const key = item.pdf_drive_id || `id:${String(item.id || "").trim()}` || `title:${item.title.toLowerCase()}`;
+            if (!byDrive.has(key)) byDrive.set(key, item);
+          }
+          history = Array.from(byDrive.values());
+
+          const existing = history.find((item) => item.pdf_drive_id === normalizedDriveId);
+          const stableId = existing?.id ?? Date.now();
+
+          history = history.filter((item) => item.pdf_drive_id !== normalizedDriveId);
+          history.unshift({
+            id: stableId,
+            title: normalizedTitle,
+            pdf_drive_id: normalizedDriveId,
+          });
+
+          writeScopedJSON(LS_RECENT_PREFIX, history.slice(0, 200), emailKey);
+        } catch { /* silently ignore */ }
+      }
+
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // SYNC USER TO BACKEND (non-blocking)
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+      async function syncToBackend(accessToken) {
+        try {
+          const res = await fetch(buildApiUrl("/api/auth/login"), {
+            method : "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body   : JSON.stringify({
+              accessToken,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data?.error || "Backend login verification failed.");
+          }
+
+          const user = data.user;
+          if (!user || !user.email) {
+            throw new Error("Verified user profile missing from backend response.");
+          }
+
+          // Save DB user ID for future use
+          const userId = data.userId || (data.user && data.user.id);
+          if (userId) {
+            localStorage.setItem("db_user_id", userId);
+            writeScopedValue(LS_DB_USER_ID_PREFIX, userId, normalizeEmailKey(user.email));
+          }
+          return user;
+        } catch (error) {
+          console.error("Reader backend sync failed:", error);
+          return null;
+        }
+      }
+
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // RESET SIGN-IN BUTTON (on error)
+      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+      function resetSignInButton() {
+        const btn = document.getElementById("gate-google-btn");
+        if (!btn) return;
+        btn.classList.remove("loading");
+        btn.innerHTML = `
+          <svg class="google-g-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.83c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          Continue with Account`;
+      }
     </script>
+    
+    <!-- PDF.js Engine Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <script src="assets/js/pdf-engine.js?v=5"></script>
+    <script src="assets/js/reader-controls.js?v=3"></script>
+
+    <!-- Theme Toggle -->
+    <script src="assets/js/theme-toggle.js?v=2"></script>
+
+    <!-- AI Sidebar (our existing assistant â€” works globally) -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.7/dist/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="assets/js/ai-sidebar.js?v=14"></script>
+
   </body>
 </html>

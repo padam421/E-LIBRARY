@@ -1,0 +1,166 @@
+/* =========================================
+   LIGHT MODE — PDF Reader Page Overrides
+   ========================================= */
+
+body.light-mode {
+  background: #f8f9fa !important;
+  color: #1d1d1f !important;
+}
+
+body.light-mode .reader-nav {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light-mode .reader-title {
+  color: #1d1d1f !important;
+}
+
+body.light-mode .reader-back {
+  color: #1a73e8 !important;
+}
+
+body.light-mode .reader-nav-signin-btn {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  color: #1d1d1f !important;
+}
+
+body.light-mode .reader-nav-signin-btn:hover {
+  background: rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light-mode .reader-user-chip {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08) !important;
+}
+
+body.light-mode .reader-user-chip span {
+  color: #1d1d1f !important;
+  -webkit-text-fill-color: #1d1d1f !important;
+}
+
+body.light-mode .reader-avatar {
+  border-color: rgba(0, 0, 0, 0.14) !important;
+}
+
+body.light-mode .reader-avatar-initials {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+body.light-mode .pdf-preview-fade {
+  background: linear-gradient(to bottom, transparent 0%, #f8f9fa 100%) !important;
+}
+
+body.light-mode .reader-gate {
+  background: #f8f9fa !important;
+}
+
+body.light-mode .gate-card {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-mode .gate-heading {
+  color: #1d1d1f !important;
+}
+
+body.light-mode .gate-subtext {
+  color: #5f6368 !important;
+}
+
+body.light-mode .gate-benefit {
+  color: #3c4043 !important;
+}
+
+body.light-mode .gate-book-label {
+  color: #9aa0a6 !important;
+}
+
+body.light-mode .gate-book-name {
+  color: #1d1d1f !important;
+}
+
+body.light-mode .gate-rule {
+  background: rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light-mode .gate-footer-note {
+  color: #9aa0a6 !important;
+}
+
+body.light-mode .gate-google-btn {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+body.light-mode .unlock-success-badge {
+  background: rgba(48, 209, 88, 0.08) !important;
+  border-color: rgba(48, 209, 88, 0.2) !important;
+}
+
+/* Smooth transition */
+body.theme-transitioning,
+body.theme-transitioning *,
+body.theme-transitioning *::before,
+body.theme-transitioning *::after {
+  transition:
+    background-color 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
+    color 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
+    border-color 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
+    box-shadow 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
+}
+
+body.light-mode .reader-quick-sheet,
+body.light-mode .reader-popover,
+body.light-mode .reader-theme-modal {
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.14) !important;
+}
+
+body.light-mode .reader-progress-row {
+  background: #2e3138 !important;
+  color: #f4f6f9 !important;
+}
+
+body.light-mode .reader-sheet-row {
+  background: #ffffff !important;
+  color: #1d1f24 !important;
+}
+
+body.light-mode .reader-action-btn {
+  background: #ffffff !important;
+}
+
+body.light-mode .reader-controls-backdrop {
+  background: rgba(230, 234, 241, 0.28) !important;
+}
+
+body.light-mode .reader-line-guide {
+  background: rgba(255, 255, 255, 0.86) !important;
+  border-color: rgba(210, 215, 226, 0.86) !important;
+}
+
+body.light-mode .reader-customise-modal,
+body.light-mode .reader-bookmarks-popover,
+body.light-mode .reader-highlight-popover,
+body.light-mode .reader-notes-popover {
+  background: #f6f7fa !important;
+  color: #1d1f24 !important;
+}
+
+body.light-mode .reader-customise-card,
+body.light-mode .reader-customise-preview,
+body.light-mode .reader-font-option {
+  background: #ffffff !important;
+}
+
+body.light-mode .reader-hover-label {
+  background: rgba(18, 21, 29, 0.9) !important;
+  color: #f7f9fc !important;
+}
+
+body.light-mode .reader-note-jump {
+  background: #ffffff !important;
+}

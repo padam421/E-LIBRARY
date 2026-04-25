@@ -7,6 +7,7 @@
 
     <!-- CSS Connection -->
     <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="stylesheet" href="assets/css/theme-toggle.css" />
 
     <!-- Source Serif 4 Font — Used across entire website -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -36,13 +37,26 @@
         >
           <span class="material-symbols-outlined">menu_book</span>
         </button>
+        <button id="search-open-btn" class="header-search-pill" type="button" aria-label="Search Library">
+          <span class="material-symbols-outlined">search</span>
+          <span>Search books, authors...</span>
+          <kbd>/</kbd>
+        </button>
       </div>
-      <!-- Center: Logo -->
-      <div class="header-center">PDF Library</div>
-
       <!-- Right: Profile & Auth -->
-      <div class="header-right">
+      <div class="header-right" style="align-items: center;">
         <button id="sign-in-btn" class="sign-in-btn">Sign in</button>
+
+        <button
+          id="site-premium-btn"
+          class="site-premium-btn hidden"
+          type="button"
+          aria-label="Join Premium"
+          title="Join Premium"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">workspace_premium</span>
+          <span>Join Premium</span>
+        </button>
 
         <button id="profile-btn" class="profile-btn hidden">
           <img
@@ -53,6 +67,7 @@
             referrerpolicy="no-referrer"
           />
           <span id="profile-initials" class="hidden"></span>
+          <span id="profile-name" class="profile-name">User</span>
         </button>
 
         <!-- Profile Popup (Hidden by default) -->
@@ -84,6 +99,7 @@
                 </svg>
               </div>
               <!-- Hover Tooltip -->
+
               <div class="profile-tooltip">Change profile picture</div>
             </div>
             <!-- EXACT ID RESTORED FOR JS CONNECTION -->
@@ -135,9 +151,26 @@
         box-sizing: border-box;
       "
     >
-      <h1 style="margin-left: 4%; margin-bottom: 30px">
-        Welcome to the PDF Library
-      </h1>
+      <section id="training-mega-shell" class="training-mega-shell" aria-label="Training categories">
+        <div id="training-nav-bar" class="training-nav-bar" role="tablist" aria-label="Training category tabs"></div>
+        <div id="training-mega-backdrop" class="training-mega-backdrop" aria-hidden="true"></div>
+        <section id="training-mega-panel" class="training-mega-panel" aria-hidden="true">
+          <div class="training-panel-layout">
+            <div class="training-panel-main">
+              <p class="training-panel-eyebrow">Explore</p>
+              <div id="training-panel-links" class="training-panel-links"></div>
+            </div>
+            <div class="training-panel-books-col">
+              <div class="training-panel-books-head">
+                <h2 id="training-panel-title">Training</h2>
+                <p>Curated top 10 books for this category.</p>
+              </div>
+              <div id="training-book-grid" class="training-book-grid"></div>
+            </div>
+          </div>
+        </section>
+      </section>
+      <section id="continue-reading-section" class="continue-reading-section hidden"></section>
       <!-- The PDF rows will be injected here -->
       <div id="pdf-container" style="width: 100%"></div>
     </main>
@@ -166,27 +199,73 @@
       </div>
 
       <div class="sidebar-footer">
-        <button class="sidebar-footer-btn">
+        <button class="sidebar-footer-btn" id="open-settings-btn" type="button">
           <span class="material-symbols-outlined">settings</span>
           Settings & help
         </button>
       </div>
     </div>
+    <!-- START OF SETTINGS & HELP PANEL -->
+    <div id="settings-backdrop" class="settings-backdrop hidden"></div>
+    <aside id="settings-panel" class="settings-panel hidden" aria-hidden="true" aria-label="Settings and help">
+      <div class="settings-head">
+        <div>
+          <p class="settings-kicker">Library controls</p>
+          <h2>Settings & help</h2>
+        </div>
+        <button id="close-settings-btn" class="icon-btn" type="button" aria-label="Close settings">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="settings-shell">
+        <nav class="settings-menu" aria-label="Settings sections">
+          <button class="settings-menu-item active" type="button" data-settings-section="my-list">
+            <span class="material-symbols-outlined">bookmark</span>
+            <span>My List</span>
+            <small id="settings-my-list-count">0</small>
+          </button>
+          <button class="settings-menu-item" type="button" data-settings-section="reading">
+            <span class="material-symbols-outlined">auto_stories</span>
+            <span>Reading</span>
+          </button>
+          <button class="settings-menu-item" type="button" data-settings-section="privacy">
+            <span class="material-symbols-outlined">shield</span>
+            <span>Privacy</span>
+          </button>
+          <button class="settings-menu-item" type="button" data-settings-section="account">
+            <span class="material-symbols-outlined">account_circle</span>
+            <span>Account</span>
+          </button>
+          <button class="settings-menu-item" type="button" data-settings-section="help">
+            <span class="material-symbols-outlined">help</span>
+            <span>Help</span>
+          </button>
+        </nav>
+
+        <section class="settings-detail" id="settings-detail" aria-live="polite"></section>
+      </div>
+    </aside>
+    <!-- END OF SETTINGS & HELP PANEL -->
     <!-- START OF SEARCH MODAL -->
-    <div id="search-backdrop" class="sidebar-overlay hidden"></div>
+    <div id="search-backdrop" class="search-backdrop hidden"></div>
     <div id="search-modal" class="search-modal hidden">
       <div class="search-header">
         <span class="material-symbols-outlined">search</span>
         <input
           type="text"
           id="search-input"
-          placeholder="Search your library..."
+          placeholder="Search books, authors, categories..."
           autocomplete="off"
         />
+        <span class="search-esc">Esc</span>
         <button id="close-search-btn" class="icon-btn">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
+      <p class="search-subtext">
+        Search your full library. Press Enter to open the first matching book.
+      </p>
       <div id="search-results" class="search-results">
         <!-- Search results injected here -->
       </div>
@@ -266,189 +345,7 @@
         </div>
       </div>
     </div>
-    <!-- START OF PREMIUM AI SIDEBAR -->
-    <!-- Floating AI Button (Bottom Right) -->
-    <button id="ai-chat-btn" class="ai-chat-btn">AI</button>
-
-    <!-- The Right Sidebar Panel -->
-    <div id="ai-sidebar" class="ai-sidebar">
-      <<!-- Clean Close Button & History Menu inside the sidebar -->
-      <div
-        class="ai-sidebar-top"
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        "
-      >
-        <button id="ai-close-btn" class="ai-icon-btn">
-          <span class="material-symbols-outlined">arrow_forward</span>
-        </button>
-
-        <!-- Three Dots History Menu -->
-        <div style="position: relative">
-          <button id="ai-history-btn" class="ai-icon-btn" title="Chat History">
-            <span class="material-symbols-outlined">more_vert</span>
-          </button>
-
-          <!-- The History Dropdown Popup -->
-          <div
-            id="ai-history-dropdown"
-            class="ai-history-dropdown hidden-dropdown"
-          >
-            <div class="history-dropdown-header">Interaction History</div>
-            <div id="ai-history-list" class="history-list-container">
-              <!-- History items will appear here -->
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Chat History Area (No Header) -->
-      <div id="ai-chat-body" class="ai-chat-body">
-        <!-- Messages will appear here -->
-      </div>
-
-      <!-- The Sophisticated Perplexity-Style Search Bar -->
-      <!-- The Sophisticated Perplexity-Style Search Bar -->
-      <div class="ai-input-container">
-        <div class="ai-input-box">
-          <!-- Top half: Text Input -->
-          <div class="ai-input-top">
-            <!-- START OF FILE DISPLAY AREA -->
-            <div
-              id="file-preview-container"
-              class="file-preview-container"
-            ></div>
-            <!-- END OF FILE DISPLAY AREA -->
-            <input
-              type="text"
-              id="ai-chat-input"
-              placeholder="Type / for search modes and shortcuts"
-              autocomplete="off"
-            />
-          </div>
-
-          <!-- Bottom half: Buttons -->
-          <div class="ai-input-bottom">
-            <!-- START OF NEW UPLOAD CONTAINER -->
-            <div class="upload-container">
-              <!-- The Plus Button -->
-              <!-- The Plus Button -->
-              <button
-                id="ai-plus-btn"
-                class="action-btn"
-                type="button"
-                title="Attach file"
-                style="
-                  background: transparent;
-                  border: none;
-                  cursor: pointer;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  padding: 4px;
-                "
-              >
-                <span
-                  class="material-symbols-outlined"
-                  style="font-size: 22px; color: #a0a0a0"
-                  >add</span
-                >
-              </button>
-
-              <!-- New Chat Button & Hover Popup -->
-              <div
-                style="position: relative; display: flex; align-items: center"
-              >
-                <button
-                  id="ai-new-chat-btn"
-                  class="action-btn"
-                  type="button"
-                  style="
-                    background: transparent;
-                    border: none;
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 4px;
-                    margin-left: 4px;
-                  "
-                >
-                  <span
-                    class="material-symbols-outlined"
-                    style="
-                      font-size: 22px;
-                      color: #a0a0a0;
-                      transition: color 0.2s;
-                    "
-                    >edit_square</span
-                  >
-                </button>
-
-                <!-- The Pill-Shaped Hover Popup -->
-                <div class="new-chat-tooltip">
-                  <span
-                    class="material-symbols-outlined"
-                    style="font-size: 18px"
-                    >edit_square</span
-                  >
-                  New chat
-                </div>
-              </div>
-
-              <!-- The Hidden Popup Menu -->
-              <div id="ai-upload-popup" class="upload-popup">
-                <button
-                  id="ai-upload-device-btn"
-                  class="popup-item"
-                  type="button"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="17 8 12 3 7 8"></polyline>
-                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                  </svg>
-                  Upload from device
-                </button>
-              </div>
-
-              <!-- The Hidden File Input (This actually opens the computer folder) -->
-              <input
-                type="file"
-                id="ai-file-input"
-                style="display: none"
-                multiple
-              />
-            </div>
-            <!-- END OF NEW UPLOAD CONTAINER -->
-
-            <!-- Right side: Model, Mic, and Send -->
-            <!-- Right side: Dynamic Royal Send Button -->
-            <div class="ai-input-actions">
-              <button
-                id="ai-send-btn"
-                class="royal-send-btn hidden-send"
-                type="button"
-                title="Send message"
-              >
-                <span class="material-symbols-outlined">send</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- END OF PREMIUM AI SIDEBAR -->
+    <!-- PREMIUM AI SIDEBAR INJECTED HERE -->
 
     <!-- START OF PREMIUM CINEMATIC DETAIL MODAL -->
     <div id="cinematic-modal-backdrop" class="cinematic-backdrop hidden">
@@ -511,14 +408,23 @@
                 <span class="material-symbols-outlined">thumb_up</span>
               </button>
             </div>
+          </div>
+        </div>
       </div>
     </div>
     <!-- END OF PREMIUM CINEMATIC DETAIL MODAL -->
 
     <!-- This tool converts AI Markdown into beautiful HTML -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.7/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="assets/js/config.js"></script>
+
+    <!-- Theme Toggle (must load before auth.js) -->
+    <script src="assets/js/theme-toggle.js"></script>
 
     <!-- JavaScript Connections (MUST BE AT THE VERY BOTTOM) -->
-    <script src="assets/js/auth.js"></script>
+<script src="assets/js/ai-sidebar.js?v=14"></script>
+    <script src="assets/js/payments.js?v=1"></script>
+<script src="assets/js/auth.js?v=context-ai-3"></script>
   </body>
 </html>

@@ -1,0 +1,1288 @@
+﻿/* =========================================
+   PREMIUM AI SIDEBAR STYLES (PERPLEXITY STYLE)
+   ========================================= */
+
+/* Floating Circular Button */
+.ai-chat-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a73e8, #8ab4f8);
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  border: none;
+  box-shadow: 0 4px 16px rgba(26, 115, 232, 0.4);
+  cursor: pointer;
+  z-index: 9999;
+  transition: transform 0.3s ease;
+  font-family: "Google Sans", sans-serif;
+}
+.ai-chat-btn:hover {
+  transform: scale(1.08);
+}
+
+/* The Sidebar Panel */
+.ai-sidebar {
+  position: fixed;
+  top: 0;
+  right: -450px; /* Hidden off-screen */
+  width: 420px;
+  max-width: 90vw;
+  height: 100vh;
+  background-color: #191a1c; /* Deep professional dark */
+  border-left: 1px solid #2e2f31;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  transition: right 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  font-family: "Google Sans", Roboto, sans-serif;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.5);
+}
+.ai-sidebar.active {
+  right: 0;
+} /* Slides in */
+
+/* Top area for the close button */
+.ai-sidebar-top {
+  padding: 16px 24px 0 24px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* Chat Body Area */
+.ai-chat-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 24px 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Sophisticated Input Area (Perplexity Style) */
+.ai-input-container {
+  padding: 0 24px 32px 24px; /* Perfectly aligned to the left and right edges */
+  background-color: #191a1c;
+}
+/* --- START OF PREMIUM TRACING BORDER SEARCH BAR --- */
+
+/* 1. Define the angle for the spinning animation */
+@property --angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* 2. The Main Container */
+.ai-input-box {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+  border: none; /* Removes standard borders */
+  background: transparent; /* We let the ::after shield handle the background */
+  border-radius: 16px;
+}
+
+/* 3. The Spinning "Comet" Line (Outer Border) */
+.ai-input-box::before {
+  content: "";
+  position: absolute;
+  inset: -1.5px; /* This 1.5px is the exact thickness of your spinning line */
+  border-radius: 17.5px; /* Slightly larger to wrap the corners perfectly */
+
+  /* Royal Aesthetic: 75% invisible, creating a single continuous line of Cyan -> Indigo -> Purple */
+  background: conic-gradient(
+    from var(--angle),
+    transparent 0%,
+    transparent 75%,
+    rgba(56, 189, 248, 0.3) 85%,
+    /* Faint Cyan tail */ rgba(99, 102, 241, 0.8) 95%,
+    /* Deep Indigo body */ rgba(168, 85, 247, 1) 100% /* Royal Purple head */
+  );
+  z-index: -2; /* Puts the spinning line at the very back */
+  animation: spin-tracing-line 3s linear infinite;
+  transition: filter 0.4s ease;
+}
+
+/* 4. The Solid Dark Shield (GUARANTEES the center stays dark) */
+.ai-input-box::after {
+  content: "";
+  position: absolute;
+  inset: 0; /* Exactly covers the inside of the box, blocking the gradient */
+  background-color: #1e1e20; /* Professional, deep dark gray/black */
+  border-radius: 16px;
+  z-index: -1; /* Sits ON TOP of the spinning line, but BEHIND your text */
+
+  /* A very faint, static inner line so the box always has definition */
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  transition: box-shadow 0.4s ease;
+}
+
+/* 5. Hover Effects: The Subtle Glow */
+.ai-input-box:hover::before {
+  /* When hovered, the spinning line casts a faint purple glow outward */
+  filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.5));
+}
+
+.ai-input-box:hover::after {
+  /* When hovered, a very faint, elegant glow appears INSIDE the dark box */
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 0 20px rgba(99, 102, 241, 0.12);
+}
+
+/* 6. The Continuous Spinning Animation */
+@keyframes spin-tracing-line {
+  0% {
+    --angle: 0deg;
+  }
+  100% {
+    --angle: 360deg;
+  }
+}
+
+/* --- END OF PREMIUM TRACING BORDER SEARCH BAR --- */
+
+/* Top Half: Input */
+.ai-input-top {
+  width: 100%;
+}
+.ai-input-top input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #e3e3e3;
+  font-size: 15px;
+  outline: none;
+  font-family: "Source Serif 4", Georgia, serif;
+}
+.ai-input-top input::placeholder {
+  color: #7a7c7f;
+  font-weight: 500;
+}
+
+/* Bottom Half: Buttons */
+.ai-input-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ai-input-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Specific Button Styles */
+.ai-icon-btn-outline {
+  background: transparent;
+  border: 1px solid #444746;
+  color: #a0a0a0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+.ai-icon-btn-outline:hover {
+  background-color: #333538;
+  color: #fff;
+}
+
+.ai-icon-btn {
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+.ai-icon-btn:hover {
+  color: #fff;
+}
+
+.ai-model-btn {
+  background: none;
+  border: none;
+  color: #8ab4f8; /* Blue accent text */
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.ai-model-btn:hover {
+  color: #aecbfa;
+}
+
+/* --- START OF ROYAL SEND BUTTON --- */
+.royal-send-btn {
+  background-color: #e8eaed; /* Crisp, premium light color */
+  color: #191a1c; /* Deep dark icon color for maximum HD contrast */
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  /* Smooth, premium transition for appearing and hovering */
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* The HD Material Icon Styling */
+.royal-send-btn .material-symbols-outlined {
+  font-size: 18px;
+  font-variation-settings:
+    "FILL" 1,
+    "wght" 600; /* Solid fill and bold weight for HD quality */
+  margin-left: 2px; /* Perfectly centers the paper plane visually */
+  margin-top: 1px;
+}
+
+/* Hover effect with subtle royal glow */
+.royal-send-btn:hover {
+  background-color: #ffffff;
+  transform: scale(1.05);
+  box-shadow:
+    0 4px 16px rgba(255, 255, 255, 0.1),
+    0 0 12px rgba(168, 85, 247, 0.4);
+}
+
+.royal-send-btn:active {
+  transform: scale(0.95);
+}
+
+/* The class that keeps it hidden until the user types */
+.hidden-send {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.8); /* Shrinks slightly when hidden */
+  pointer-events: none; /* Prevents clicking when invisible */
+}
+/* --- END OF ROYAL SEND BUTTON --- */
+
+/* Message Bubbles */
+.ai-msg-user {
+  align-self: flex-end;
+  background-color: #2e2f31;
+  color: #e3e3e3;
+  padding: 14px 18px;
+  border-radius: 20px 20px 4px 20px;
+  max-width: 85%;
+  font-size: 15px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.ai-msg-bot {
+  align-self: flex-start;
+  color: #e3e3e3;
+  padding: 8px 0;
+  max-width: 95%;
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.ai-msg-bot pre,
+.ai-msg-bot code {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: hidden;
+}
+/* --- START OF UPLOAD POPUP STYLES --- */
+.upload-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.upload-popup {
+  position: absolute;
+  bottom: 45px; /* Opens above the + button */
+  left: 0;
+  background-color: #1e1e20; /* Deep premium dark color */
+  border: 1px solid #333538;
+  border-radius: 12px;
+  padding: 6px;
+  width: 200px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  z-index: 100;
+
+  /* Smooth Animation Setup */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* This class is added by JavaScript to show the popup */
+.upload-popup.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.popup-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  color: #e8eaed;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.popup-item:hover {
+  background-color: #2a2b2e; /* Highlights when hovered */
+}
+/* --- END OF UPLOAD POPUP STYLES --- */
+/* --- START OF FILE PREVIEW CHIPS --- */
+.file-preview-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Adds a little space below the files if there are any */
+.file-preview-container:not(:empty) {
+  margin-bottom: 8px;
+}
+
+/* The sleek dark card for each file */
+.file-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #2a2b2e; /* Premium dark gray */
+  border: 1px solid #44474a;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: #e8eaed;
+  max-width: 220px;
+  animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Keeps long file names from breaking the layout */
+.file-chip-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The 'X' remove button */
+.file-chip-remove {
+  background: none;
+  border: none;
+  color: #9aa0a6;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.file-chip-remove:hover {
+  color: #ff6b6b; /* Turns soft red on hover */
+  background-color: rgba(255, 107, 107, 0.1);
+}
+
+/* Smooth entrance animation */
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+/* --- END OF FILE PREVIEW CHIPS --- */
+
+/* --- START OF AI HISTORY STYLES --- */
+.ai-history-dropdown {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  width: 300px;
+  background-color: #1e1e20;
+  border: 1px solid #333538;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  max-height: 400px;
+
+  /* Smooth Animation */
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ai-history-dropdown.hidden-dropdown {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  pointer-events: none;
+}
+
+.history-dropdown-header {
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e8eaed;
+  border-bottom: 1px solid #333538;
+  background-color: #252628;
+  border-radius: 12px 12px 0 0;
+}
+
+.history-list-container {
+  overflow-y: auto;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Custom Scrollbar for History */
+.history-list-container::-webkit-scrollbar {
+  width: 6px;
+}
+.history-list-container::-webkit-scrollbar-thumb {
+  background: #44474a;
+  border-radius: 3px;
+}
+
+.ai-history-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Pushes the 3 dots to the far right */
+  position: relative; /* Required for the delete popup to position correctly */
+}
+
+.ai-history-item:hover {
+  background-color: #2a2b2e;
+}
+
+.ai-history-item:last-child {
+  border-bottom: none;
+}
+
+.ai-history-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.ai-history-item-query {
+  font-size: 13px;
+  color: #e8eaed;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.ai-history-item-date {
+  font-size: 11px;
+  color: #9aa0a6;
+}
+
+/* The 3 dots button ON each history item */
+.ai-history-more-btn {
+  background: none;
+  border: none;
+  color: #9aa0a6;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0; /* Hidden until you hover over the item */
+  transition: all 0.2s;
+}
+
+.ai-history-item:hover .ai-history-more-btn {
+  opacity: 1; /* Appears when hovering */
+}
+
+.ai-history-more-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #e8eaed;
+}
+
+/* The Delete Dropdown Menu */
+.ai-history-delete-menu {
+  position: absolute;
+  right: 24px;
+  top: 36px;
+  display: none;
+  background-color: #282a2c;
+  border: 1px solid #444746;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 1001;
+  overflow: hidden;
+}
+
+.ai-history-delete-menu.is-visible {
+  display: block;
+}
+
+.ai-history-delete-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  color: #e3e3e3;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.ai-history-delete-btn:hover {
+  background-color: #333538;
+}
+
+.ai-history-delete-btn .material-symbols-outlined {
+  font-size: 16px;
+  color: #f28b82; /* Soft red color for the trash can */
+}
+/* --- START OF NEW CHAT BUTTON STYLES --- */
+.new-chat-tooltip {
+  position: absolute;
+  bottom: 130%; /* Positions the popup above the button */
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background-color: #282a2c; /* Premium dark pill background */
+  color: #e3e3e3;
+  padding: 8px 16px;
+  border-radius: 24px; /* Perfectly rounded pill shape */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+
+  /* Smooth animation settings */
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  pointer-events: none; /* Prevents the popup from blocking mouse clicks */
+  z-index: 1000;
+}
+
+/* Hover effect: Makes the popup float up and appear */
+#ai-new-chat-btn:hover + .new-chat-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Hover effect: Makes the icon light up when hovered */
+#ai-new-chat-btn:hover .material-symbols-outlined {
+  color: #ffffff !important;
+}
+/* --- END OF NEW CHAT BUTTON STYLES --- */
+
+/* =========================================
+   ADVANCED LIBRARY AI EXPERIENCE
+   ========================================= */
+
+.ai-chat-btn {
+  width: 68px;
+  height: 68px;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.32), transparent 28%),
+    linear-gradient(135deg, #2563eb 0%, #0ea5e9 58%, #22c55e 130%);
+  box-shadow:
+    0 20px 42px rgba(37, 99, 235, 0.34),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.ai-sidebar {
+  right: -470px;
+  width: 450px;
+  max-width: min(92vw, 450px);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 14% 8%, rgba(37, 99, 235, 0.18), transparent 34%),
+    radial-gradient(circle at 86% 12%, rgba(245, 158, 11, 0.12), transparent 30%),
+    linear-gradient(180deg, #15171b 0%, #181a1f 48%, #111316 100%);
+  border-left: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow:
+    -22px 0 54px rgba(0, 0, 0, 0.52),
+    inset 1px 0 0 rgba(255, 255, 255, 0.04);
+}
+
+.ai-sidebar-top {
+  padding: 18px 22px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ai-sidebar-top::before {
+  content: "Reading Assistant";
+  order: 1;
+  flex: 1;
+  color: #f5f7fb;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+.ai-sidebar-top > button:first-child {
+  order: 0;
+}
+
+.ai-sidebar-top > div {
+  order: 2;
+}
+
+.ai-icon-btn,
+.upload-container .action-btn {
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #cbd5e1 !important;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.ai-icon-btn:hover,
+.upload-container .action-btn:hover {
+  background: rgba(255, 255, 255, 0.11) !important;
+  border-color: rgba(147, 197, 253, 0.34) !important;
+  transform: translateY(-1px);
+}
+
+.ai-chat-body {
+  padding: 14px 18px 18px;
+  gap: 14px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.ai-chat-body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.ai-chat-body:not(.has-messages) {
+  justify-content: center;
+}
+
+.ai-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 11px;
+  width: 100%;
+  margin: auto 0;
+  animation: aiStateIn 0.24s ease both;
+}
+
+.ai-empty-orb {
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.96), rgba(14, 165, 233, 0.9)),
+    #2563eb;
+  color: #ffffff;
+  box-shadow: 0 18px 36px rgba(14, 165, 233, 0.26);
+}
+
+.ai-empty-orb .material-symbols-outlined {
+  font-size: 27px;
+  font-variation-settings: "FILL" 1, "wght" 650, "GRAD" 0, "opsz" 32;
+}
+
+.ai-empty-kicker {
+  margin: 0;
+  color: #93c5fd;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ai-empty-state h2 {
+  margin: 0;
+  max-width: 320px;
+  color: #f8fafc;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 21px;
+  font-weight: 760;
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+
+.ai-suggestion-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.ai-suggestion-card {
+  min-height: 96px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.035)),
+    rgba(255, 255, 255, 0.04);
+  color: #e5edf8;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  text-align: left;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  overflow: hidden;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.ai-suggestion-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(125, 211, 252, 0.38);
+  background-color: rgba(37, 99, 235, 0.1);
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.22);
+}
+
+.ai-suggestion-card .material-symbols-outlined {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(14, 165, 233, 0.13);
+  color: #7dd3fc;
+  font-size: 18px;
+  font-variation-settings: "FILL" 1, "wght" 600, "GRAD" 0, "opsz" 24;
+}
+
+.ai-suggestion-card strong {
+  font-size: 12px;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.ai-suggestion-card small {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: #aeb8c8;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.ai-capability-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding-top: 2px;
+}
+
+.ai-capability-strip span {
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  color: #b8c4d4;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ai-input-container {
+  padding: 12px 22px 24px;
+  background:
+    linear-gradient(180deg, rgba(17, 19, 22, 0), rgba(17, 19, 22, 0.94) 22%),
+    #111316;
+}
+
+.ai-input-box {
+  padding: 14px;
+  gap: 12px;
+  border-radius: 20px;
+}
+
+.ai-input-box::before {
+  inset: -1px;
+  border-radius: 21px;
+  background: conic-gradient(
+    from var(--angle),
+    rgba(37, 99, 235, 0.02),
+    rgba(14, 165, 233, 0.28),
+    rgba(34, 197, 94, 0.24),
+    rgba(245, 158, 11, 0.28),
+    rgba(37, 99, 235, 0.02)
+  );
+}
+
+.ai-input-box::after {
+  border-radius: 20px;
+  background: rgba(25, 27, 32, 0.96);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 14px 40px rgba(0, 0, 0, 0.26);
+}
+
+.ai-input-top input {
+  min-height: 28px;
+  color: #f8fafc;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  font-size: 15px;
+}
+
+.ai-input-top input::placeholder {
+  color: #8f9aaa;
+}
+
+.royal-send-btn {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #f8fafc, #bfdbfe);
+  color: #102036;
+  box-shadow:
+    0 10px 24px rgba(96, 165, 250, 0.28),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.72);
+}
+
+.ai-msg-user {
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.92), rgba(14, 165, 233, 0.76)),
+    #2563eb;
+  color: #ffffff;
+  border-radius: 18px 18px 6px 18px;
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.22);
+}
+
+.ai-msg-bot {
+  padding: 14px 0;
+  color: #e8edf5;
+}
+
+.ai-loading-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+@keyframes aiStateIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 560px) {
+  .ai-sidebar {
+    width: 100vw;
+    max-width: 100vw;
+    right: -100vw;
+  }
+
+  .ai-chat-body {
+    padding: 16px;
+  }
+
+  .ai-input-container {
+    padding: 10px 16px 18px;
+  }
+
+  .ai-suggestion-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* AI mode keeps the reader/library sidebars out of the way while the assistant is open. */
+body.ai-sidebar-open #sidebar,
+body.ai-sidebar-open #sidebar-overlay,
+body.ai-sidebar-open #pdf-sidebar,
+body.ai-sidebar-open #show-sidebar-btn,
+body.ai-sidebar-open #epub-chapters-panel {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+body.book-sidebar-open .ai-sidebar {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+body.book-sidebar-open .ai-chat-btn {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.ai-sidebar::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(180deg, #38bdf8, #818cf8 42%, #fbbf24 76%, #22c55e);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.28);
+  transition: opacity 0.2s ease;
+}
+
+.ai-sidebar.active::before {
+  opacity: 1;
+}
+
+.ai-chat-body.has-messages {
+  justify-content: flex-start;
+}
+
+.ai-loading-indicator {
+  width: fit-content;
+  max-width: 86%;
+  color: #dbeafe;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  font-weight: 750;
+  letter-spacing: 0;
+}
+
+.ai-thinking-spinner {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  border-radius: 999px;
+  border: 2.5px solid rgba(148, 163, 184, 0.22);
+  border-top-color: #38bdf8;
+  border-right-color: #a78bfa;
+  border-bottom-color: #fbbf24;
+  animation: aiThinkingSpin 0.82s linear infinite;
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.18);
+}
+
+.ai-thinking-spinner::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: inherit;
+  border: 1px solid rgba(125, 211, 252, 0.18);
+  animation: aiThinkingPulse 1.35s ease-in-out infinite;
+}
+
+@keyframes aiThinkingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes aiThinkingPulse {
+  0%,
+  100% {
+    opacity: 0.26;
+    transform: scale(0.84);
+  }
+  50% {
+    opacity: 0.82;
+    transform: scale(1.1);
+  }
+}
+
+/* Keep the AI assistant visually independent from the website theme.
+   The main library may switch to light mode, but the assistant should stay
+   in the same premium dark style for readability and consistency. */
+.ai-sidebar,
+.ai-sidebar * {
+  color-scheme: dark !important;
+}
+
+.ai-sidebar {
+  background:
+    radial-gradient(circle at 18% 14%, rgba(37, 99, 235, 0.22), transparent 34%),
+    radial-gradient(circle at 82% 12%, rgba(245, 158, 11, 0.16), transparent 32%),
+    linear-gradient(180deg, #151922 0%, #111316 52%, #0f1115 100%) !important;
+  color: #e8edf5 !important;
+  border-left-color: rgba(96, 165, 250, 0.34) !important;
+}
+
+.ai-sidebar .ai-sidebar-top {
+  background: transparent !important;
+  color: #f5f7fb !important;
+}
+
+.ai-sidebar .ai-sidebar-top::before,
+.ai-sidebar .ai-empty-state h2,
+.ai-sidebar .ai-msg-bot,
+.ai-sidebar .ai-history-dropdown,
+.ai-sidebar .ai-history-item-query {
+  color: #f5f7fb !important;
+}
+
+.ai-sidebar .ai-empty-kicker,
+.ai-sidebar .ai-empty-state small,
+.ai-sidebar .ai-history-item-date,
+.ai-sidebar .ai-capability-strip span {
+  color: #b8c4d4 !important;
+}
+
+.ai-sidebar .ai-input-container {
+  background:
+    linear-gradient(180deg, rgba(17, 19, 22, 0), rgba(17, 19, 22, 0.94) 22%),
+    #111316 !important;
+}
+
+.ai-sidebar .ai-input-box {
+  background: transparent !important;
+}
+
+.ai-sidebar .ai-input-box::after {
+  background: rgba(25, 27, 32, 0.96) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 14px 40px rgba(0, 0, 0, 0.26) !important;
+}
+
+.ai-sidebar .ai-input-top input {
+  background: transparent !important;
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.ai-sidebar .ai-input-top input::placeholder {
+  color: #8f9aaa !important;
+  -webkit-text-fill-color: #8f9aaa !important;
+}
+
+.ai-sidebar .action-btn,
+.ai-sidebar .ai-icon-btn,
+.ai-sidebar .ai-history-more-btn,
+.ai-sidebar .file-chip-remove {
+  background-color: transparent !important;
+  color: #aeb8c7 !important;
+}
+
+.ai-sidebar .ai-suggestion-card {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.095), rgba(255, 255, 255, 0.035)),
+    rgba(30, 34, 42, 0.92) !important;
+  color: #edf4ff !important;
+}
+
+.ai-sidebar .ai-suggestion-card strong {
+  color: #f8fafc !important;
+}
+
+/* Strong light-theme protection: the assistant keeps the premium dark design
+   even when the main website is switched to white mode. */
+html body .ai-chat-btn,
+html body.light-mode .ai-chat-btn,
+html body.light-theme .ai-chat-btn,
+html body[data-theme="light"] .ai-chat-btn {
+  z-index: 11000 !important;
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.42), transparent 22%),
+    linear-gradient(135deg, #2f7df6 0%, #1d8ff0 48%, #06b6d4 100%) !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 20px 48px rgba(37, 99, 235, 0.34),
+    0 0 0 1px rgba(255, 255, 255, 0.16) inset !important;
+}
+
+html body .ai-sidebar,
+html body.light-mode .ai-sidebar,
+html body.light-theme .ai-sidebar,
+html body[data-theme="light"] .ai-sidebar {
+  background:
+    radial-gradient(circle at 18% 14%, rgba(37, 99, 235, 0.24), transparent 34%),
+    radial-gradient(circle at 86% 10%, rgba(245, 158, 11, 0.18), transparent 34%),
+    linear-gradient(180deg, #151922 0%, #111316 52%, #0f1115 100%) !important;
+  color: #e8edf5 !important;
+  border-left: 2px solid rgba(96, 165, 250, 0.62) !important;
+  color-scheme: dark !important;
+}
+
+html body .ai-sidebar .ai-sidebar-top,
+html body.light-mode .ai-sidebar .ai-sidebar-top,
+html body.light-theme .ai-sidebar .ai-sidebar-top,
+html body[data-theme="light"] .ai-sidebar .ai-sidebar-top {
+  background: rgba(17, 19, 22, 0.78) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #f5f7fb !important;
+}
+
+html body .ai-sidebar .ai-sidebar-top::before,
+html body.light-mode .ai-sidebar .ai-sidebar-top::before,
+html body.light-theme .ai-sidebar .ai-sidebar-top::before,
+html body[data-theme="light"] .ai-sidebar .ai-sidebar-top::before {
+  color: #f5f7fb !important;
+  -webkit-text-fill-color: #f5f7fb !important;
+  text-shadow: 0 1px 18px rgba(15, 23, 42, 0.72) !important;
+}
+
+html body .ai-sidebar .ai-icon-btn,
+html body.light-mode .ai-sidebar .ai-icon-btn,
+html body.light-theme .ai-sidebar .ai-icon-btn,
+html body[data-theme="light"] .ai-sidebar .ai-icon-btn,
+html body .ai-sidebar .action-btn,
+html body.light-mode .ai-sidebar .action-btn,
+html body.light-theme .ai-sidebar .action-btn,
+html body[data-theme="light"] .ai-sidebar .action-btn {
+  background: rgba(255, 255, 255, 0.055) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #dbeafe !important;
+}
+
+html body .ai-sidebar .ai-icon-btn .material-symbols-outlined,
+html body.light-mode .ai-sidebar .ai-icon-btn .material-symbols-outlined,
+html body.light-theme .ai-sidebar .ai-icon-btn .material-symbols-outlined,
+html body[data-theme="light"] .ai-sidebar .ai-icon-btn .material-symbols-outlined,
+html body .ai-sidebar .action-btn .material-symbols-outlined,
+html body.light-mode .ai-sidebar .action-btn .material-symbols-outlined,
+html body.light-theme .ai-sidebar .action-btn .material-symbols-outlined,
+html body[data-theme="light"] .ai-sidebar .action-btn .material-symbols-outlined {
+  color: #dbeafe !important;
+  -webkit-text-fill-color: #dbeafe !important;
+}
+
+html body .ai-sidebar .ai-input-container,
+html body.light-mode .ai-sidebar .ai-input-container,
+html body.light-theme .ai-sidebar .ai-input-container,
+html body[data-theme="light"] .ai-sidebar .ai-input-container {
+  background:
+    linear-gradient(180deg, rgba(17, 19, 22, 0), rgba(17, 19, 22, 0.96) 20%),
+    #111316 !important;
+}
+
+html body .ai-sidebar .ai-input-box,
+html body.light-mode .ai-sidebar .ai-input-box,
+html body.light-theme .ai-sidebar .ai-input-box,
+html body[data-theme="light"] .ai-sidebar .ai-input-box {
+  background: #191b20 !important;
+  border: 1px solid rgba(96, 165, 250, 0.24) !important;
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.34),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+}
+
+html body .ai-sidebar .ai-input-box::after,
+html body.light-mode .ai-sidebar .ai-input-box::after,
+html body.light-theme .ai-sidebar .ai-input-box::after,
+html body[data-theme="light"] .ai-sidebar .ai-input-box::after {
+  background: #191b20 !important;
+}
+
+html body .ai-sidebar .ai-input-top input,
+html body.light-mode .ai-sidebar .ai-input-top input,
+html body.light-theme .ai-sidebar .ai-input-top input,
+html body[data-theme="light"] .ai-sidebar .ai-input-top input {
+  background: transparent !important;
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  caret-color: #7dd3fc !important;
+}
+
+html body .ai-sidebar .ai-input-top input::placeholder,
+html body.light-mode .ai-sidebar .ai-input-top input::placeholder,
+html body.light-theme .ai-sidebar .ai-input-top input::placeholder,
+html body[data-theme="light"] .ai-sidebar .ai-input-top input::placeholder {
+  color: #99a6b8 !important;
+  -webkit-text-fill-color: #99a6b8 !important;
+}
+
+html body .ai-sidebar .ai-suggestion-card,
+html body.light-mode .ai-sidebar .ai-suggestion-card,
+html body.light-theme .ai-sidebar .ai-suggestion-card,
+html body[data-theme="light"] .ai-sidebar .ai-suggestion-card {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.095), rgba(255, 255, 255, 0.035)),
+    rgba(30, 34, 42, 0.94) !important;
+  color: #edf4ff !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+.ai-sidebar .ai-loading-indicator {
+  background: rgba(255, 255, 255, 0.045) !important;
+  color: #dbeafe !important;
+}
+

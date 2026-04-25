@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reading EPUB - PDF Library</title>
+    <meta name="description" content="Read secure EPUB books inside the PDF Library." />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,550;9..144,650&family=IBM+Plex+Sans:wght@400;500;600;700&family=Literata:opsz,wght@7..72,400..800&family=Lora:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..800;1,8..60,400..800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+    <link rel="stylesheet" href="assets/css/theme-toggle.css" />
+  <link rel="stylesheet" href="assets/css/ai-sidebar.css?v=14" />
+    <link rel="stylesheet" href="assets/css/epub-reader.css?v=5" />
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="assets/js/config.js"></script>
+  </head>
+
+  <body class="epub-reader-body">
+    <div class="epub-progress-track" aria-hidden="true">
+      <div class="epub-progress-fill" id="epub-progress-fill"></div>
+    </div>
+
+    <header class="reader-nav epub-reader-nav" id="reader-nav">
+      <div class="epub-nav-left">
+        <a href="javascript:void(0)" onclick="history.back()" class="epub-nav-pill epub-back-link">
+          <span class="material-symbols-outlined">chevron_left</span>
+          <span>Back</span>
+        </a>
+
+        <button type="button" class="epub-nav-pill" id="epub-search-toggle" aria-expanded="false">
+          <span class="material-symbols-outlined">search</span>
+          <span>Search</span>
+        </button>
+      </div>
+
+      <h1 class="reader-title epub-reader-title" id="reader-title">Loading...</h1>
+
+      <div class="epub-nav-right">
+        <button type="button" class="epub-icon-btn" id="epub-bookmark-btn" aria-label="Bookmark chapter">
+          <span class="material-symbols-outlined">bookmark</span>
+        </button>
+
+        <button type="button" class="epub-icon-btn" id="epub-toc-icon-btn" aria-label="Open table of contents">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+
+        <button type="button" class="epub-icon-btn epub-text-btn" id="epub-typography-btn" aria-label="Reader studio">
+          A
+        </button>
+
+        <button type="button" class="epub-nav-pill epub-chapters-btn" id="epub-chapters-btn" aria-expanded="false">
+          Chapters
+        </button>
+
+        <div id="nav-right-slot"></div>
+      </div>
+    </header>
+
+    <div class="epub-search-panel hidden" id="epub-search-panel">
+      <span class="material-symbols-outlined">search</span>
+      <input id="epub-search-input" type="search" placeholder="Search inside this EPUB..." autocomplete="off" />
+      <button type="button" id="epub-search-close" aria-label="Close search">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      <div class="epub-search-results" id="epub-search-results"></div>
+    </div>
+
+    <section class="epub-reader-app hidden" id="epub-reader-app" aria-live="polite">
+      <aside class="epub-chapters-panel" id="epub-chapters-panel" aria-label="EPUB chapters">
+        <div class="epub-panel-header">
+          <div>
+            <span class="epub-panel-kicker">Table of contents</span>
+            <h2>Chapters</h2>
+          </div>
+          <button type="button" class="epub-icon-btn" id="epub-chapters-close" aria-label="Close chapters">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="epub-chapters-hero" id="epub-chapters-hero">
+          <div class="epub-chapters-art" id="epub-chapters-art">
+            <span id="epub-chapters-initials">BK</span>
+          </div>
+          <div class="epub-chapters-hero-body">
+            <span class="epub-panel-kicker" id="epub-panel-kicker">Reading map</span>
+            <h3 id="epub-panel-title">This book</h3>
+            <p id="epub-panel-summary">Move through the book by section, bookmark, or saved note.</p>
+            <div class="epub-panel-stats">
+              <span id="epub-panel-progress">0% complete</span>
+              <span id="epub-panel-total">0 sections</span>
+            </div>
+          </div>
+        </div>
+        <nav class="epub-chapter-list" id="epub-chapter-list"></nav>
+      </aside>
+
+      <div class="epub-reader-stage">
+        <div class="epub-reader-meta">
+          <span id="epub-current-label">Chapter 1</span>
+          <span id="epub-progress-label">0%</span>
+        </div>
+
+        <div class="epub-content-host" id="epub-content-host"></div>
+
+        <div class="epub-reader-actions">
+          <button type="button" class="epub-nav-pill" id="epub-prev-btn">
+            <span class="material-symbols-outlined">arrow_back</span>
+            Previous
+          </button>
+          <button type="button" class="epub-nav-pill" id="epub-next-btn">
+            Next
+            <span class="material-symbols-outlined">arrow_forward</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="epub-typography-panel hidden" id="epub-typography-panel" aria-label="Reader studio">
+      <div class="epub-panel-header">
+        <div>
+          <span class="epub-panel-kicker">Reader studio</span>
+          <h2>Tools</h2>
+        </div>
+        <button type="button" class="epub-icon-btn" id="epub-typography-close" aria-label="Close text settings">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="epub-tool-tabs" role="tablist" aria-label="Reader tools">
+        <button type="button" class="active" data-tool-tab="default">Default</button>
+        <button type="button" data-tool-tab="modes">Modes</button>
+        <button type="button" data-tool-tab="highlights">Highlight</button>
+        <button type="button" data-tool-tab="notes">Notes</button>
+        <button type="button" data-tool-tab="bookmarks">Bookmarks</button>
+      </div>
+
+      <div class="epub-tool-section active" data-tool-panel="default">
+        <label class="epub-control-row">
+          <span>Font size</span>
+          <input id="epub-font-size" type="range" min="16" max="32" value="22" />
+        </label>
+        <label class="epub-control-row">
+          <span>Line spacing</span>
+          <input id="epub-line-height" type="range" min="135" max="220" value="176" />
+        </label>
+        <label class="epub-control-row">
+          <span>Reading width</span>
+          <input id="epub-reading-width" type="range" min="560" max="1120" value="880" />
+        </label>
+        <label class="epub-control-row">
+          <span>Font style</span>
+          <select id="epub-font-family">
+            <option value="serif">Default Serif</option>
+            <option value="literata">Literata</option>
+            <option value="lora">Lora</option>
+            <option value="merriweather">Merriweather</option>
+            <option value="garamond">Garamond</option>
+            <option value="classic">Classic Book</option>
+            <option value="sans">Clean Sans</option>
+            <option value="dyslexic">Easy Reading</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="epub-tool-section" data-tool-panel="modes">
+        <p class="epub-tool-help">Choose a comfortable reading mood. Night mode is safest for long reading in low light.</p>
+        <div class="epub-mode-grid">
+          <button type="button" data-epub-mode="night" class="active">
+            <span class="material-symbols-outlined">dark_mode</span>
+            Night
+          </button>
+          <button type="button" data-epub-mode="paper">
+            <span class="material-symbols-outlined">article</span>
+            Paper
+          </button>
+          <button type="button" data-epub-mode="sepia">
+            <span class="material-symbols-outlined">auto_stories</span>
+            Sepia
+          </button>
+          <button type="button" data-epub-mode="focus">
+            <span class="material-symbols-outlined">center_focus_strong</span>
+            Focus
+          </button>
+          <button type="button" data-epub-mode="oled">
+            <span class="material-symbols-outlined">contrast</span>
+            OLED
+          </button>
+        </div>
+      </div>
+
+      <div class="epub-tool-section" data-tool-panel="highlights">
+        <p class="epub-tool-help">Select words inside the book, choose a color, then press the button below. Your highlights stay private in this browser.</p>
+        <div class="epub-highlight-workflow" aria-label="Highlight tools">
+          <div class="epub-highlight-step">
+            <strong>How to highlight</strong>
+            <span>Drag over text in the book. Keep it selected, open this panel, choose a color, then click Highlight selected text.</span>
+          </div>
+          <div class="epub-highlight-picker" aria-label="Highlight color choices">
+            <button type="button" class="active" data-highlight-color="yellow" style="--highlight-swatch: #f8d96a;">
+              <span aria-hidden="true"></span>
+              Sun
+            </button>
+            <button type="button" data-highlight-color="honey" style="--highlight-swatch: #ffae42;">
+              <span aria-hidden="true"></span>
+              Honey
+            </button>
+            <button type="button" data-highlight-color="mint" style="--highlight-swatch: #7be7b7;">
+              <span aria-hidden="true"></span>
+              Mint
+            </button>
+            <button type="button" data-highlight-color="sky" style="--highlight-swatch: #83c5ff;">
+              <span aria-hidden="true"></span>
+              Sky
+            </button>
+            <button type="button" data-highlight-color="violet" style="--highlight-swatch: #b69cff;">
+              <span aria-hidden="true"></span>
+              Violet
+            </button>
+            <button type="button" data-highlight-color="rose" style="--highlight-swatch: #ff8fb3;">
+              <span aria-hidden="true"></span>
+              Rose
+            </button>
+            <button type="button" data-highlight-color="coral" style="--highlight-swatch: #ff8d76;">
+              <span aria-hidden="true"></span>
+              Coral
+            </button>
+            <button type="button" data-highlight-color="graphite" style="--highlight-swatch: #b8c0cc;">
+              <span aria-hidden="true"></span>
+              Grey
+            </button>
+            <button type="button" data-highlight-color="lime" style="--highlight-swatch: #c8f76b;">
+              <span aria-hidden="true"></span>
+              Lime
+            </button>
+            <button type="button" data-highlight-color="aqua" style="--highlight-swatch: #55e6ff;">
+              <span aria-hidden="true"></span>
+              Aqua
+            </button>
+            <button type="button" data-highlight-color="lavender" style="--highlight-swatch: #d7b8ff;">
+              <span aria-hidden="true"></span>
+              Lavender
+            </button>
+            <button type="button" data-highlight-color="ruby" style="--highlight-swatch: #ff5f7e;">
+              <span aria-hidden="true"></span>
+              Ruby
+            </button>
+          </div>
+          <button type="button" class="epub-primary-action epub-highlight-action" id="epub-highlight-selection">
+            Highlight selected text
+          </button>
+          <p class="epub-highlight-status" id="epub-highlight-status" role="status">Select text in the book first. Then this button will save it.</p>
+        </div>
+        <div class="epub-collection-list" id="epub-highlights-list"></div>
+      </div>
+
+      <div class="epub-tool-section" data-tool-panel="notes">
+        <p class="epub-tool-help">Write a private note for the current section. Notes are saved only in this browser.</p>
+        <textarea id="epub-note-input" rows="4" placeholder="Write your note here..."></textarea>
+        <button type="button" class="epub-primary-action" id="epub-save-note">Save note</button>
+        <div class="epub-collection-list" id="epub-notes-list"></div>
+      </div>
+
+      <div class="epub-tool-section" data-tool-panel="bookmarks">
+        <p class="epub-tool-help">Use the bookmark icon in the top bar to save the current section.</p>
+        <div class="epub-collection-list" id="epub-bookmarks-list"></div>
+      </div>
+    </section>
+
+    <div class="epub-loading" id="epub-loading">
+      <div class="epub-load-message">
+        <div class="epub-spinner"></div>
+        <span>Preparing reader...</span>
+      </div>
+    </div>
+
+    <div class="epub-selection-popover hidden" id="epub-selection-popover" aria-label="Selected text actions">
+      <button type="button" id="epub-selection-highlight">
+        <span class="material-symbols-outlined">ink_highlighter</span>
+        <span class="epub-popover-swatch" aria-hidden="true"></span>
+        Highlight
+      </button>
+      <button type="button" id="epub-selection-note">
+        <span class="material-symbols-outlined">edit_note</span>
+        Note
+      </button>
+    </div>
+
+    <section class="epub-reader-gate" id="reader-gate" style="display: none;">
+      <div class="epub-gate-card">
+        <div class="epub-gate-context">
+          <div class="epub-gate-icon">
+            <span class="material-symbols-outlined">auto_stories</span>
+          </div>
+          <div>
+            <span class="epub-gate-label">Now Reading</span>
+            <strong id="gate-book-name">This EPUB</strong>
+          </div>
+        </div>
+
+        <h2>Sign in to read this EPUB</h2>
+        <p>
+          The book opens securely inside this website after sign-in.
+          Storage details stay private.
+        </p>
+
+        <button id="gate-google-btn" class="epub-google-btn" onclick="triggerGoogleSignIn()">
+          <svg class="google-g-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.83c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          Continue with Account
+        </button>
+
+        <span class="epub-gate-note">Protected reading - no password required</span>
+      </div>
+    </section>
+
+    <script src="assets/js/payments.js?v=1"></script>
+    <script>
+      const CLIENT_ID =
+        window.PDF_LIBRARY_CONFIG?.GOOGLE_CLIENT_ID ||
+        "492249193220-e9hpnb9hgnmsrdi68m64mvuomg8589n3.apps.googleusercontent.com";
+
+      const LS_ACCOUNTS = "pdf_lib_accounts";
+      const LS_ACTIVE = "pdf_lib_active_email";
+      const LS_RECENT_PREFIX = "pdf_lib_recent_books";
+      const LS_ACCESS_TOKEN_PREFIX = "pdf_lib_google_access_token_v1";
+      const LS_ACCESS_TOKEN_EXPIRY_PREFIX = "pdf_lib_google_access_token_expiry_v1";
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const driveId = urlParams.get("id");
+      const bookTitle = urlParams.get("title") || "EPUB Book";
+      const explicitSectionParam = Math.floor(Number(urlParams.get("page") || 0));
+      const paymentBookId = window.PdfLibraryPayments?.parseBookId(driveId, "epub") || 0;
+      let tokenClient = null;
+      let authStateVersion = 0;
+      let currentReaderUser = null;
+      let currentAccess = null;
+      let previewReaderStarted = false;
+
+      function resolveApiOrigin() {
+        const configured = String(
+          window.PDF_LIBRARY_CONFIG?.API_ORIGIN ||
+            window.PDF_LIBRARY_API_BASE_URL ||
+            "",
+        ).trim();
+        if (configured) return configured.replace(/\/+$/, "");
+
+        const host = String(window.location.hostname || "").toLowerCase();
+        const isLocal = host === "localhost" || host === "127.0.0.1";
+        return isLocal
+          ? `${window.location.protocol}//${window.location.hostname}:3000`
+          : String(window.location.origin || "").replace(/\/+$/, "");
+      }
+
+      const API_ORIGIN = resolveApiOrigin();
+
+      function buildApiUrl(path) {
+        return `${API_ORIGIN}${path}`;
+      }
+
+      function normalizeEmailKey(email) {
+        return String(email || "").trim().toLowerCase();
+      }
+
+      function getActiveEmailKey() {
+        return normalizeEmailKey(localStorage.getItem(LS_ACTIVE));
+      }
+
+      function getScopedStorageKey(prefix, emailKey = getActiveEmailKey()) {
+        if (!emailKey) return null;
+        return `${prefix}::${emailKey}`;
+      }
+
+      function writeScopedValue(prefix, value, emailKey = getActiveEmailKey()) {
+        const scopedKey = getScopedStorageKey(prefix, emailKey);
+        if (!scopedKey) return;
+        try {
+          localStorage.setItem(scopedKey, String(value));
+        } catch {
+          // Local storage can fail in private mode. Reading still works.
+        }
+      }
+
+      function storeAccessToken(accessToken, expiresInSeconds, emailKey = getActiveEmailKey()) {
+        if (!accessToken || !emailKey) return;
+        writeScopedValue(LS_ACCESS_TOKEN_PREFIX, accessToken, emailKey);
+        const expiresIn = Number(expiresInSeconds || 0);
+        if (Number.isFinite(expiresIn) && expiresIn > 0) {
+          writeScopedValue(LS_ACCESS_TOKEN_EXPIRY_PREFIX, Date.now() + expiresIn * 1000, emailKey);
+        }
+      }
+
+      function getInitials(name, email) {
+        if (name && name.trim()) {
+          const parts = name.trim().split(" ");
+          return parts.length >= 2
+            ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+            : parts[0].slice(0, 2).toUpperCase();
+        }
+        return (email || "U")[0].toUpperCase();
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function safeImageSrc(value) {
+        const src = String(value || "").trim();
+        if (!src) return "";
+        if (/^data:image\/(?:png|jpe?g|gif|webp);base64,/i.test(src)) return src;
+        try {
+          const url = new URL(src, window.location.href);
+          return ["https:", "http:"].includes(url.protocol) ? src : "";
+        } catch {
+          return "";
+        }
+      }
+
+      async function fetchSessionUser() {
+        try {
+          const response = await Promise.race([
+            fetch(buildApiUrl("/api/auth/session"), { credentials: "include" }),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("Session check timed out")), 8000),
+            ),
+          ]);
+          if (!response.ok) return null;
+          const data = await response.json();
+          return data?.user?.email ? data.user : null;
+        } catch {
+          return null;
+        }
+      }
+
+      async function fetchReaderAccess() {
+        if (!paymentBookId || !window.PdfLibraryPayments) {
+          return { fullAccess: true, requiresPayment: false, previewPageLimit: 10, offers: [] };
+        }
+
+        try {
+          const access = await window.PdfLibraryPayments.getAccess(paymentBookId);
+          window.VIEWER_PREVIEW_PAGE_LIMIT = Number(access.previewPageLimit || 10);
+          return access;
+        } catch (error) {
+          console.warn("Could not check EPUB payment access:", error);
+          return {
+            fullAccess: false,
+            requiresPayment: true,
+            paymentsEnabled: false,
+            providerConfigured: false,
+            previewPageLimit: 10,
+            offers: [],
+          };
+        }
+      }
+
+      function renderUserNav(user) {
+        const initials = getInitials(user.name, user.email);
+        const firstName =
+          user.given_name ||
+          (user.name ? String(user.name).trim().split(" ")[0] : "User");
+        const pictureSrc = safeImageSrc(user.picture);
+        const safeInitials = escapeHtml(initials);
+        const safeFirstName = escapeHtml(firstName);
+
+        document.getElementById("nav-right-slot").innerHTML = pictureSrc
+          ? `<div class="reader-user-chip"><img class="reader-avatar" src="${escapeHtml(pictureSrc)}" alt="${safeInitials}" referrerpolicy="no-referrer" /><span>${safeFirstName}</span></div>`
+          : `<div class="reader-user-chip"><div class="reader-avatar-initials">${safeInitials}</div><span>${safeFirstName}</span></div>`;
+      }
+
+      function ensurePremiumActions() {
+        let actions = document.getElementById("premium-payment-actions");
+        if (!actions) {
+          actions = document.createElement("div");
+          actions.id = "premium-payment-actions";
+          actions.style.display = "none";
+          actions.style.gap = "10px";
+          actions.style.flexDirection = "column";
+          actions.style.width = "100%";
+          actions.style.marginTop = "12px";
+          const note = document.querySelector(".epub-gate-note");
+          note?.parentNode?.insertBefore(actions, note);
+        }
+        return actions;
+      }
+
+      function setGateForSignIn() {
+        const heading = document.querySelector("#reader-gate h2");
+        const text = document.querySelector("#reader-gate p");
+        const googleButton = document.getElementById("gate-google-btn");
+        const note = document.querySelector(".epub-gate-note");
+        const actions = ensurePremiumActions();
+
+        if (heading) heading.textContent = "Sign in to read this EPUB";
+        if (text) {
+          text.textContent = "The book opens securely inside this website after sign-in. Storage details stay private.";
+        }
+        if (googleButton) {
+          googleButton.style.display = "";
+          googleButton.classList.remove("loading");
+          googleButton.innerHTML = `
+            <svg class="google-g-svg" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.83c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            Continue with Account`;
+        }
+        if (actions) {
+          actions.style.display = "none";
+          actions.innerHTML = "";
+        }
+        if (note) note.textContent = "Protected reading - no password required";
+      }
+
+      function setGateForPremium(access) {
+        const heading = document.querySelector("#reader-gate h2");
+        const text = document.querySelector("#reader-gate p");
+        const googleButton = document.getElementById("gate-google-btn");
+        const note = document.querySelector(".epub-gate-note");
+        const actions = ensurePremiumActions();
+        const previewLimit = Number(access?.previewPageLimit || 10);
+        const offers = Array.isArray(access?.offers) ? access.offers : [];
+
+        if (heading) heading.textContent = "Premium access required";
+        if (text) {
+          text.textContent = `You can preview the first ${previewLimit} sections. Pay securely to unlock the full EPUB inside this website.`;
+        }
+        if (googleButton) googleButton.style.display = "none";
+        if (note) note.textContent = "Razorpay handles payment details. This website stores only access status.";
+        if (!actions) return;
+
+        actions.style.display = "flex";
+        if (!access?.paymentsEnabled || !access?.providerConfigured || offers.length === 0) {
+          actions.innerHTML = `
+            <div style="font-size:13px;line-height:1.5;color:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:12px;">
+              Payments are not fully enabled yet. Add Razorpay keys and prices in the admin panel first.
+            </div>`;
+          return;
+        }
+
+        actions.innerHTML = offers.map((offer) => {
+          const amount = window.PdfLibraryPayments.formatMoney(offer.amountPaise, offer.currency);
+          const duration = offer.lifetime ? "Permanent book access" : `${Number(offer.durationDays || 0)} day access`;
+          return `
+            <button class="epub-google-btn" type="button" onclick="startPremiumPayment('${escapeHtml(offer.scope)}', '${escapeHtml(offer.planKey || "")}')">
+              <span class="material-symbols-outlined">payments</span>
+              ${escapeHtml(offer.label)} - ${escapeHtml(amount)}
+              <span style="display:block;font-size:12px;font-weight:500;opacity:.78;margin-top:3px;">${escapeHtml(duration)}</span>
+            </button>`;
+        }).join("");
+      }
+
+      function startPreviewReader() {
+        if (previewReaderStarted || !window.initEpubViewer || !window.VIEWER_DOCUMENT_ID) return;
+        previewReaderStarted = true;
+        window.initEpubViewer(window.VIEWER_DOCUMENT_ID, true);
+      }
+
+      async function handleAuthenticatedReader(user) {
+        currentReaderUser = user;
+        currentAccess = await fetchReaderAccess();
+        if (!currentAccess.requiresPayment || currentAccess.fullAccess) {
+          unlockReader(user);
+          return;
+        }
+
+        renderUserNav(user);
+        document.body.classList.add("is-authenticated");
+        document.getElementById("epub-reader-app").classList.remove("hidden");
+        document.getElementById("epub-loading").style.display = "grid";
+        const gate = document.getElementById("reader-gate");
+        gate.style.display = "";
+        gate.classList.remove("hidden");
+        setGateForPremium(currentAccess);
+        setTimeout(startPreviewReader, 0);
+      }
+
+      async function startPremiumPayment(scope, planKey) {
+        if (!currentReaderUser?.email) {
+          triggerGoogleSignIn();
+          return;
+        }
+
+        const actions = document.getElementById("premium-payment-actions");
+        if (actions) actions.querySelectorAll("button").forEach((button) => { button.disabled = true; });
+
+        try {
+          await window.PdfLibraryPayments.startCheckout({
+            scope,
+            planKey,
+            bookId: paymentBookId,
+            title: bookTitle,
+            user: currentReaderUser,
+          });
+          previewReaderStarted = false;
+          currentAccess = await fetchReaderAccess();
+          unlockReader(currentReaderUser);
+        } catch (error) {
+          alert(error?.message || "Payment could not be completed.");
+          if (actions) actions.querySelectorAll("button").forEach((button) => { button.disabled = false; });
+        }
+      }
+
+      function showGatedMode() {
+        setGateForSignIn();
+        document.getElementById("nav-right-slot").innerHTML = `
+          <button class="epub-nav-pill" onclick="triggerGoogleSignIn()" title="Sign In">
+            <span class="material-symbols-outlined">login</span>
+            Sign in
+          </button>`;
+
+        document.getElementById("epub-reader-app").classList.add("hidden");
+        document.getElementById("epub-loading").style.display = "none";
+        document.body.classList.remove("is-authenticated");
+
+        const gate = document.getElementById("reader-gate");
+        gate.style.display = "";
+        gate.classList.remove("hidden");
+      }
+
+      function unlockReader(user) {
+        const initials = getInitials(user.name, user.email);
+        const firstName =
+          user.given_name ||
+          (user.name ? String(user.name).trim().split(" ")[0] : "User");
+        const pictureSrc = safeImageSrc(user.picture);
+        const safeInitials = escapeHtml(initials);
+        const safeFirstName = escapeHtml(firstName);
+
+        document.getElementById("nav-right-slot").innerHTML = pictureSrc
+          ? `<div class="reader-user-chip"><img class="reader-avatar" src="${escapeHtml(pictureSrc)}" alt="${safeInitials}" referrerpolicy="no-referrer" /><span>${safeFirstName}</span></div>`
+          : `<div class="reader-user-chip"><div class="reader-avatar-initials">${safeInitials}</div><span>${safeFirstName}</span></div>`;
+
+        document.body.classList.add("is-authenticated");
+        document.getElementById("reader-gate").style.display = "none";
+        document.getElementById("epub-reader-app").classList.remove("hidden");
+        document.getElementById("epub-loading").style.display = "grid";
+
+        saveToRecentHistory();
+
+        setTimeout(() => {
+          if (window.initEpubViewer && window.VIEWER_DOCUMENT_ID) {
+            window.initEpubViewer(window.VIEWER_DOCUMENT_ID);
+          }
+        }, 0);
+      }
+
+      function saveToRecentHistory() {
+        if (!driveId || !bookTitle) return;
+        const emailKey = getActiveEmailKey();
+        if (!emailKey) return;
+
+        try {
+          const scopedKey = getScopedStorageKey(LS_RECENT_PREFIX, emailKey);
+          if (!scopedKey) return;
+          const current = JSON.parse(localStorage.getItem(scopedKey) || "[]");
+          const history = Array.isArray(current) ? current : [];
+          const cleanDriveId = String(driveId).trim();
+          const next = history
+            .filter((item) => item && item.epub_drive_id !== cleanDriveId)
+            .slice(0, 199);
+
+          next.unshift({
+            id: Date.now(),
+            title: String(bookTitle).trim(),
+            epub_drive_id: cleanDriveId,
+          });
+
+          localStorage.setItem(scopedKey, JSON.stringify(next));
+        } catch {
+          // Reading history should never block the reader.
+        }
+      }
+
+      function triggerGoogleSignIn() {
+        const btn = document.getElementById("gate-google-btn");
+        if (btn) {
+          btn.classList.add("loading");
+          btn.textContent = "Opening secure sign-in...";
+        }
+
+        authStateVersion += 1;
+
+        if (!tokenClient) {
+          tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            scope: "openid email profile",
+            callback: onGoogleSuccess,
+          });
+        }
+        tokenClient.requestAccessToken({ prompt: "select_account" });
+      }
+
+      async function onGoogleSuccess(tokenResponse) {
+        const requestVersion = authStateVersion;
+        if (tokenResponse.error) {
+          resetSignInButton();
+          return;
+        }
+
+        try {
+          const newUser = await syncToBackend(tokenResponse.access_token);
+          if (!newUser?.email) throw new Error("Verified Google profile is missing.");
+          if (requestVersion < authStateVersion) return;
+
+          let accounts = JSON.parse(localStorage.getItem(LS_ACCOUNTS) || "[]");
+          if (!Array.isArray(accounts)) accounts = [];
+          const existing = accounts.find((account) => account.email === newUser.email);
+          if (!existing) accounts.push(newUser);
+          else Object.assign(existing, newUser);
+
+          localStorage.setItem(LS_ACCOUNTS, JSON.stringify(accounts));
+          localStorage.setItem(LS_ACTIVE, newUser.email);
+          await handleAuthenticatedReader(newUser);
+        } catch (error) {
+          console.error("EPUB sign-in error:", error);
+          resetSignInButton();
+        }
+      }
+
+      async function syncToBackend(accessToken) {
+        const res = await fetch(buildApiUrl("/api/auth/login"), {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accessToken }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Backend login verification failed.");
+        return data.user;
+      }
+
+      function resetSignInButton() {
+        const btn = document.getElementById("gate-google-btn");
+        if (!btn) return;
+        btn.classList.remove("loading");
+        btn.innerHTML = `
+          <svg class="google-g-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.83c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          Continue with Account`;
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("reader-title").textContent = bookTitle;
+        document.getElementById("gate-book-name").textContent = bookTitle;
+        document.title = `${bookTitle} - EPUB Reader`;
+
+        if (!driveId) {
+          document.getElementById("reader-title").textContent = "Error: No EPUB ID provided.";
+          showGatedMode();
+          return;
+        }
+
+        window.VIEWER_DOCUMENT_ID = driveId;
+        window.VIEWER_INITIAL_PAGE = explicitSectionParam > 0 ? explicitSectionParam : 0;
+        window.VIEWER_DOCUMENT_FORMAT = "epub";
+        window.VIEWER_BOOK_TITLE = bookTitle;
+
+        (async () => {
+          const restoreVersion = authStateVersion;
+          const user = await fetchSessionUser();
+          if (restoreVersion !== authStateVersion) return;
+
+          if (user?.email) {
+            let accounts = JSON.parse(localStorage.getItem(LS_ACCOUNTS) || "[]");
+            if (!Array.isArray(accounts)) accounts = [];
+            const existing = accounts.find((account) => account.email === user.email);
+            if (!existing) accounts.push(user);
+            else Object.assign(existing, user);
+            localStorage.setItem(LS_ACCOUNTS, JSON.stringify(accounts));
+            localStorage.setItem(LS_ACTIVE, user.email);
+            await handleAuthenticatedReader(user);
+            return;
+          }
+
+          localStorage.removeItem(LS_ACTIVE);
+          showGatedMode();
+        })();
+      });
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="assets/js/epub-engine.js?v=7"></script>
+    <script src="assets/js/theme-toggle.js?v=2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.7/dist/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="assets/js/ai-sidebar.js?v=14"></script>
+  </body>
+</html>

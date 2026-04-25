@@ -1,19 +1,59 @@
 import mysql from "mysql2/promise";
-import dotenv from "dotenv";
+import fs from "fs";
+import "./loadEnv.js";
+import { readPositiveIntEnv } from "./runtimeLimits.js";
 
-dotenv.config();
+const requiredEnvVars = ["DB_HOST", "DB_USER", "DB_NAME"];
+const missingEnvVars = requiredEnvVars.filter(
+  (key) => !String(process.env[key] || "").trim(),
+);
 
-// Create a connection pool to the MySQL database
-const pool = mysql.createPool({
+if (missingEnvVars.length > 0) {
+  throw new Error(
+    `[DB] Missing required environment variables: ${missingEnvVars.join(", ")}`,
+  );
+}
+
+const useSsl =
+  String(process.env.DB_SSL || "false").trim().toLowerCase() === "true";
+
+const poolConfig = {
   host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT || 3306),
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+  connectionLimit: readPositiveIntEnv("DB_CONNECTION_LIMIT", 25, {
+    min: 1,
+    max: 200,
+  }),
+  queueLimit: readPositiveIntEnv("DB_QUEUE_LIMIT", 5000, {
+    min: 1,
+    max: 100000,
+  }),
+};
 
-console.log("MySQL Database connection pool created successfully.");
+if (useSsl) {
+  const caPath = String(process.env.DB_SSL_CA_PATH || "").trim();
+  const caBase64 = String(process.env.DB_SSL_CA_BASE64 || "").trim();
+  poolConfig.ssl = {
+    minVersion: "TLSv1.2",
+    rejectUnauthorized:
+      String(process.env.DB_SSL_REJECT_UNAUTHORIZED || "true")
+        .trim()
+        .toLowerCase() !== "false",
+  };
+
+  if (caPath) {
+    poolConfig.ssl.ca = fs.readFileSync(caPath, "utf8");
+  } else if (caBase64) {
+    poolConfig.ssl.ca = Buffer.from(caBase64, "base64").toString("utf8");
+  }
+}
+
+const pool = mysql.createPool(poolConfig);
+
+console.log("[DB] MySQL connection pool configured.");
 
 export default pool;

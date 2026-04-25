@@ -13,7 +13,9 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 
     <!-- Styles -->
-    <link rel="stylesheet" href="assets/css/book-detail.css" />
+  <link rel="stylesheet" href="assets/css/book-detail.css?v=detail-reco-3" />
+    <link rel="stylesheet" href="assets/css/theme-toggle.css" />
+    <link rel="stylesheet" href="assets/css/theme-toggle-detail.css" />
   </head>
   <body>
     <!-- ═══════════════════════════════════════════
@@ -68,6 +70,7 @@
             <span class="match-badge" id="match-badge">98% Match</span>
             <span class="rating-badge" id="rating-badge">U/A 13+</span>
             <span class="category-badge" id="category-badge">Fiction</span>
+            <span class="premium-access-badge hidden" id="premium-access-badge"></span>
           </div>
 
           <p class="info-description" id="info-description">
@@ -75,16 +78,27 @@
           </p>
 
           <!-- Action Buttons — Apple Pill Style -->
+          <div class="format-switcher-shell hidden" id="format-switcher-shell">
+            <span class="format-switcher-label">Choose format</span>
+            <div
+              class="format-switcher"
+              id="format-switcher"
+              role="radiogroup"
+              aria-label="Choose reading format"
+            ></div>
+          </div>
+
           <div class="action-buttons">
             <button class="btn-apple-primary" id="btn-read-pdf">
               <span class="material-symbols-outlined">menu_book</span>
-              Read PDF
+              Read Now
             </button>
             <button class="btn-apple-secondary" id="btn-add-list">
               <span class="material-symbols-outlined">add</span>
               My List
             </button>
           </div>
+          <p class="payment-access-note hidden" id="payment-access-note"></p>
         </div>
 
         <!-- Right Column -->
@@ -127,7 +141,7 @@
           <p class="detail-label">Video Preview</p>
           <p class="detail-value" id="detail-video-status">Available</p>
           <p class="detail-label">Access</p>
-          <p class="detail-value">Free to Read</p>
+          <p class="detail-value" id="detail-access-status">Free to Read</p>
         </div>
         <div class="detail-card glass-card">
           <h3>Summary</h3>
@@ -166,6 +180,11 @@
       <p>&copy; 2026 PDF Library — Your Digital Reading Companion</p>
     </footer>
 
-    <script src="assets/js/book-detail.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/theme-toggle.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.7/dist/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="assets/js/ai-sidebar.js?v=14"></script>
+    <script src="assets/js/book-detail.js?v=detail-reco-4"></script>
   </body>
 </html>
