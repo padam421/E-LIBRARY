@@ -3159,7 +3159,7 @@ async function fetchPDFs() {
   const loadingSubtitle = document.getElementById("loading-subtitle");
   const sleepTimer = setTimeout(() => {
     if (loadingSubtitle) {
-      loadingSubtitle.innerHTML = "Waking up the cloud server... ☁️<br><small style='color:#757575'>Since this is a free server, it sleeps when inactive. This first load takes ~50 seconds.</small>";
+      loadingSubtitle.innerHTML = "Warming up the library catalog... 📚<br><small style='color:#757575'>Establishing a secure connection. Just a moment...</small>";
     }
   }, 3000);
 
