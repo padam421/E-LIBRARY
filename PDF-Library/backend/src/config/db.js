@@ -32,6 +32,9 @@ const poolConfig = {
     min: 1,
     max: 100000,
   }),
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000,
+  connectTimeout: 10000,
 };
 
 if (useSsl) {
