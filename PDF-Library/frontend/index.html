@@ -177,12 +177,13 @@
       </section>
       <section id="continue-reading-section" class="continue-reading-section hidden"></section>
       <!-- The PDF rows will be injected here -->
-      <div id="pdf-container" style="width: 100%; min-height: 50vh; display: flex; align-items: center; justify-content: center;">
+      <div id="pdf-container" style="width: 100%">
         <style>
           @keyframes spin-slow { 100% { transform: rotate(360deg); } }
           .server-waking-ui {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             color: #a0a0a0; text-align: center; gap: 16px; padding: 40px; animation: fadeIn 0.5s ease;
+            width: 100%; min-height: 50vh;
           }
           .server-waking-ui p { max-width: 320px; line-height: 1.5; font-size: 14px; margin: 0; }
         </style>
