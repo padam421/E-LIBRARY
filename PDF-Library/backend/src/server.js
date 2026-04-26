@@ -21,3 +21,18 @@ server.on("error", (error) => {
   console.error("[Server] Failed to start:", error);
   process.exit(1);
 });
+
+// ─── Permanent fix: Graceful shutdown + uncaught error recovery ─────────────
+// Prevents the server from dying silently on unhandled promise rejections.
+process.on("unhandledRejection", (reason) => {
+  console.error("[Server] Unhandled promise rejection (server stays up):", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("[Server] Uncaught exception (server stays up):", err);
+});
+
+// ─── Render: Keep-alive for the HTTP server itself ──────────────────────────
+// Render's free tier can drop idle HTTP connections; this prevents that.
+server.keepAliveTimeout = 65000;
+server.headersTimeout = 66000;
