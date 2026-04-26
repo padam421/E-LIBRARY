@@ -3155,8 +3155,11 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchPDFs();
 });
 
-async function fetchPDFs() {
+async function fetchPDFs(retryCount = 0) {
+  const MAX_RETRIES = 3;
   const loadingSubtitle = document.getElementById("loading-subtitle");
+  const loadingIndicator = document.getElementById("loading-indicator");
+
   const sleepTimer = setTimeout(() => {
     if (loadingSubtitle) {
       loadingSubtitle.innerHTML = "Warming up the library catalog... 📚<br><small style='color:#757575'>Establishing a secure connection. Just a moment...</small>";
@@ -3166,6 +3169,7 @@ async function fetchPDFs() {
   try {
     const response = await fetch(buildApiUrl("/api/pdfs"));
     clearTimeout(sleepTimer);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const pdfs = await response.json();
     allLibraryBooks = Array.isArray(pdfs)
       ? pdfs.filter(
@@ -3183,13 +3187,32 @@ async function fetchPDFs() {
     rerenderLibraryRowsForFreshLayout();
   } catch (error) {
     clearTimeout(sleepTimer);
-    console.error("Error fetching PDFs:", error);
-    const container = document.getElementById("pdf-container");
-    if (container) {
-      container.innerHTML = `<div class="search-empty-state" style="color:#ff6b6b">Server connection failed. Please ensure the backend is running and refresh the page.</div>`;
+    console.error(`Error fetching PDFs (attempt ${retryCount + 1}):`, error);
+
+    if (retryCount < MAX_RETRIES) {
+      const waitSeconds = Math.pow(2, retryCount) * 5; // 5s, 10s, 20s
+      if (loadingSubtitle) {
+        loadingSubtitle.innerHTML = `Retrying in ${waitSeconds}s... (attempt ${retryCount + 1}/${MAX_RETRIES})<br><small style='color:#757575'>Establishing a secure connection.</small>`;
+      }
+      setTimeout(() => fetchPDFs(retryCount + 1), waitSeconds * 1000);
+    } else {
+      // All retries failed — show a friendly retry button instead of dead text
+      const container = document.getElementById("pdf-container");
+      if (container) {
+        container.innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:40vh;gap:16px;text-align:center;padding:40px;">
+            <span class="material-symbols-outlined" style="font-size:48px;color:#ff6b6b">cloud_off</span>
+            <h3 style="color:#e8eaed;font-weight:500;margin:0">Unable to connect to library</h3>
+            <p style="color:#9aa0a6;max-width:300px;font-size:14px;margin:0">The server may be starting up. Please wait a moment and try again.</p>
+            <button onclick="location.reload()" style="margin-top:8px;padding:10px 24px;background:#1a73e8;color:#fff;border:none;border-radius:8px;font-size:15px;cursor:pointer;font-family:inherit;">
+              🔄 Retry Now
+            </button>
+          </div>`;
+      }
     }
   }
 }
+
 
 function renderPDFRows(pdfs) {
   const container = document.getElementById("pdf-container");
