@@ -8,7 +8,7 @@
     if (!document.querySelector('link[href*="ai-sidebar.css"]')) {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
-  link.href = 'assets/css/ai-sidebar.css?v=14';
+        link.href = 'assets/css/ai-sidebar.css?v=15';
         document.head.appendChild(link);
     }
 
