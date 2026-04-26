@@ -1446,3 +1446,11 @@ html body[data-theme="light"] .ai-sidebar .ai-suggestion-card {
     font-size: 13px;
   }
 }
+
+/* Hide floating AI button when the sidebar is open on all devices */
+body.ai-sidebar-open .ai-chat-btn {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: scale(0) !important;
+}
