@@ -3156,8 +3156,16 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function fetchPDFs() {
+  const loadingSubtitle = document.getElementById("loading-subtitle");
+  const sleepTimer = setTimeout(() => {
+    if (loadingSubtitle) {
+      loadingSubtitle.innerHTML = "Waking up the cloud server... ☁️<br><small style='color:#757575'>Since this is a free server, it sleeps when inactive. This first load takes ~50 seconds.</small>";
+    }
+  }, 3000);
+
   try {
     const response = await fetch(buildApiUrl("/api/pdfs"));
+    clearTimeout(sleepTimer);
     const pdfs = await response.json();
     allLibraryBooks = Array.isArray(pdfs)
       ? pdfs.filter(
@@ -3174,7 +3182,12 @@ async function fetchPDFs() {
     runSearch("");
     rerenderLibraryRowsForFreshLayout();
   } catch (error) {
+    clearTimeout(sleepTimer);
     console.error("Error fetching PDFs:", error);
+    const container = document.getElementById("pdf-container");
+    if (container) {
+      container.innerHTML = `<div class="search-empty-state" style="color:#ff6b6b">Server connection failed. Please ensure the backend is running and refresh the page.</div>`;
+    }
   }
 }
 

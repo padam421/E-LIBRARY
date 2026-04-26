@@ -177,7 +177,21 @@
       </section>
       <section id="continue-reading-section" class="continue-reading-section hidden"></section>
       <!-- The PDF rows will be injected here -->
-      <div id="pdf-container" style="width: 100%"></div>
+      <div id="pdf-container" style="width: 100%; min-height: 50vh; display: flex; align-items: center; justify-content: center;">
+        <style>
+          @keyframes spin-slow { 100% { transform: rotate(360deg); } }
+          .server-waking-ui {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: #a0a0a0; text-align: center; gap: 16px; padding: 40px; animation: fadeIn 0.5s ease;
+          }
+          .server-waking-ui p { max-width: 320px; line-height: 1.5; font-size: 14px; margin: 0; }
+        </style>
+        <div id="loading-indicator" class="server-waking-ui">
+          <span class="material-symbols-outlined" style="font-size: 48px; color: #1a73e8; animation: spin-slow 2s linear infinite;">hourglass_top</span>
+          <h2 style="color: #e8eaed; font-size: 20px; font-weight: 500; margin: 0;">Connecting to Library...</h2>
+          <p id="loading-subtitle">Please wait while we connect to the database.</p>
+        </div>
+      </div>
     </main>
     <!-- START OF CHANGE PROFILE PICTURE MODAL -->
     <!-- START OF SIDEBAR MENU -->
