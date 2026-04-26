@@ -2836,3 +2836,261 @@ body.library-reduce-motion *::after {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* =========================================
+   MOBILE: Small phones (≤480px)
+   Fixes book grid, header, cards, popups
+   ========================================= */
+@media (max-width: 480px) {
+  /* ── Header compact ── */
+  .header {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .header-center {
+    font-size: 15px;
+  }
+
+  .sign-in-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  .profile-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .profile-name {
+    display: none;
+  }
+
+  /* ── Main content tighter ── */
+  .main-content {
+    padding: 10px 0 !important;
+  }
+
+  .main-content h1 {
+    font-size: 24px;
+  }
+
+  /* ── Book row ── */
+  .pdf-row-container {
+    margin-bottom: 16px;
+  }
+
+  .row-title {
+    font-size: 18px;
+    margin: 0 12px 8px 12px;
+  }
+
+  .pdf-row {
+    padding: 8px 12px;
+    gap: 10px;
+  }
+
+  /* ── Book cards smaller for phones ── */
+  .pdf-card {
+    width: 140px;
+    border-radius: 8px;
+  }
+
+  .pdf-card:hover {
+    transform: scale(1.03) translateY(-2px);
+  }
+
+  .pdf-info {
+    padding: 14px 10px 10px;
+  }
+
+  .pdf-title {
+    font-size: 12px;
+  }
+
+  .pdf-description {
+    font-size: 11px;
+  }
+
+  .pdf-premium-badge {
+    top: 6px;
+    left: 6px;
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  /* ── Profile popup: full width on mobile ── */
+  .profile-popup {
+    width: calc(100vw - 16px);
+    max-width: 360px;
+    right: -6px;
+    top: 44px;
+    border-radius: 16px;
+  }
+
+  .popup-avatar {
+    width: 64px;
+    height: 64px;
+    font-size: 22px;
+  }
+
+  .popup-greeting {
+    font-size: 18px;
+  }
+
+  /* ── Training mega panel ── */
+  .training-nav-bar {
+    gap: 2px;
+    padding: 0 8px;
+  }
+
+  .training-nav-item {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+
+  .training-mega-panel {
+    border-radius: 12px;
+  }
+
+  .training-panel-layout {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .training-panel-link {
+    font-size: 20px;
+  }
+
+  .training-book-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  /* ── Cinematic modal ── */
+  .cinematic-modal {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 0;
+  }
+
+  .cinematic-title {
+    font-size: 22px;
+  }
+
+  .cinematic-desc {
+    font-size: 13px;
+    -webkit-line-clamp: 3;
+  }
+
+  .cinematic-actions {
+    gap: 10px;
+  }
+
+  .cinematic-actions button {
+    padding: 0 14px;
+  }
+
+  /* ── Search modal ── */
+  .search-modal {
+    width: 98vw;
+    top: 56px;
+    max-height: 85vh;
+  }
+
+  #search-input {
+    font-size: 15px;
+  }
+
+  .search-result-item {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .search-result-cover {
+    width: 40px;
+  }
+
+  /* ── Settings panel ── */
+  .settings-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 0;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 85vw;
+    max-width: 320px;
+  }
+
+  /* ── Continue reading ── */
+  .continue-reading-card {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  /* ── Change profile pic modal ── */
+  .change-pic-modal {
+    width: calc(100vw - 32px);
+    max-width: 320px;
+  }
+
+  .large-profile-display {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 24px;
+  }
+
+  #large-preview-initials {
+    font-size: 48px;
+  }
+
+  .action-buttons-container {
+    gap: 32px;
+  }
+
+  .circle-btn {
+    width: 52px;
+    height: 52px;
+  }
+}
+
+/* =========================================
+   MOBILE: Very small phones (≤360px)
+   Extra tight layout adjustments
+   ========================================= */
+@media (max-width: 360px) {
+  .pdf-card {
+    width: 120px;
+  }
+
+  .pdf-row {
+    gap: 8px;
+    padding: 6px 8px;
+  }
+
+  .row-title {
+    font-size: 16px;
+    margin: 0 8px 6px 8px;
+  }
+
+  .training-nav-item {
+    padding: 5px 6px;
+    font-size: 11px;
+  }
+
+  .training-panel-link {
+    font-size: 18px;
+  }
+
+  .training-book-grid {
+    gap: 6px;
+  }
+
+  .profile-popup {
+    width: calc(100vw - 8px);
+    right: -2px;
+  }
+}
+

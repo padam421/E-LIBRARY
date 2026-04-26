@@ -9,6 +9,7 @@ RUN npm ci --omit=dev
 
 COPY src ./src
 COPY scripts ./scripts
+COPY aiven-ca.pem* ./
 
 EXPOSE 3000
 
