@@ -3155,43 +3155,22 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchPDFs();
 });
 
-// ─── Permanent Backend Recovery System ────────────────────────────────────────
-// This function retries silently in the background. The user never sees a dead
-// screen. If the server is restarting/deploying, it keeps trying for up to 10
-// minutes and auto-loads books the moment the server responds.
+// ─── Permanent Silent Backend Recovery System ─────────────────────────────────
+// Retries silently in background for up to ~10 minutes.
+// User only ever sees the skeleton loading cards. Zero error messages.
 let _fetchPDFsRunning = false;
 
 async function fetchPDFs(retryCount = 0) {
-  // Guard: don't run two copies at once
   if (retryCount === 0 && _fetchPDFsRunning) return;
   _fetchPDFsRunning = true;
 
-  const MAX_RETRIES = 20;                    // ~10 minutes total
-  const loadingSubtitle = document.getElementById("loading-subtitle");
-  const loadingIndicator = document.getElementById("loading-indicator");
-
-  // Show warm loading animation on first attempt
-  if (retryCount === 0 && loadingIndicator) {
-    loadingIndicator.style.display = "flex";
-  }
-
-  // Update loading text after 3 seconds of first attempt
-  const sleepTimer = retryCount === 0
-    ? setTimeout(() => {
-        if (loadingSubtitle) {
-          loadingSubtitle.innerHTML =
-            "Warming up the library catalog... 📚<br>" +
-            "<small style='color:#757575'>Establishing a secure connection. Just a moment...</small>";
-        }
-      }, 3000)
-    : null;
+  const MAX_RETRIES = 20; // ~10 minutes of retrying
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout per attempt
+    const fetchTimeout = setTimeout(() => controller.abort(), 30000);
     const response = await fetch(buildApiUrl("/api/pdfs"), { signal: controller.signal });
-    clearTimeout(timeout);
-    if (sleepTimer) clearTimeout(sleepTimer);
+    clearTimeout(fetchTimeout);
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
@@ -3207,7 +3186,8 @@ async function fetchPDFs(retryCount = 0) {
     window.PDF_LIBRARY_BOOKS = allLibraryBooks;
     searchableBooks = allLibraryBooks.filter((book) => hasReadableBook(book));
 
-    // Hide loading indicator before rendering
+    // Success — hide skeleton, show books
+    const loadingIndicator = document.getElementById("loading-indicator");
     if (loadingIndicator) loadingIndicator.style.display = "none";
 
     renderSitePremiumButton();
@@ -3217,71 +3197,30 @@ async function fetchPDFs(retryCount = 0) {
     _fetchPDFsRunning = false;
 
   } catch (error) {
-    if (sleepTimer) clearTimeout(sleepTimer);
-    console.warn(`[Library] Connection attempt ${retryCount + 1} failed:`, error.message);
+    console.warn(`[Library] Attempt ${retryCount + 1} failed silently:`, error.message);
 
     if (retryCount < MAX_RETRIES) {
-      // Backoff: 5s, 8s, 13s, 21s, 30s, 30s, 30s... (capped at 30s)
-      const waitSeconds = Math.min(30, Math.round(5 * Math.pow(1.6, retryCount)));
-
-      // Update loading text silently — user sees progress not errors
-      if (loadingSubtitle) {
-        const attempts = retryCount + 1;
-        if (attempts <= 2) {
-          loadingSubtitle.innerHTML =
-            "Connecting to library... 📚<br>" +
-            "<small style='color:#757575'>Establishing a secure connection.</small>";
-        } else {
-          loadingSubtitle.innerHTML =
-            "Still connecting... please wait ☁️<br>" +
-            "<small style='color:#757575'>This can take up to a minute on first visit.</small>";
-        }
-      }
-
-      setTimeout(() => fetchPDFs(retryCount + 1), waitSeconds * 1000);
+      // Skeleton stays visible — user sees nothing wrong
+      // Backoff: 5s → 8s → 13s → 21s → 30s → 30s (capped)
+      const waitMs = Math.min(30000, Math.round(5000 * Math.pow(1.6, retryCount)));
+      setTimeout(() => fetchPDFs(retryCount + 1), waitMs);
 
     } else {
-      // Truly gave up after ~10 minutes — show retry button, but keep pinging background
+      // After 10 min of trying — skeleton stays, but start a slow background ping
+      // Auto-recovers silently if server ever comes back, no error shown
       _fetchPDFsRunning = false;
-      const container = document.getElementById("pdf-container");
-      if (container) {
-        container.innerHTML = `
-          <div id="library-offline-msg" style="display:flex;flex-direction:column;align-items:center;
-            justify-content:center;min-height:40vh;gap:16px;text-align:center;padding:40px;">
-            <span class="material-symbols-outlined" style="font-size:48px;color:#ff6b6b">cloud_off</span>
-            <h3 style="color:#e8eaed;font-weight:500;margin:0">Unable to connect to library</h3>
-            <p style="color:#9aa0a6;max-width:300px;font-size:14px;margin:0">
-              The server may be starting up. Please wait a moment and try again.
-            </p>
-            <button onclick="fetchPDFs()" style="margin-top:8px;padding:10px 24px;background:#1a73e8;
-              color:#fff;border:none;border-radius:8px;font-size:15px;cursor:pointer;font-family:inherit;">
-              🔄 Retry Now
-            </button>
-          </div>`;
-      }
-
-      // Silent background pinger — auto-recovers when server comes back
-      // Checks every 30 seconds without user doing anything
       const backgroundPing = setInterval(async () => {
         try {
-          const r = await fetch(buildApiUrl("/api/pdfs"), { method: "HEAD" });
-          if (r.ok || r.status === 405) {
+          const r = await fetch(buildApiUrl("/api/ping"));
+          if (r.ok) {
             clearInterval(backgroundPing);
-            // Server is back! Auto-reload books
-            const offlineMsg = document.getElementById("library-offline-msg");
-            if (offlineMsg) {
-              offlineMsg.innerHTML =
-                `<span class="material-symbols-outlined" style="font-size:40px;color:#34a853">check_circle</span>
-                 <h3 style="color:#e8eaed;font-weight:500;margin:8px 0">Connected! Loading books...</h3>`;
-            }
-            setTimeout(() => fetchPDFs(0), 500);
+            fetchPDFs(0); // Server back — load books silently
           }
-        } catch (_) { /* still offline, keep waiting */ }
+        } catch (_) { /* still waiting */ }
       }, 30000);
     }
   }
 }
-
 
 
 function renderPDFRows(pdfs) {

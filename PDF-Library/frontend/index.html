@@ -179,18 +179,71 @@
       <!-- The PDF rows will be injected here -->
       <div id="pdf-container" style="width: 100%">
         <style>
-          @keyframes spin-slow { 100% { transform: rotate(360deg); } }
-          .server-waking-ui {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: #a0a0a0; text-align: center; gap: 16px; padding: 40px; animation: fadeIn 0.5s ease;
-            width: 100%; min-height: 50vh;
+          @keyframes shimmer {
+            0% { background-position: -800px 0; }
+            100% { background-position: 800px 0; }
           }
-          .server-waking-ui p { max-width: 320px; line-height: 1.5; font-size: 14px; margin: 0; }
+          .skeleton-section { width: 100%; padding: 12px 0 24px 0; }
+          .skeleton-label {
+            height: 18px; width: 200px; border-radius: 6px; margin-bottom: 16px;
+            background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+            background-size: 800px 100%;
+            animation: shimmer 1.5s infinite linear;
+          }
+          .skeleton-row { display: flex; gap: 16px; overflow: hidden; }
+          .skeleton-card {
+            flex: 0 0 140px; height: 210px; border-radius: 10px;
+            background: linear-gradient(90deg, #1e1e1e 25%, #2d2d2d 50%, #1e1e1e 75%);
+            background-size: 800px 100%;
+            animation: shimmer 1.5s infinite linear;
+          }
+          .skeleton-card:nth-child(2) { animation-delay: 0.1s; }
+          .skeleton-card:nth-child(3) { animation-delay: 0.2s; }
+          .skeleton-card:nth-child(4) { animation-delay: 0.3s; }
+          .skeleton-card:nth-child(5) { animation-delay: 0.4s; }
+          .skeleton-card:nth-child(6) { animation-delay: 0.5s; }
+          .skeleton-card:nth-child(7) { animation-delay: 0.6s; }
         </style>
-        <div id="loading-indicator" class="server-waking-ui">
-          <span class="material-symbols-outlined" style="font-size: 48px; color: #1a73e8; animation: spin-slow 2s linear infinite;">hourglass_top</span>
-          <h2 style="color: #e8eaed; font-size: 20px; font-weight: 500; margin: 0;">Connecting to Library...</h2>
-          <p id="loading-subtitle">Please wait while we connect to the database.</p>
+        <div id="loading-indicator">
+          <!-- Row 1 -->
+          <div class="skeleton-section">
+            <div class="skeleton-label"></div>
+            <div class="skeleton-row">
+              <div class="skeleton-card"></div>
+              <div class="skeleton-card"></div>
+              <div class="skeleton-card"></div>
+              <div class="skeleton-card"></div>
+              <div class="skeleton-card"></div>
+              <div class="skeleton-card"></div>
+              <div class="skeleton-card"></div>
+            </div>
+          </div>
+          <!-- Row 2 -->
+          <div class="skeleton-section">
+            <div class="skeleton-label" style="width:160px;animation-delay:0.2s"></div>
+            <div class="skeleton-row">
+              <div class="skeleton-card" style="animation-delay:0.15s"></div>
+              <div class="skeleton-card" style="animation-delay:0.25s"></div>
+              <div class="skeleton-card" style="animation-delay:0.35s"></div>
+              <div class="skeleton-card" style="animation-delay:0.45s"></div>
+              <div class="skeleton-card" style="animation-delay:0.55s"></div>
+              <div class="skeleton-card" style="animation-delay:0.65s"></div>
+              <div class="skeleton-card" style="animation-delay:0.75s"></div>
+            </div>
+          </div>
+          <!-- Row 3 -->
+          <div class="skeleton-section">
+            <div class="skeleton-label" style="width:240px;animation-delay:0.4s"></div>
+            <div class="skeleton-row">
+              <div class="skeleton-card" style="animation-delay:0.2s"></div>
+              <div class="skeleton-card" style="animation-delay:0.3s"></div>
+              <div class="skeleton-card" style="animation-delay:0.4s"></div>
+              <div class="skeleton-card" style="animation-delay:0.5s"></div>
+              <div class="skeleton-card" style="animation-delay:0.6s"></div>
+              <div class="skeleton-card" style="animation-delay:0.7s"></div>
+              <div class="skeleton-card" style="animation-delay:0.8s"></div>
+            </div>
+          </div>
         </div>
       </div>
     </main>
