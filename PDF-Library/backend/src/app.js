@@ -92,6 +92,9 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/video", videoRoutes);
 app.use("/api/payments", paymentRoutes);
 
+// Ultra-lightweight ping for cron-job.org — zero DB, instant response
+app.get("/api/ping", (req, res) => res.status(200).json({ alive: true }));
+
 app.get("/", (req, res) => {
   res.send("Digital Library API is running!");
 });
