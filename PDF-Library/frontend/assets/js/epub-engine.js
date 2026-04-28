@@ -17,6 +17,7 @@ let activeDocumentId = "";
 let activeHighlightColor = "yellow";
 let lastSelectionData = null;
 let isPreviewMode = false;
+let epubToastTimer = null;
 
 const readerApp = document.getElementById("epub-reader-app");
 const loadingOverlay = document.getElementById("epub-loading");
@@ -216,6 +217,38 @@ function updateHighlightStatus(message, tone = "muted") {
   if (!highlightStatus) return;
   highlightStatus.textContent = message;
   highlightStatus.dataset.tone = tone;
+}
+
+function getToastRegion() {
+  let region = document.getElementById("epub-toast-region");
+  if (region) return region;
+
+  region = document.createElement("div");
+  region.id = "epub-toast-region";
+  region.className = "epub-toast-region";
+  region.setAttribute("role", "status");
+  region.setAttribute("aria-live", "polite");
+  document.body.appendChild(region);
+  return region;
+}
+
+function showEpubToast(message, tone = "success") {
+  const region = getToastRegion();
+  region.innerHTML = "";
+
+  const toast = document.createElement("div");
+  toast.className = "epub-toast";
+  toast.dataset.tone = tone;
+  toast.innerHTML = `
+    <span class="material-symbols-outlined" aria-hidden="true">${tone === "muted" ? "bookmark_remove" : "bookmark_added"}</span>
+    <span>${escapeHtml(message)}</span>
+  `;
+
+  region.appendChild(toast);
+  window.clearTimeout(epubToastTimer);
+  epubToastTimer = window.setTimeout(() => {
+    toast.remove();
+  }, 2800);
 }
 
 function setActiveHighlightColor(colorKey) {
@@ -1736,6 +1769,14 @@ function toggleSearchPanel() {
 }
 
 function toggleBookmark() {
+  if (!chapters.length) {
+    showEpubToast("Open a chapter before adding a bookmark.", "muted");
+    return;
+  }
+
+  let toastMessage = "";
+  let toastTone = "success";
+
   try {
     const bookmarks = readCollection(getBookmarksKey());
     const existingIndex = bookmarks.findIndex((item) => Number(item.chapter) === currentChapter);
@@ -1746,7 +1787,10 @@ function toggleBookmark() {
       if (existing?.chapter === currentChapter) {
         localStorage.removeItem(getBookmarkKey());
       }
+      toastMessage = `Removed bookmark for ${formatLocationLabel({ chapter: currentChapter })}.`;
+      toastTone = "muted";
     } else {
+      const savedAt = Date.now();
       const bookmark = {
         id: makeId("bookmark"),
         chapter: currentChapter,
@@ -1754,7 +1798,8 @@ function toggleBookmark() {
         title: chapters[currentChapter - 1]?.title || "",
         excerpt: `Section ${currentChapter}`,
         locationLabel: formatLocationLabel({ chapter: currentChapter }),
-        savedAt: Date.now(),
+        savedAt,
+        createdAt: savedAt,
       };
       bookmarks.unshift(bookmark);
       writeCollection(getBookmarksKey(), bookmarks.slice(0, 200));
@@ -1762,12 +1807,15 @@ function toggleBookmark() {
         getBookmarkKey(),
         JSON.stringify(bookmark),
       );
+      toastMessage = `Bookmarked ${bookmark.locationLabel}. Saved in bookmark history.`;
     }
   } catch {
-    // Ignore storage errors.
+    toastMessage = "Bookmark could not be saved in this browser.";
+    toastTone = "muted";
   }
   updateBookmarkButton();
   renderReaderCollections();
+  if (toastMessage) showEpubToast(toastMessage, toastTone);
 }
 
 function updateBookmarkButton() {
@@ -1784,6 +1832,11 @@ function updateBookmarkButton() {
     isBookmarked = false;
   }
   bookmarkButton.classList.toggle("active", isBookmarked);
+  bookmarkButton.setAttribute("aria-pressed", isBookmarked ? "true" : "false");
+  bookmarkButton.setAttribute(
+    "aria-label",
+    isBookmarked ? "Remove bookmark for this chapter" : "Bookmark chapter",
+  );
 }
 
 function readInitialChapter() {

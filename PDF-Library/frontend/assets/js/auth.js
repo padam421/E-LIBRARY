@@ -148,6 +148,7 @@ let trainingMegaInitialized = false;
 let trainingCloseTimer = null;
 let restoreSessionPromise = null;
 let authStateVersion = 0;
+let signInResetTimer = null;
 
 function buildApiUrl(path) {
   return `${API_ORIGIN}${path}`;
@@ -834,6 +835,10 @@ function renderTrainingPanelLinks() {
   }
 }
 
+function isCompactTrainingMegaPanel() {
+  return window.matchMedia("(max-width: 640px)").matches;
+}
+
 function renderTrainingNavTabs() {
   if (!trainingNavBar) return;
   trainingNavBar.innerHTML = "";
@@ -860,7 +865,7 @@ function openTrainingMegaPanel(categoryId = activeTrainingCategoryId) {
     clearTimeout(trainingCloseTimer);
     trainingCloseTimer = null;
   }
-  if (trainingMegaBackdrop && trainingNavBar) {
+  if (trainingMegaBackdrop && trainingNavBar && !isCompactTrainingMegaPanel()) {
     const navRect = trainingNavBar.getBoundingClientRect();
     const overlayTop = Math.max(0, Math.floor(navRect.bottom + 8));
     trainingMegaBackdrop.style.top = `${overlayTop}px`;
@@ -1081,6 +1086,35 @@ function removeScopedValue(prefix, email = activeEmail) {
   }
 }
 
+function clearSignInResetTimer() {
+  if (!signInResetTimer) return;
+  window.clearTimeout(signInResetTimer);
+  signInResetTimer = null;
+}
+
+function resetMainSignInButton() {
+  clearSignInResetTimer();
+  if (!signInBtn) return;
+  signInBtn.disabled = false;
+  signInBtn.classList.remove("is-loading");
+  signInBtn.removeAttribute("aria-busy");
+  signInBtn.textContent = "Sign in";
+}
+
+function markMainSignInBusy(requestVersion) {
+  if (!signInBtn || signInBtn.classList.contains("hidden")) return;
+  clearSignInResetTimer();
+  signInBtn.disabled = true;
+  signInBtn.classList.add("is-loading");
+  signInBtn.setAttribute("aria-busy", "true");
+  signInBtn.textContent = "Opening...";
+  signInResetTimer = window.setTimeout(() => {
+    if (requestVersion === authStateVersion) {
+      resetMainSignInButton();
+    }
+  }, 25000);
+}
+
 function initializeGoogleIdentityClient() {
   if (tokenClient) return;
   if (!window.google || !google.accounts || !google.accounts.oauth2) return;
@@ -1091,6 +1125,7 @@ function initializeGoogleIdentityClient() {
     prompt: "select_account",
     callback: async (tokenResponse) => {
       const requestVersion = authStateVersion;
+      clearSignInResetTimer();
       if (tokenResponse && tokenResponse.access_token) {
         try {
           await handleLogin(
@@ -1100,8 +1135,14 @@ function initializeGoogleIdentityClient() {
           );
         } catch (error) {
           console.error("Failed to fetch user info", error);
+          resetMainSignInButton();
         }
+      } else {
+        resetMainSignInButton();
       }
+    },
+    error_callback: () => {
+      resetMainSignInButton();
     },
   });
 }
@@ -1192,10 +1233,18 @@ function requestGoogleAccessToken() {
   initializeGoogleIdentityClient();
   if (!tokenClient) {
     console.error("Google Identity client is not ready yet.");
+    resetMainSignInButton();
     return;
   }
   authStateVersion += 1;
-  tokenClient.requestAccessToken();
+  const requestVersion = authStateVersion;
+  markMainSignInBusy(requestVersion);
+  try {
+    tokenClient.requestAccessToken({ prompt: "select_account" });
+  } catch (error) {
+    console.error("Google sign-in could not start:", error);
+    resetMainSignInButton();
+  }
 }
 
 window.addEventListener("load", () => {
@@ -3414,7 +3463,7 @@ function openCinematicModal(pdf) {
   // 7. Set iframe source Ã¢â‚¬â€ Google Drive /preview URL
   cinematicVideo.src = pdf.video_url
     ? buildApiUrl(pdf.video_url)
-    : `https://drive.google.com/file/d/${encodeURIComponent(pdf.video_drive_id)}/preview`;
+    : `https://drive.google.com/file/d/${encodeURIComponent(pdf.video_drive_id)}/preview?rm=minimal`;
 
   // 8. Show Modal
   cinematicBackdrop.classList.remove("hidden");

@@ -13,7 +13,7 @@
 
     <link rel="stylesheet" href="assets/css/theme-toggle.css" />
   <link rel="stylesheet" href="assets/css/ai-sidebar.css?v=14" />
-    <link rel="stylesheet" href="assets/css/epub-reader.css?v=5" />
+    <link rel="stylesheet" href="assets/css/epub-reader.css?v=6" />
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="assets/js/config.js"></script>
@@ -339,6 +339,7 @@
       const paymentBookId = window.PdfLibraryPayments?.parseBookId(driveId, "epub") || 0;
       let tokenClient = null;
       let authStateVersion = 0;
+      let signInResetTimer = null;
       let currentReaderUser = null;
       let currentAccess = null;
       let previewReaderStarted = false;
@@ -685,6 +686,21 @@
         }
       }
 
+      function clearSignInResetTimer() {
+        if (!signInResetTimer) return;
+        window.clearTimeout(signInResetTimer);
+        signInResetTimer = null;
+      }
+
+      function scheduleSignInReset(requestVersion) {
+        clearSignInResetTimer();
+        signInResetTimer = window.setTimeout(() => {
+          if (requestVersion === authStateVersion) {
+            resetSignInButton();
+          }
+        }, 25000);
+      }
+
       function triggerGoogleSignIn() {
         const btn = document.getElementById("gate-google-btn");
         if (btn) {
@@ -693,20 +709,37 @@
         }
 
         authStateVersion += 1;
+        const requestVersion = authStateVersion;
+        scheduleSignInReset(requestVersion);
 
-        if (!tokenClient) {
-          tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: CLIENT_ID,
-            scope: "openid email profile",
-            callback: onGoogleSuccess,
-          });
+        try {
+          if (!window.google?.accounts?.oauth2) {
+            throw new Error("Google Identity Services is not ready.");
+          }
+
+          if (!tokenClient) {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+              client_id: CLIENT_ID,
+              scope: "openid email profile",
+              callback: onGoogleSuccess,
+              error_callback: () => {
+                clearSignInResetTimer();
+                resetSignInButton();
+              },
+            });
+          }
+          tokenClient.requestAccessToken({ prompt: "select_account" });
+        } catch (error) {
+          console.error("EPUB sign-in could not start:", error);
+          clearSignInResetTimer();
+          resetSignInButton();
         }
-        tokenClient.requestAccessToken({ prompt: "select_account" });
       }
 
       async function onGoogleSuccess(tokenResponse) {
         const requestVersion = authStateVersion;
-        if (tokenResponse.error) {
+        clearSignInResetTimer();
+        if (!tokenResponse || tokenResponse.error || !tokenResponse.access_token) {
           resetSignInButton();
           return;
         }
@@ -744,6 +777,7 @@
       }
 
       function resetSignInButton() {
+        clearSignInResetTimer();
         const btn = document.getElementById("gate-google-btn");
         if (!btn) return;
         btn.classList.remove("loading");
@@ -797,7 +831,7 @@
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="assets/js/epub-engine.js?v=7"></script>
+    <script src="assets/js/epub-engine.js?v=8"></script>
     <script src="assets/js/theme-toggle.js?v=2"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.7/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>

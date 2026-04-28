@@ -127,6 +127,13 @@ h1, h2, h3, h4, h5, h6,
   transform: scale(0.97);
 }
 
+.sign-in-btn.is-loading,
+.sign-in-btn:disabled {
+  cursor: progress;
+  opacity: 0.78;
+  transform: none;
+}
+
 .profile-btn {
   width: 40px;
   height: 40px;
@@ -2794,6 +2801,11 @@ body.library-reduce-motion *::after {
 }
 
 @media (max-width: 640px) {
+  .training-mega-shell {
+    width: 100%;
+    margin-inline: 0;
+  }
+
   .header-search-pill {
     display: none;
   }
@@ -2819,21 +2831,73 @@ body.library-reduce-motion *::after {
     font-size: 17px;
   }
 
+  .training-nav-bar {
+    gap: 6px;
+    padding: 6px;
+    scroll-padding-inline: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .training-nav-item {
-    padding: 8px 11px;
+    flex: 0 0 auto;
+    padding: 8px 12px;
     font-size: 13px;
   }
 
+  .training-mega-backdrop {
+    display: none;
+  }
+
+  .training-mega-panel {
+    position: static;
+    top: auto;
+    left: auto;
+    right: auto;
+    margin-top: 12px;
+    border-radius: 18px;
+    transform: none;
+  }
+
+  .training-mega-shell.open .training-mega-panel {
+    max-height: none;
+    overflow: visible;
+  }
+
   .training-panel-layout {
+    display: block;
     padding: 16px;
   }
 
-  .training-panel-link {
+  .training-panel-main {
+    display: none;
+  }
+
+  .training-panel-books-head {
+    margin-bottom: 14px;
+  }
+
+  .training-panel-books-head h2 {
     font-size: 24px;
+  }
+
+  .training-panel-books-head p {
+    font-size: 13px;
+    line-height: 1.5;
   }
 
   .training-book-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    align-items: start;
+  }
+
+  .training-book-title {
+    min-height: 3em;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 }
 
@@ -2941,16 +3005,17 @@ body.library-reduce-motion *::after {
   /* ── Training mega panel ── */
   .training-nav-bar {
     gap: 2px;
-    padding: 0 8px;
+    padding: 6px;
   }
 
   .training-nav-item {
-    padding: 6px 8px;
+    padding: 7px 10px;
     font-size: 12px;
   }
 
   .training-mega-panel {
-    border-radius: 12px;
+    margin-top: 10px;
+    border-radius: 16px;
   }
 
   .training-panel-layout {
@@ -2958,20 +3023,48 @@ body.library-reduce-motion *::after {
     gap: 12px;
   }
 
-  .training-panel-link {
-    font-size: 20px;
-  }
-
   .training-book-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+  }
+
+  .training-panel-books-head h2 {
+    font-size: 22px;
   }
 
   /* ── Cinematic modal ── */
   .cinematic-modal {
     width: 100%;
     max-width: 100%;
+    height: 100vh;
+    max-height: 100vh;
     border-radius: 0;
+    overflow-y: auto;
+  }
+
+  .cinematic-hero {
+    height: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cinematic-media {
+    height: 56.25vw;
+  }
+
+  .cinematic-vignette {
+    height: 56.25vw;
+    background: linear-gradient(to top, #ffffff 0%, transparent 40%);
+  }
+
+  .cinematic-content {
+    position: relative;
+    margin-top: 56.25vw;
+    width: 100%;
+    left: 0;
+    bottom: auto;
+    padding: 20px;
+    box-sizing: border-box;
   }
 
   .cinematic-title {
@@ -2980,11 +3073,13 @@ body.library-reduce-motion *::after {
 
   .cinematic-desc {
     font-size: 13px;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: none;
+    line-clamp: none;
   }
 
   .cinematic-actions {
     gap: 10px;
+    flex-wrap: wrap;
   }
 
   .cinematic-actions button {
@@ -3093,4 +3188,3 @@ body.library-reduce-motion *::after {
     right: -2px;
   }
 }
-

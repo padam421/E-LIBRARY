@@ -246,6 +246,7 @@
       // â”€â”€ Google token client (lazy-created on first click) â”€â”€
       let tokenClient = null;
       let authStateVersion = 0;
+      let signInResetTimer = null;
       let currentReaderUser = null;
       let currentAccess = null;
       let previewReaderStarted = false;
@@ -789,6 +790,21 @@
       // GOOGLE SIGN-IN TRIGGER
       // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+      function clearSignInResetTimer() {
+        if (!signInResetTimer) return;
+        window.clearTimeout(signInResetTimer);
+        signInResetTimer = null;
+      }
+
+      function scheduleSignInReset(requestVersion) {
+        clearSignInResetTimer();
+        signInResetTimer = window.setTimeout(() => {
+          if (requestVersion === authStateVersion) {
+            resetSignInButton();
+          }
+        }, 25000);
+      }
+
       function triggerGoogleSignIn() {
         const btn = document.getElementById("gate-google-btn");
         if (btn) {
@@ -797,16 +813,32 @@
         }
 
         authStateVersion += 1;
+        const requestVersion = authStateVersion;
+        scheduleSignInReset(requestVersion);
 
-        // Lazy-init token client
-        if (!tokenClient) {
-          tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: CLIENT_ID,
-            scope: "openid email profile",
-            callback: onGoogleSuccess,
-          });
+        try {
+          if (!window.google?.accounts?.oauth2) {
+            throw new Error("Google Identity Services is not ready.");
+          }
+
+          // Lazy-init token client
+          if (!tokenClient) {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+              client_id: CLIENT_ID,
+              scope: "openid email profile",
+              callback: onGoogleSuccess,
+              error_callback: () => {
+                clearSignInResetTimer();
+                resetSignInButton();
+              },
+            });
+          }
+          tokenClient.requestAccessToken({ prompt: "select_account" });
+        } catch (error) {
+          console.error("PDF sign-in could not start:", error);
+          clearSignInResetTimer();
+          resetSignInButton();
         }
-        tokenClient.requestAccessToken({ prompt: "select_account" });
       }
 
       // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -815,7 +847,8 @@
 
       async function onGoogleSuccess(tokenResponse) {
         const requestVersion = authStateVersion;
-        if (tokenResponse.error) {
+        clearSignInResetTimer();
+        if (!tokenResponse || tokenResponse.error || !tokenResponse.access_token) {
           resetSignInButton();
           return;
         }
@@ -995,6 +1028,7 @@
       // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
       function resetSignInButton() {
+        clearSignInResetTimer();
         const btn = document.getElementById("gate-google-btn");
         if (!btn) return;
         btn.classList.remove("loading");
