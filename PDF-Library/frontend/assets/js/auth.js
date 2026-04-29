@@ -176,13 +176,12 @@ function slugifyPublicUrlPart(value, fallback = "book") {
 function buildPublicBookUrl(book) {
   const id = normalizeText(book?.id);
   const title = normalizeText(book?.title) || "Untitled";
-  const author = normalizeText(book?.author || book?.creator);
   if (!id) {
     const params = new URLSearchParams({ q: title });
     return `/?${params.toString()}`;
   }
-  const slug = slugifyPublicUrlPart([title, author].filter(Boolean).join(" "));
-  return `/books/${encodeURIComponent(id)}/${slug}/`;
+  const params = new URLSearchParams({ id, title });
+  return `book-detail.html?${params.toString()}`;
 }
 
 function hasPosterAsset(book) {
