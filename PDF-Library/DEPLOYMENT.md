@@ -44,6 +44,20 @@ npm start
 GET /api/health
 ```
 
+For keep-alive cron jobs, use the warm endpoint instead:
+
+```text
+GET /api/health/warm
+```
+
+Recommended cron-job.org URL:
+
+```text
+https://your-backend-domain.com/api/health/warm
+```
+
+Run it every 10 minutes. This is frequent enough for Render's free 15-minute idle window and also touches MySQL plus the public books query. The old `/api/health` endpoint only proves the Express server is alive.
+
 3. Frontend API URL is now configurable in:
 
 ```text
@@ -127,6 +141,10 @@ AUTH_READ_RATE_LIMIT=600
 AUTH_LOGIN_RATE_LIMIT=30
 AI_ASK_RATE_LIMIT=30
 ADMIN_RATE_LIMIT=2000
+PAYMENT_READ_RATE_LIMIT=600
+PAYMENT_WRITE_RATE_LIMIT=60
+SUPPORT_READ_RATE_LIMIT=300
+SUPPORT_MEDIA_RATE_LIMIT=20
 PUBLIC_BOOKS_CACHE_TTL_MS=30000
 PREVIEW_CACHE_MAX_ENTRIES=50
 PUBLIC_INCLUDE_PRIVATE_BOOKS=false
@@ -148,6 +166,15 @@ SESSION_TOKEN_SECRET=replace_with_a_long_random_secret
 SESSION_COOKIE_SAME_SITE=none
 SESSION_COOKIE_SECURE=true
 SESSION_TOKEN_TTL_SECONDS=2592000
+
+RAZORPAY_KEY_ID=your-razorpay-key-id
+RAZORPAY_KEY_SECRET=your-razorpay-key-secret
+RAZORPAY_WEBHOOK_SECRET=your-razorpay-webhook-secret
+
+SUPPORT_MEDIA_DRIVE_FOLDER_ID=your-private-google-drive-folder-id
+SUPPORT_MIN_AMOUNT_PAISE=9900
+SUPPORT_MAX_AMOUNT_PAISE=10000000
+SUPPORT_MEDIA_MAX_BYTES=12582912
 
 GEMINI_API_KEY=your-gemini-key
 GEMINI_API_KEYS=
@@ -179,6 +206,7 @@ Rotate:
 - Gemini API keys
 - Firebase service account key
 - session secret
+- Razorpay key secret and webhook secret
 
 For Firebase, after you download the new service account JSON file and place it locally at:
 
@@ -230,6 +258,41 @@ Expected result when everything is ready:
 ```
 
 If it says something is missing or still a placeholder, fix that value before deploying.
+
+## Support Payments
+
+The homepage support section uses the same Razorpay account as premium checkout. Money settles to the bank account configured in Razorpay.
+
+1. Run the payment/support migration on the backend database:
+
+```powershell
+cd backend
+npm run setup:payments
+```
+
+2. In the Razorpay dashboard, keep these backend environment variables current:
+
+```env
+RAZORPAY_KEY_ID=your-razorpay-key-id
+RAZORPAY_KEY_SECRET=your-razorpay-key-secret
+RAZORPAY_WEBHOOK_SECRET=your-razorpay-webhook-secret
+```
+
+3. Configure the Razorpay webhook URL:
+
+```text
+https://your-backend-domain.com/api/payments/webhook/razorpay
+```
+
+Enable at least `payment.captured` and `order.paid`.
+
+4. For optional supporter audio/video messages, create a private Google Drive folder and set:
+
+```env
+SUPPORT_MEDIA_DRIVE_FOLDER_ID=your-folder-id
+```
+
+The Drive refresh token used by the backend must have access to that folder.
 
 ## Cloud Database Move
 
@@ -341,6 +404,28 @@ DB_SSL_REJECT_UNAUTHORIZED=true
 ```
 
 Do not paste these into frontend files.
+
+## Sleep Mode / Cold Start Reality
+
+The current frontend location is good: Cloudflare Pages is static edge hosting and should not be the part that sleeps.
+
+The current backend/database setup is the part that can sleep:
+
+- Render Free web services spin down after idle time. A cron job can reduce cold starts, but it is still a workaround on a free compute plan.
+- Aiven Free MySQL can be powered off when unused and is not covered by the paid SLA.
+
+Permanent production fix:
+
+1. Keep the frontend on Cloudflare Pages.
+2. Move the backend to an always-on paid instance, or upgrade the existing Render web service from Free.
+3. Move MySQL to a paid always-on database plan, or upgrade the existing Aiven MySQL service.
+4. Point cron-job.org to:
+
+```text
+https://your-backend-domain.com/api/health/warm
+```
+
+The cron job is useful as monitoring and cache warming, but it should not be treated as the permanent replacement for always-on hosting.
 
 ## If Admin Book Upload Fails
 

@@ -6,7 +6,10 @@ import db from "../src/config/db.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const sqlPath = path.resolve(__dirname, "../../sql/005_payments.sql");
+const sqlPaths = [
+  path.resolve(__dirname, "../../sql/005_payments.sql"),
+  path.resolve(__dirname, "../../sql/006_support_contributions.sql"),
+];
 
 function splitSqlStatements(sql) {
   return sql
@@ -17,14 +20,16 @@ function splitSqlStatements(sql) {
 }
 
 async function main() {
-  const sql = fs.readFileSync(sqlPath, "utf8");
-  const statements = splitSqlStatements(sql);
+  const statements = sqlPaths.flatMap((sqlPath) => {
+    const sql = fs.readFileSync(sqlPath, "utf8");
+    return splitSqlStatements(sql);
+  });
 
   for (const statement of statements) {
     await db.query(statement);
   }
 
-  console.log("[Schema] Payment tables are ready.");
+  console.log("[Schema] Payment and support tables are ready.");
 }
 
 try {

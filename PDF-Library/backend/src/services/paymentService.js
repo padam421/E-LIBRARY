@@ -1,12 +1,34 @@
 import crypto from "crypto";
+import { Readable } from "stream";
 
 import db from "../config/db.js";
+import drive from "../config/drive.js";
+import { readPositiveIntEnv } from "../config/runtimeLimits.js";
 import {
   readSessionTokenFromRequest,
   verifySessionToken,
 } from "../utils/sessionToken.js";
 
 const DEFAULT_CURRENCY = "INR";
+const SUPPORT_SCOPE = "support_contribution";
+const SUPPORT_MIN_AMOUNT_PAISE = readPositiveIntEnv("SUPPORT_MIN_AMOUNT_PAISE", 9900, {
+  min: 100,
+});
+const SUPPORT_MAX_AMOUNT_PAISE = readPositiveIntEnv("SUPPORT_MAX_AMOUNT_PAISE", 10000000, {
+  min: SUPPORT_MIN_AMOUNT_PAISE,
+});
+const SUPPORT_MEDIA_MAX_BYTES = readPositiveIntEnv("SUPPORT_MEDIA_MAX_BYTES", 12 * 1024 * 1024, {
+  min: 1024,
+});
+const SUPPORT_QUICK_AMOUNTS = [9900, 24900, 49900];
+const SUPPORT_MEDIA_TYPES = new Set([
+  "audio/webm",
+  "audio/mp4",
+  "audio/mpeg",
+  "video/webm",
+  "video/mp4",
+  "video/quicktime",
+]);
 const DEFAULT_SETTINGS = {
   schemaReady: false,
   paymentsEnabled: false,
@@ -25,6 +47,15 @@ function isMissingPaymentSchemaError(error) {
   return ["ER_NO_SUCH_TABLE", "ER_BAD_FIELD_ERROR"].includes(error?.code);
 }
 
+function isMissingSupportSchemaError(error) {
+  return [
+    "ER_NO_SUCH_TABLE",
+    "ER_BAD_FIELD_ERROR",
+    "ER_TRUNCATED_WRONG_VALUE_FOR_FIELD",
+    "WARN_DATA_TRUNCATED",
+  ].includes(error?.code);
+}
+
 function toBool(value) {
   return Number(value || 0) === 1;
 }
@@ -33,6 +64,12 @@ function clampInteger(value, fallback, { min = 0, max = Number.MAX_SAFE_INTEGER 
   const parsed = Number.parseInt(String(value ?? ""), 10);
   if (!Number.isInteger(parsed)) return fallback;
   return Math.min(max, Math.max(min, parsed));
+}
+
+function clampAmountPaise(value, fallback = SUPPORT_MIN_AMOUNT_PAISE) {
+  const parsed = Number.parseInt(String(value ?? ""), 10);
+  if (!Number.isInteger(parsed)) return fallback;
+  return Math.min(SUPPORT_MAX_AMOUNT_PAISE, Math.max(SUPPORT_MIN_AMOUNT_PAISE, parsed));
 }
 
 function normalizeCurrency(value) {
@@ -125,6 +162,34 @@ function parseJson(value, fallback = {}) {
   }
 }
 
+function sanitizeText(value, maxLength = 255) {
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
+}
+
+function sanitizeSupportMessage(value) {
+  return String(value || "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .trim()
+    .slice(0, 1200);
+}
+
+function normalizeEmail(value) {
+  const email = String(value || "").trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "";
+}
+
+function makeSupportUploadToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+function hashSupportUploadToken(token) {
+  return crypto.createHash("sha256").update(String(token || "")).digest("hex");
+}
+
 function addDays(date, days) {
   const next = new Date(date.getTime());
   next.setUTCDate(next.getUTCDate() + Number(days || 0));
@@ -139,7 +204,11 @@ function dateToMysql(value) {
 }
 
 function makeReceipt(scope) {
-  const prefix = scope === "site_subscription" ? "site" : "book";
+  const prefix = scope === "site_subscription"
+    ? "site"
+    : scope === SUPPORT_SCOPE
+      ? "support"
+      : "book";
   return `lib_${prefix}_${Date.now().toString(36)}_${crypto.randomBytes(5).toString("hex")}`.slice(0, 40);
 }
 
@@ -323,6 +392,27 @@ export async function getAuthenticatedPaymentUser(req) {
     id: rows[0]?.id || null,
     role: rows[0]?.role || "user",
   };
+}
+
+export async function getOptionalPaymentUser(req) {
+  const token = readSessionTokenFromRequest(req);
+  if (!token) return null;
+
+  try {
+    const sessionUser = verifySessionToken(token);
+    const [rows] = await db.query(
+      "SELECT id, role FROM users WHERE email = ? LIMIT 1",
+      [sessionUser.email],
+    );
+
+    return {
+      ...sessionUser,
+      id: rows[0]?.id || null,
+      role: rows[0]?.role || "user",
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function getReaderAccess(user, bookId) {
@@ -634,6 +724,160 @@ export async function createBookPurchaseOrder(user, bookId) {
   });
 }
 
+export async function getSupportConfig() {
+  const settings = await getPaymentSettings();
+  return {
+    ownerName: "Padam Kishore",
+    githubUrl: "https://github.com/padam421",
+    linkedinUrl: "https://www.linkedin.com/in/padam-kishore-031b8b377/",
+    provider: "razorpay",
+    keyId: getPublicPaymentConfig().keyId,
+    configured: getPublicPaymentConfig().configured,
+    paymentsEnabled: settings.paymentsEnabled,
+    schemaReady: settings.schemaReady,
+    supportEnabled: Boolean(
+      settings.schemaReady &&
+      settings.paymentsEnabled &&
+      getPublicPaymentConfig().configured,
+    ),
+    currency: DEFAULT_CURRENCY,
+    minAmountPaise: SUPPORT_MIN_AMOUNT_PAISE,
+    maxAmountPaise: SUPPORT_MAX_AMOUNT_PAISE,
+    quickAmountsPaise: SUPPORT_QUICK_AMOUNTS,
+    mediaEnabled: Boolean(String(process.env.SUPPORT_MEDIA_DRIVE_FOLDER_ID || "").trim()),
+    mediaMaxBytes: SUPPORT_MEDIA_MAX_BYTES,
+  };
+}
+
+export async function createSupportContributionOrder(user, input = {}) {
+  const settings = await getPaymentSettings();
+  if (!settings.schemaReady) {
+    const error = new Error("Payment database tables are not installed yet.");
+    error.statusCode = 503;
+    throw error;
+  }
+  if (!settings.paymentsEnabled) {
+    const error = new Error("Support payments are disabled in the admin panel.");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const rupees = Number(String(input.amountRupees ?? "").trim());
+  const amountPaise = clampAmountPaise(
+    input.amountPaise ?? (Number.isFinite(rupees) ? Math.round(rupees * 100) : undefined),
+  );
+  const supporterName =
+    sanitizeText(input.name, 120) ||
+    sanitizeText(user?.name, 120) ||
+    "Anonymous reader";
+  const supporterHandle = sanitizeText(input.handle, 120);
+  const supporterEmail = normalizeEmail(input.email) || normalizeEmail(user?.email);
+  const message = sanitizeSupportMessage(input.message);
+  const localCurrency = normalizeCurrency(input.localCurrency || DEFAULT_CURRENCY);
+  const localAmount = Number.isFinite(Number(input.localAmount))
+    ? Math.max(0, Number(input.localAmount))
+    : null;
+  const isPublic = input.isPublic === false ? 0 : 1;
+  const receipt = makeReceipt(SUPPORT_SCOPE);
+  const uploadToken = makeSupportUploadToken();
+  const uploadTokenHash = hashSupportUploadToken(uploadToken);
+
+  let razorpayOrder;
+  try {
+    razorpayOrder = await createRazorpayOrder({
+      amountPaise,
+      currency: DEFAULT_CURRENCY,
+      receipt,
+      notes: {
+        scope: SUPPORT_SCOPE,
+        supporter_name: supporterName.slice(0, 120),
+        supporter_handle: supporterHandle.slice(0, 120),
+        supporter_email: supporterEmail.slice(0, 120),
+      },
+    });
+  } catch (error) {
+    throw error;
+  }
+
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [orderResult] = await connection.query(
+      `INSERT INTO payment_orders
+         (user_id, user_email, scope, plan_key, book_id, amount_paise, currency,
+          gateway_order_id, status, receipt, metadata_json)
+       VALUES (?, ?, ?, 'support', 0, ?, ?, ?, 'created', ?, ?)`,
+      [
+        user?.id || null,
+        supporterEmail || null,
+        SUPPORT_SCOPE,
+        amountPaise,
+        DEFAULT_CURRENCY,
+        razorpayOrder.id,
+        receipt,
+        JSON.stringify({
+          supporterName,
+          supporterHandle,
+          localCurrency,
+          localAmount,
+        }),
+      ],
+    );
+
+    const [supportResult] = await connection.query(
+      `INSERT INTO support_contributions
+         (order_id, user_id, supporter_name, supporter_handle, supporter_email,
+          message, amount_paise, currency, local_amount, local_currency,
+          upload_token_hash, is_public, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'created')`,
+      [
+        orderResult.insertId,
+        user?.id || null,
+        supporterName,
+        supporterHandle || null,
+        supporterEmail || null,
+        message || null,
+        amountPaise,
+        DEFAULT_CURRENCY,
+        localAmount,
+        localCurrency,
+        uploadTokenHash,
+        isPublic,
+      ],
+    );
+
+    await connection.commit();
+    return {
+      id: orderResult.insertId,
+      supportContributionId: supportResult.insertId,
+      provider: "razorpay",
+      keyId: getPublicPaymentConfig().keyId,
+      gatewayOrderId: razorpayOrder.id,
+      amountPaise,
+      currency: DEFAULT_CURRENCY,
+      receipt,
+      scope: SUPPORT_SCOPE,
+      planKey: "support",
+      bookId: 0,
+      supportUploadToken: uploadToken,
+      prefill: {
+        name: supporterName,
+        email: supporterEmail,
+      },
+    };
+  } catch (error) {
+    await connection.rollback().catch(() => {});
+    if (isMissingSupportSchemaError(error)) {
+      const schemaError = new Error("Support payment tables are not installed yet.");
+      schemaError.statusCode = 503;
+      throw schemaError;
+    }
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
 async function createStoredOrder({
   user,
   scope,
@@ -735,6 +979,30 @@ async function grantEntitlementForOrder(connection, order) {
   return findActiveEntitlement(cleanEmail, order.scope, cleanBookId, connection);
 }
 
+async function markSupportContributionPaid(connection, order) {
+  await connection.query(
+    `UPDATE support_contributions
+        SET status = CASE WHEN status = 'media_uploaded' THEN status ELSE 'paid' END,
+            paid_at = COALESCE(paid_at, CURRENT_TIMESTAMP)
+      WHERE order_id = ?`,
+    [order.id],
+  );
+
+  const [rows] = await connection.query(
+    `SELECT id, supporter_name, supporter_handle, message, amount_paise,
+            currency, status, paid_at, media_drive_id
+       FROM support_contributions
+      WHERE order_id = ?
+      LIMIT 1`,
+    [order.id],
+  );
+
+  return {
+    type: SUPPORT_SCOPE,
+    contribution: rows[0] || null,
+  };
+}
+
 async function markOrderPaid(connection, order, paymentId, signature = "") {
   if (order.status !== "paid") {
     await connection.query(
@@ -746,6 +1014,14 @@ async function markOrderPaid(connection, order, paymentId, signature = "") {
         WHERE id = ?`,
       [paymentId || "", signature || "", order.id],
     );
+  }
+
+  if (order.scope === SUPPORT_SCOPE) {
+    return markSupportContributionPaid(connection, {
+      ...order,
+      status: "paid",
+      gateway_payment_id: paymentId || order.gateway_payment_id,
+    });
   }
 
   return grantEntitlementForOrder(connection, {
@@ -780,9 +1056,12 @@ export async function verifyPaymentAndGrantAccess({ gatewayOrderId, gatewayPayme
       throw error;
     }
 
-    const entitlement = await markOrderPaid(connection, order, gatewayPaymentId, signature);
+    const paidResult = await markOrderPaid(connection, order, gatewayPaymentId, signature);
     await connection.commit();
-    return { orderId: order.id, entitlement };
+    if (order.scope === SUPPORT_SCOPE) {
+      return { orderId: order.id, scope: order.scope, support: paidResult?.contribution || null };
+    }
+    return { orderId: order.id, scope: order.scope, entitlement: paidResult };
   } catch (error) {
     await connection.rollback().catch(() => {});
     throw error;
@@ -820,10 +1099,16 @@ export async function listPaymentOrders({ page = 1, limit = 50 } = {}) {
 
   const [countRows] = await db.query("SELECT COUNT(*) AS total FROM payment_orders");
   const [rows] = await db.query(
-    `SELECT id, user_email, scope, plan_key, book_id, amount_paise, currency,
-            gateway_order_id, gateway_payment_id, status, receipt, created_at, paid_at
-       FROM payment_orders
-      ORDER BY id DESC
+    `SELECT po.id, po.user_email, po.scope, po.plan_key, po.book_id,
+            po.amount_paise, po.currency, po.gateway_order_id,
+            po.gateway_payment_id, po.status, po.receipt, po.created_at, po.paid_at,
+            sc.supporter_name, sc.supporter_handle, sc.message AS support_message,
+            sc.media_drive_id, sc.media_mime_type, sc.media_file_name,
+            sc.status AS support_status
+       FROM payment_orders po
+       LEFT JOIN support_contributions sc
+         ON sc.order_id = po.id
+      ORDER BY po.id DESC
       LIMIT ? OFFSET ?`,
     [safeLimit, offset],
   );
@@ -835,5 +1120,143 @@ export async function listPaymentOrders({ page = 1, limit = 50 } = {}) {
     limit: safeLimit,
     total,
     totalPages: Math.max(1, Math.ceil(total / safeLimit)),
+  };
+}
+
+export async function listRecentSupportContributions({ limit = 8 } = {}) {
+  const safeLimit = clampInteger(limit, 8, { min: 1, max: 20 });
+  try {
+    const [rows] = await db.query(
+      `SELECT supporter_name, supporter_handle, message, amount_paise,
+              currency, paid_at, media_drive_id
+         FROM support_contributions
+        WHERE status IN ('paid', 'media_uploaded')
+          AND is_public = 1
+        ORDER BY COALESCE(paid_at, created_at) DESC, id DESC
+        LIMIT ?`,
+      [safeLimit],
+    );
+
+    return rows.map((row) => ({
+      name: row.supporter_name || "Anonymous reader",
+      handle: row.supporter_handle || "",
+      message: row.message || "",
+      amountPaise: Number(row.amount_paise || 0),
+      currency: row.currency || DEFAULT_CURRENCY,
+      paidAt: row.paid_at || null,
+      hasMedia: Boolean(row.media_drive_id),
+    }));
+  } catch (error) {
+    if (isMissingSupportSchemaError(error)) {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export async function uploadSupportMedia(uploadToken, input = {}) {
+  const tokenHash = hashSupportUploadToken(uploadToken);
+  if (!uploadToken || tokenHash.length !== 64) {
+    const error = new Error("Invalid support upload token.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const folderId = String(process.env.SUPPORT_MEDIA_DRIVE_FOLDER_ID || "").trim();
+  if (!folderId) {
+    const error = new Error("Support media uploads are not configured yet.");
+    error.statusCode = 503;
+    throw error;
+  }
+
+  const [rows] = await db.query(
+    `SELECT sc.*, po.status AS order_status, po.gateway_payment_id
+       FROM support_contributions sc
+       INNER JOIN payment_orders po
+         ON po.id = sc.order_id
+      WHERE sc.upload_token_hash = ?
+      LIMIT 1`,
+    [tokenHash],
+  );
+  const contribution = rows[0];
+  if (!contribution) {
+    const error = new Error("Support upload session was not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+  if (contribution.order_status !== "paid") {
+    const error = new Error("Media can be uploaded only after payment succeeds.");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const mimeType = sanitizeText(input.mimeType, 80).toLowerCase();
+  if (!SUPPORT_MEDIA_TYPES.has(mimeType)) {
+    const error = new Error("Unsupported media type.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const dataInput = String(input.dataBase64 || input.mediaDataUrl || "").trim();
+  const dataBase64 = dataInput.includes(",") ? dataInput.split(",").pop() : dataInput;
+  if (!dataBase64) {
+    const error = new Error("Missing media data.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const buffer = Buffer.from(dataBase64, "base64");
+  if (!buffer.length || buffer.length > SUPPORT_MEDIA_MAX_BYTES) {
+    const error = new Error(`Media must be smaller than ${Math.round(SUPPORT_MEDIA_MAX_BYTES / 1024 / 1024)} MB.`);
+    error.statusCode = 413;
+    throw error;
+  }
+
+  const extension = mimeType.includes("mp4")
+    ? "mp4"
+    : mimeType.includes("mpeg")
+      ? "mp3"
+      : mimeType.includes("quicktime")
+        ? "mov"
+        : "webm";
+  const kind = mimeType.startsWith("video/") ? "video" : "audio";
+  const fileName = `support-${contribution.id}-${kind}-${Date.now()}.${extension}`;
+
+  const response = await drive.files.create({
+    requestBody: {
+      name: fileName,
+      parents: [folderId],
+      description: `Support message for E-Library contribution #${contribution.id}`,
+    },
+    media: {
+      mimeType,
+      body: Readable.from(buffer),
+    },
+    fields: "id, webViewLink",
+  });
+
+  await db.query(
+    `UPDATE support_contributions
+        SET media_drive_id = ?,
+            media_mime_type = ?,
+            media_file_name = ?,
+            media_size_bytes = ?,
+            media_uploaded_at = CURRENT_TIMESTAMP,
+            status = 'media_uploaded'
+      WHERE id = ?`,
+    [
+      response.data.id,
+      mimeType,
+      fileName,
+      buffer.length,
+      contribution.id,
+    ],
+  );
+
+  return {
+    id: contribution.id,
+    mediaDriveId: response.data.id,
+    mediaUrl: response.data.webViewLink || "",
+    fileName,
   };
 }

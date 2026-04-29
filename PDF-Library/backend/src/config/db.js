@@ -77,6 +77,9 @@ async function runHeartbeat() {
 }
 
 // Start heartbeat — this runs inside the server process forever
-setInterval(runHeartbeat, HEARTBEAT_INTERVAL_MS);
+const heartbeatStartTimer = setTimeout(runHeartbeat, 5000);
+const heartbeatIntervalTimer = setInterval(runHeartbeat, HEARTBEAT_INTERVAL_MS);
+heartbeatStartTimer.unref?.();
+heartbeatIntervalTimer.unref?.();
 
 export default pool;

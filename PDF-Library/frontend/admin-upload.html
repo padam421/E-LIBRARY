@@ -1935,7 +1935,26 @@
         if (order?.scope === "book_purchase") {
           return order?.book_id ? `Book #${Number(order.book_id)}` : "Book Purchase";
         }
+        if (order?.scope === "support_contribution") {
+          return "Support Contribution";
+        }
         return order?.scope || "-";
+      }
+
+      function formatSupporter(order) {
+        if (order?.scope !== "support_contribution") return order?.user_email || "-";
+        const label = order.supporter_handle
+          ? `${order.supporter_name || "Anonymous"} (${order.supporter_handle})`
+          : order.supporter_name || order.user_email || "Anonymous";
+        const email = order.user_email || "";
+        return email ? `${label} · ${email}` : label;
+      }
+
+      function formatSupportMedia(order) {
+        if (order?.scope !== "support_contribution") return "-";
+        if (!order.media_drive_id) return order.support_status === "paid" ? "No media" : "-";
+        const url = `https://drive.google.com/file/d/${encodeURIComponent(order.media_drive_id)}/view`;
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#93c5fd;">Open media</a>`;
       }
 
       function formatPaymentStatus(status) {
@@ -1986,14 +2005,16 @@
           const amount = formatRupees(order.amount_paise || 0, order.currency || "INR");
           const createdAt = order.created_at ? new Date(order.created_at).toLocaleString() : "-";
           const paidAt = order.paid_at ? new Date(order.paid_at).toLocaleString() : "-";
+          const supporterTitle = order.support_message ? ` title="${escapeHtml(order.support_message)}"` : "";
           return `<tr>
             <td>${escapeHtml(createdAt)}</td>
-            <td>${escapeHtml(order.user_email || "-")}</td>
+            <td${supporterTitle}>${escapeHtml(formatSupporter(order))}</td>
             <td>${escapeHtml(formatPaymentScope(order))}</td>
             <td>${escapeHtml(amount)}</td>
             <td>${formatPaymentStatus(order.status)}</td>
             <td title="${escapeHtml(order.gateway_order_id || "-")}">${escapeHtml(order.gateway_order_id || "-")}</td>
             <td>${escapeHtml(order.gateway_payment_id || "-")}</td>
+            <td>${formatSupportMedia(order)}</td>
             <td>${escapeHtml(paidAt)}</td>
           </tr>`;
         }).join("");
@@ -2002,8 +2023,8 @@
           <table>
             <thead>
               <tr>
-                <th>Created</th><th>User</th><th>Type</th><th>Amount</th>
-                <th>Status</th><th>Gateway Order</th><th>Gateway Payment</th><th>Paid At</th>
+                <th>Created</th><th>User / Supporter</th><th>Type</th><th>Amount</th>
+                <th>Status</th><th>Gateway Order</th><th>Gateway Payment</th><th>Media</th><th>Paid At</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>

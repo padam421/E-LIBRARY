@@ -8,6 +8,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import videoRoutes from "./routes/videoRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import paymentWebhookRoutes from "./routes/paymentWebhookRoutes.js";
+import supportRoutes from "./routes/supportRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
 import { readStringEnv } from "./config/runtimeLimits.js";
 
@@ -37,7 +38,7 @@ function applySecurityHeaders(req, res, next) {
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader(
     "Permissions-Policy",
-    "camera=(self), microphone=(), geolocation=()",
+    "camera=(self), microphone=(self), geolocation=()",
   );
 
   if (isProduction) {
@@ -91,6 +92,7 @@ app.use("/api/health", healthRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/video", videoRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/support", supportRoutes);
 
 // Ultra-lightweight ping for cron-job.org — zero DB, instant response
 app.get("/api/ping", (req, res) => res.status(200).json({ alive: true }));

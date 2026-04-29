@@ -105,6 +105,10 @@ function validateProduction() {
   if (!hasValue("GEMINI_API_KEY") && !hasValue("GEMINI_API_KEYS")) {
     warn("No Gemini API key is configured. The public AI assistant will not work.");
   }
+
+  if (!hasValue("SUPPORT_MEDIA_DRIVE_FOLDER_ID")) {
+    warn("SUPPORT_MEDIA_DRIVE_FOLDER_ID is not configured. Paid support will work, but audio/video support messages cannot upload.");
+  }
 }
 
 function validateDevelopment() {

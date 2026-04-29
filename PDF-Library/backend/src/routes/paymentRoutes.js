@@ -2,6 +2,7 @@ import express from "express";
 
 import {
   createBookOrder,
+  createSupportOrder,
   createSiteOrder,
   getBookAccess,
   getPaymentConfig,
@@ -33,6 +34,7 @@ router.get("/config", paymentReadLimiter, getPaymentConfig);
 router.get("/access", paymentReadLimiter, getBookAccess);
 router.post("/orders/site", paymentWriteLimiter, createSiteOrder);
 router.post("/orders/book", paymentWriteLimiter, createBookOrder);
+router.post("/orders/support", paymentWriteLimiter, createSupportOrder);
 router.post("/verify", paymentWriteLimiter, verifyPayment);
 
 export default router;

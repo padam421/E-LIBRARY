@@ -102,13 +102,17 @@
     });
   }
 
-  async function createOrder({ scope, planKey, bookId }) {
+  async function createOrder({ scope, planKey, bookId, support }) {
     const endpoint = scope === "site_subscription"
       ? "/api/payments/orders/site"
-      : "/api/payments/orders/book";
+      : scope === "support_contribution"
+        ? "/api/payments/orders/support"
+        : "/api/payments/orders/book";
     const body = scope === "site_subscription"
       ? { planKey }
-      : { bookId };
+      : scope === "support_contribution"
+        ? { ...(support || {}) }
+        : { bookId };
 
     const response = await fetch(buildApiUrl(endpoint), {
       method: "POST",
@@ -169,10 +173,96 @@
     });
   }
 
+  async function startSupportCheckout({ amountPaise, amountRupees, name, handle, email, message, localCurrency, localAmount, user }) {
+    await ensureCheckoutScript();
+    const order = await createOrder({
+      scope: "support_contribution",
+      support: {
+        amountPaise,
+        amountRupees,
+        name,
+        handle,
+        email,
+        message,
+        localCurrency,
+        localAmount,
+      },
+    });
+
+    return new Promise((resolve, reject) => {
+      const checkout = new window.Razorpay({
+        key: order.keyId,
+        amount: order.amountPaise,
+        currency: order.currency,
+        name: "E-Library",
+        description: "Support Padam Kishore's free digital library",
+        order_id: order.gatewayOrderId,
+        prefill: {
+          name: name || user?.name || order.prefill?.name || "",
+          email: email || user?.email || order.prefill?.email || "",
+        },
+        notes: {
+          scope: "support_contribution",
+          supporter: name || handle || "Anonymous reader",
+        },
+        theme: {
+          color: "#0ea5e9",
+        },
+        handler: async (paymentResponse) => {
+          try {
+            const verified = await verifyCheckout(paymentResponse);
+            resolve({
+              ...verified,
+              order,
+              supportUploadToken: order.supportUploadToken || "",
+            });
+          } catch (error) {
+            reject(error);
+          }
+        },
+        modal: {
+          ondismiss: () => reject(new Error("Support payment was closed before completion.")),
+        },
+      });
+
+      checkout.on("payment.failed", (failure) => {
+        reject(new Error(failure?.error?.description || "Support payment failed."));
+      });
+
+      checkout.open();
+    });
+  }
+
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(reader.error || new Error("Could not read media."));
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function uploadSupportMedia({ uploadToken, blob, mimeType }) {
+    if (!uploadToken || !blob) return null;
+    const mediaDataUrl = await blobToDataUrl(blob);
+    const response = await fetch(buildApiUrl(`/api/support/media/${encodeURIComponent(uploadToken)}`), {
+      method: "POST",
+      credentials: "include",
+      headers: getReaderSessionHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({
+        mediaDataUrl,
+        mimeType: mimeType || blob.type || "video/webm",
+      }),
+    });
+    return readJsonResponse(response);
+  }
+
   window.PdfLibraryPayments = {
     formatMoney,
     parseBookId,
     getAccess,
     startCheckout,
+    startSupportCheckout,
+    uploadSupportMedia,
   };
 })();

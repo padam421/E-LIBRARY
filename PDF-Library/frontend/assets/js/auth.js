@@ -15,6 +15,9 @@ const SESSION_TOKEN_KEY_PREFIX = "pdf_lib_session_token_v1";
 const ACCESS_TOKEN_KEY_PREFIX = "pdf_lib_google_access_token_v1";
 const ACCESS_TOKEN_EXPIRY_KEY_PREFIX = "pdf_lib_google_access_token_expiry_v1";
 const STORAGE_MIGRATION_META_KEY = "pdf_lib_storage_migration_v2";
+const PUBLIC_LIBRARY_CACHE_KEY = "pdf_lib_public_books_cache_v1";
+const PUBLIC_LIBRARY_CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const LIBRARY_FETCH_TIMEOUT_MS = 75000;
 function resolveApiOrigin() {
   const configured = String(
     window.PDF_LIBRARY_CONFIG?.API_ORIGIN ||
@@ -3255,66 +3258,141 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchPDFs();
 });
 
-// ─── Permanent Silent Backend Recovery System ─────────────────────────────────
-// Retries silently in background for up to ~10 minutes.
-// User only ever sees the skeleton loading cards. Zero error messages.
+// Backend recovery system
+// Renders cached books immediately when possible, then keeps retrying the live
+// API while the backend/database wake up.
 let _fetchPDFsRunning = false;
+let _libraryCacheRendered = false;
+
+function normalizeLibraryBooksPayload(pdfs) {
+  return Array.isArray(pdfs)
+    ? pdfs.filter(
+        (book) =>
+          book &&
+          typeof book === "object" &&
+          normalizeText(book.title).length > 0,
+      )
+    : [];
+}
+
+function readPublicLibraryCache() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(PUBLIC_LIBRARY_CACHE_KEY) || "null");
+    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.books)) {
+      return [];
+    }
+
+    const cachedAt = Number(parsed.cachedAt || 0);
+    if (!cachedAt || Date.now() - cachedAt > PUBLIC_LIBRARY_CACHE_MAX_AGE_MS) {
+      return [];
+    }
+
+    return normalizeLibraryBooksPayload(parsed.books);
+  } catch {
+    return [];
+  }
+}
+
+function writePublicLibraryCache(books) {
+  if (!Array.isArray(books) || books.length === 0) return;
+  try {
+    localStorage.setItem(
+      PUBLIC_LIBRARY_CACHE_KEY,
+      JSON.stringify({
+        cachedAt: Date.now(),
+        books,
+      }),
+    );
+  } catch {
+    // Ignore storage write errors in private mode or when storage is full.
+  }
+}
+
+function showLibraryLoadingStatus(message) {
+  const loadingIndicator = document.getElementById("loading-indicator");
+  if (!loadingIndicator || _libraryCacheRendered) return;
+
+  let status = document.getElementById("library-loading-status");
+  if (!status) {
+    status = document.createElement("div");
+    status.id = "library-loading-status";
+    status.style.cssText =
+      "margin:18px 0 0;color:rgba(255,255,255,0.62);font:500 14px/1.5 Inter,system-ui,sans-serif;";
+    loadingIndicator.appendChild(status);
+  }
+  status.textContent = message;
+}
+
+function applyLibraryBooks(books, { fromCache = false } = {}) {
+  allLibraryBooks = normalizeLibraryBooksPayload(books);
+  window.PDF_LIBRARY_BOOKS = allLibraryBooks;
+  searchableBooks = allLibraryBooks.filter((book) => hasReadableBook(book));
+
+  const loadingIndicator = document.getElementById("loading-indicator");
+  if (loadingIndicator) loadingIndicator.style.display = "none";
+
+  if (fromCache) {
+    _libraryCacheRendered = true;
+  } else {
+    _libraryCacheRendered = false;
+    writePublicLibraryCache(allLibraryBooks);
+  }
+
+  renderSitePremiumButton();
+  renderContinueReadingSection(allLibraryBooks);
+  runSearch("");
+  rerenderLibraryRowsForFreshLayout();
+}
 
 async function fetchPDFs(retryCount = 0) {
   if (retryCount === 0 && _fetchPDFsRunning) return;
   _fetchPDFsRunning = true;
 
+  if (retryCount === 0 && !_libraryCacheRendered) {
+    const cachedBooks = readPublicLibraryCache();
+    if (cachedBooks.length > 0) {
+      applyLibraryBooks(cachedBooks, { fromCache: true });
+    }
+  }
+
   const MAX_RETRIES = 20; // ~10 minutes of retrying
 
   try {
     const controller = new AbortController();
-    const fetchTimeout = setTimeout(() => controller.abort(), 30000);
+    const fetchTimeout = setTimeout(() => controller.abort(), LIBRARY_FETCH_TIMEOUT_MS);
     const response = await fetch(buildApiUrl("/api/pdfs"), { signal: controller.signal });
     clearTimeout(fetchTimeout);
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const pdfs = await response.json();
-    allLibraryBooks = Array.isArray(pdfs)
-      ? pdfs.filter(
-          (book) =>
-            book &&
-            typeof book === "object" &&
-            normalizeText(book.title).length > 0,
-        )
-      : [];
-    window.PDF_LIBRARY_BOOKS = allLibraryBooks;
-    searchableBooks = allLibraryBooks.filter((book) => hasReadableBook(book));
+    applyLibraryBooks(pdfs);
 
-    // Success — hide skeleton, show books
-    const loadingIndicator = document.getElementById("loading-indicator");
-    if (loadingIndicator) loadingIndicator.style.display = "none";
-
-    renderSitePremiumButton();
-    renderContinueReadingSection(allLibraryBooks);
-    runSearch("");
-    rerenderLibraryRowsForFreshLayout();
     _fetchPDFsRunning = false;
 
   } catch (error) {
     console.warn(`[Library] Attempt ${retryCount + 1} failed silently:`, error.message);
 
     if (retryCount < MAX_RETRIES) {
-      // Skeleton stays visible — user sees nothing wrong
-      // Backoff: 5s → 8s → 13s → 21s → 30s → 30s (capped)
+      // Backoff: 5s, 8s, 13s, 21s, then 30s capped.
+      if (!_libraryCacheRendered && retryCount >= 1) {
+        showLibraryLoadingStatus("Still connecting to the library server...");
+      }
       const waitMs = Math.min(30000, Math.round(5000 * Math.pow(1.6, retryCount)));
       setTimeout(() => fetchPDFs(retryCount + 1), waitMs);
 
     } else {
-      // After 10 min of trying — skeleton stays, but start a slow background ping
-      // Auto-recovers silently if server ever comes back, no error shown
+      // After the retry window, keep probing and auto-recover when the server responds.
+      if (!_libraryCacheRendered) {
+        showLibraryLoadingStatus("The library server is still waking up. Retrying automatically...");
+      }
       _fetchPDFsRunning = false;
       const backgroundPing = setInterval(async () => {
         try {
           const r = await fetch(buildApiUrl("/api/ping"));
           if (r.ok) {
             clearInterval(backgroundPing);
-            fetchPDFs(0); // Server back — load books silently
+            fetchPDFs(0);
           }
         } catch (_) { /* still waiting */ }
       }, 30000);

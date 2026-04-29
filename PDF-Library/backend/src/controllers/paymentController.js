@@ -1,7 +1,9 @@
 import {
   createBookPurchaseOrder,
+  createSupportContributionOrder,
   createSiteSubscriptionOrder,
   getAuthenticatedPaymentUser,
+  getOptionalPaymentUser,
   getPaymentSettings,
   getPublicPaymentConfig,
   getReaderAccess,
@@ -86,19 +88,35 @@ export async function createBookOrder(req, res) {
   }
 }
 
+export async function createSupportOrder(req, res) {
+  try {
+    const user = await getOptionalPaymentUser(req);
+    const order = await createSupportContributionOrder(user, req.body || {});
+    return res.status(201).json(order);
+  } catch (error) {
+    return sendError(res, error, "Could not create support payment order.");
+  }
+}
+
 export async function verifyPayment(req, res) {
   try {
-    await getAuthenticatedPaymentUser(req);
     const result = await verifyPaymentAndGrantAccess({
       gatewayOrderId: req.body?.razorpay_order_id,
       gatewayPaymentId: req.body?.razorpay_payment_id,
       signature: req.body?.razorpay_signature,
     });
-    return res.status(200).json({
+    const payload = {
       message: "Payment verified and access unlocked.",
       orderId: result.orderId,
-      entitlement: result.entitlement,
-    });
+      scope: result.scope,
+    };
+    if (result.scope === "support_contribution") {
+      payload.message = "Support payment verified. Thank you for helping E-Library grow.";
+      payload.support = result.support;
+    } else {
+      payload.entitlement = result.entitlement;
+    }
+    return res.status(200).json(payload);
   } catch (error) {
     return sendError(res, error, "Payment verification failed.");
   }
