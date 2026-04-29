@@ -36,6 +36,9 @@
 
   const API_ORIGIN = resolveApiOrigin();
   const DEFAULT_QUICK_AMOUNTS = [100, 9900, 24900];
+  const DEFAULT_MIN_AMOUNT_PAISE = 100;
+  const DEFAULT_MAX_AMOUNT_PAISE = 10000000;
+  const REQUEST_TIMEOUT_MS = 20000;
   const MAX_RECORDING_MS = 60 * 1000;
   const COUNTRY_TO_CURRENCY = {
     US: "USD",
@@ -109,6 +112,33 @@
     });
   }
 
+  function normalizeFetchError(error) {
+    const message = String(error?.message || "");
+    if (error?.name === "AbortError") {
+      return new Error("Payment server is taking too long to respond. Please wait a few seconds and try again.");
+    }
+    if (error instanceof TypeError || message.toLowerCase().includes("failed to fetch")) {
+      return new Error("Payment server is not reachable right now. Please wait 30 seconds, refresh, and try again.");
+    }
+    return error;
+  }
+
+  async function fetchSupportJson(path, options = {}) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
+      const response = await fetch(buildApiUrl(path), {
+        ...options,
+        signal: controller.signal,
+      });
+      return await readJsonResponse(response);
+    } catch (error) {
+      throw normalizeFetchError(error);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   function formatMoney(amountPaise, currency = "INR") {
     if (window.PdfLibraryPayments?.formatMoney) {
       return window.PdfLibraryPayments.formatMoney(amountPaise, currency);
@@ -123,6 +153,20 @@
     } catch {
       return `INR ${amount.toFixed(amount % 1 === 0 ? 0 : 2)}`;
     }
+  }
+
+  function normalizeAmountValue(value) {
+    const cleaned = String(value || "")
+      .replace(/,/g, "")
+      .replace(/[^\d.]/g, "");
+    const parts = cleaned.split(".");
+    if (parts.length <= 1) return parts[0] || "";
+    return `${parts[0]}.${parts.slice(1).join("").slice(0, 2)}`;
+  }
+
+  function readAmountRupees() {
+    const normalized = normalizeAmountValue(els.amount?.value || "");
+    return normalized ? Number(normalized) : NaN;
   }
 
   function getActiveUser() {
@@ -178,7 +222,7 @@
   }
 
   function updateEstimate() {
-    const amountInr = Number(els.amount?.value || 0);
+    const amountInr = readAmountRupees();
     if (!Number.isFinite(amountInr) || amountInr <= 0) {
       els.localEstimate.textContent = "Estimated in your currency; charged securely in INR.";
       return null;
@@ -244,10 +288,9 @@
 
   async function loadSupportConfig() {
     try {
-      const response = await fetch(buildApiUrl("/api/support/config"), {
+      supportConfig = await fetchSupportJson("/api/support/config", {
         credentials: "include",
       });
-      supportConfig = await readJsonResponse(response);
       renderQuickAmounts(supportConfig.quickAmountsPaise);
       if (!els.amount.value) {
         els.amount.value = Math.round(Number((supportConfig.quickAmountsPaise || DEFAULT_QUICK_AMOUNTS)[0]) / 100);
@@ -260,19 +303,29 @@
       }
       updateEstimate();
     } catch (error) {
+      supportConfig = {
+        minAmountPaise: DEFAULT_MIN_AMOUNT_PAISE,
+        maxAmountPaise: DEFAULT_MAX_AMOUNT_PAISE,
+        quickAmountsPaise: DEFAULT_QUICK_AMOUNTS,
+        supportEnabled: false,
+        mediaEnabled: false,
+      };
       renderQuickAmounts(DEFAULT_QUICK_AMOUNTS);
+      if (!els.amount.value) {
+        els.amount.value = "1";
+      }
       setCheckoutEnabled(false);
       setRecorderEnabled(false);
-      setStatus(error.message, "error");
+      setStatus(normalizeFetchError(error).message, "error");
+      updateEstimate();
     }
   }
 
   async function loadRecentSupporters() {
     try {
-      const response = await fetch(buildApiUrl("/api/support/recent?limit=8"), {
+      const data = await fetchSupportJson("/api/support/recent?limit=8", {
         credentials: "include",
       });
-      const data = await readJsonResponse(response);
       const supporters = Array.isArray(data.supporters) ? data.supporters : [];
       if (!supporters.length) {
         els.supportersList.innerHTML = `<div class="supporter-empty">Be the first person to support this library.</div>`;
@@ -401,7 +454,7 @@
 
   async function submitSupport(event) {
     event.preventDefault();
-    const amountRupees = Number(els.amount.value || 0);
+    const amountRupees = readAmountRupees();
     const minRupees = Math.ceil(Number(supportConfig?.minAmountPaise || 100) / 100);
     if (!Number.isFinite(amountRupees) || amountRupees < minRupees) {
       setStatus(`Please choose at least ${formatMoney(minRupees * 100, "INR")}.`, "error");
@@ -421,6 +474,7 @@
 
     try {
       const result = await window.PdfLibraryPayments.startSupportCheckout({
+        amountPaise: Math.round(amountRupees * 100),
         amountRupees,
         name: els.name.value.trim(),
         email: els.email.value.trim(),
@@ -468,6 +522,10 @@
   });
 
   els.amount.addEventListener("input", () => {
+    const normalized = normalizeAmountValue(els.amount.value);
+    if (els.amount.value !== normalized) {
+      els.amount.value = normalized;
+    }
     els.quickAmounts.querySelectorAll("button").forEach((button) => {
       button.classList.toggle("active", button.dataset.supportAmount === String(els.amount.value));
     });

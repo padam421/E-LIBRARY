@@ -71,10 +71,47 @@ function clampInteger(value, fallback, { min = 0, max = Number.MAX_SAFE_INTEGER 
   return Math.min(max, Math.max(min, parsed));
 }
 
-function clampAmountPaise(value, fallback = SUPPORT_MIN_AMOUNT_PAISE) {
-  const parsed = Number.parseInt(String(value ?? ""), 10);
-  if (!Number.isInteger(parsed)) return fallback;
-  return Math.min(SUPPORT_MAX_AMOUNT_PAISE, Math.max(SUPPORT_MIN_AMOUNT_PAISE, parsed));
+function parseSupportAmountPaise(input = {}) {
+  const rawPaise = input.amountPaise;
+  const hasExplicitPaise = rawPaise !== undefined && rawPaise !== null && String(rawPaise).trim() !== "";
+  let amountPaise;
+
+  if (hasExplicitPaise) {
+    amountPaise = Number(String(rawPaise).replace(/,/g, "").trim());
+  } else {
+    const rawRupees = String(input.amountRupees ?? "").replace(/,/g, "").trim();
+    const amountRupees = Number(rawRupees);
+    amountPaise = Number.isFinite(amountRupees) ? Math.round(amountRupees * 100) : NaN;
+  }
+
+  if (!Number.isFinite(amountPaise) || !Number.isInteger(amountPaise)) {
+    const error = new Error("Enter a valid support amount.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (amountPaise < SUPPORT_MIN_AMOUNT_PAISE) {
+    const error = new Error(
+      `Support amount must be at least ${formatPaiseForError(SUPPORT_MIN_AMOUNT_PAISE)}.`,
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (amountPaise > SUPPORT_MAX_AMOUNT_PAISE) {
+    const error = new Error(
+      `Support amount cannot be more than ${formatPaiseForError(SUPPORT_MAX_AMOUNT_PAISE)}.`,
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return amountPaise;
+}
+
+function formatPaiseForError(amountPaise) {
+  const rupees = Number(amountPaise || 0) / 100;
+  return `INR ${rupees.toFixed(rupees % 1 === 0 ? 0 : 2)}`;
 }
 
 function normalizeCurrency(value) {
@@ -817,10 +854,7 @@ export async function createSupportContributionOrder(user, input = {}) {
     throw error;
   }
 
-  const rupees = Number(String(input.amountRupees ?? "").trim());
-  const amountPaise = clampAmountPaise(
-    input.amountPaise ?? (Number.isFinite(rupees) ? Math.round(rupees * 100) : undefined),
-  );
+  const amountPaise = parseSupportAmountPaise(input);
   const supporterName =
     sanitizeText(input.name, 120) ||
     sanitizeText(user?.name, 120) ||

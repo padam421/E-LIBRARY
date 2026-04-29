@@ -12,3 +12,6 @@
 
 /support.html
   X-Robots-Tag: noindex, follow
+
+/support
+  X-Robots-Tag: noindex, follow

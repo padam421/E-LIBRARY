@@ -17,6 +17,7 @@
   const API_ORIGIN = resolveApiOrigin();
   const ACTIVE_EMAIL_KEY = "pdf_lib_active_email";
   const SESSION_TOKEN_KEY_PREFIX = "pdf_lib_session_token_v1";
+  const PAYMENT_REQUEST_TIMEOUT_MS = 30000;
 
   function buildApiUrl(path) {
     return `${API_ORIGIN}${path}`;
@@ -64,6 +65,33 @@
     return data;
   }
 
+  function normalizePaymentFetchError(error) {
+    const message = String(error?.message || "");
+    if (error?.name === "AbortError") {
+      return new Error("Payment server is taking too long to respond. Please try again in a moment.");
+    }
+    if (error instanceof TypeError || message.toLowerCase().includes("failed to fetch")) {
+      return new Error("Payment server is not reachable right now. Please wait 30 seconds, refresh, and try again.");
+    }
+    return error;
+  }
+
+  async function requestPaymentJson(path, options = {}) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), PAYMENT_REQUEST_TIMEOUT_MS);
+    try {
+      const response = await fetch(buildApiUrl(path), {
+        ...options,
+        signal: controller.signal,
+      });
+      return await readJsonResponse(response);
+    } catch (error) {
+      throw normalizePaymentFetchError(error);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   async function getAccess(bookId) {
     if (!bookId) {
       return {
@@ -75,11 +103,10 @@
       };
     }
 
-    const response = await fetch(buildApiUrl(`/api/payments/access?bookId=${encodeURIComponent(bookId)}`), {
+    return requestPaymentJson(`/api/payments/access?bookId=${encodeURIComponent(bookId)}`, {
       credentials: "include",
       headers: getReaderSessionHeaders(),
     });
-    return readJsonResponse(response);
   }
 
   async function ensureCheckoutScript() {
@@ -114,23 +141,21 @@
         ? { ...(support || {}) }
         : { bookId };
 
-    const response = await fetch(buildApiUrl(endpoint), {
+    return requestPaymentJson(endpoint, {
       method: "POST",
       credentials: "include",
       headers: getReaderSessionHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(body),
     });
-    return readJsonResponse(response);
   }
 
   async function verifyCheckout(response) {
-    const verifyResponse = await fetch(buildApiUrl("/api/payments/verify"), {
+    return requestPaymentJson("/api/payments/verify", {
       method: "POST",
       credentials: "include",
       headers: getReaderSessionHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(response),
     });
-    return readJsonResponse(verifyResponse);
   }
 
   async function startCheckout({ scope, planKey, bookId, title, user }) {
@@ -245,7 +270,7 @@
   async function uploadSupportMedia({ uploadToken, blob, mimeType }) {
     if (!uploadToken || !blob) return null;
     const mediaDataUrl = await blobToDataUrl(blob);
-    const response = await fetch(buildApiUrl(`/api/support/media/${encodeURIComponent(uploadToken)}`), {
+    return requestPaymentJson(`/api/support/media/${encodeURIComponent(uploadToken)}`, {
       method: "POST",
       credentials: "include",
       headers: getReaderSessionHeaders({ "Content-Type": "application/json" }),
@@ -254,7 +279,6 @@
         mimeType: mimeType || blob.type || "video/webm",
       }),
     });
-    return readJsonResponse(response);
   }
 
   window.PdfLibraryPayments = {

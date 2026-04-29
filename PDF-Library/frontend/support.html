@@ -11,7 +11,7 @@
     <meta name="robots" content="noindex, follow" />
     <meta name="google-site-verification" content="XIa9uO4IJpkrJ3xV-a2K00BZ2kR4bV8vncQBjniJOGM" />
     <link rel="icon" type="image/png" href="favicon.png" />
-    <link rel="stylesheet" href="assets/css/styles.css?v=support-page-1" />
+    <link rel="stylesheet" href="assets/css/styles.css?v=support-page-2" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -92,11 +92,12 @@
                 <span>₹</span>
                 <input
                   id="support-amount"
-                  type="number"
+                  type="text"
                   min="1"
                   step="1"
-                  inputmode="numeric"
-                  placeholder="Enter amount"
+                  inputmode="decimal"
+                  pattern="[0-9]*[.]?[0-9]*"
+                  placeholder="Enter any amount"
                   autocomplete="off"
                 />
               </label>
@@ -150,7 +151,7 @@
     </main>
 
     <script src="assets/js/config.js"></script>
-    <script src="assets/js/payments.js?v=support-page-1"></script>
-    <script src="assets/js/support.js?v=support-page-1"></script>
+    <script src="assets/js/payments.js?v=support-page-2"></script>
+    <script src="assets/js/support.js?v=support-page-2"></script>
   </body>
 </html>
