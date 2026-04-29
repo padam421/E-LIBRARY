@@ -1585,6 +1585,8 @@ body.library-reduce-motion *::after {
   cursor: pointer;
   background-color: #141416;
   display: block;
+  color: inherit;
+  text-decoration: none;
   scroll-snap-align: start;
   /* PREMIUM: Multi-property transition with Apple easing */
   transition:

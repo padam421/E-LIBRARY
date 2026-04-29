@@ -677,6 +677,8 @@ body {
 .reco-card {
   flex: 0 0 170px;
   cursor: pointer;
+  color: inherit;
+  text-decoration: none;
   border-radius: 12px;
   overflow: hidden;
   position: relative;

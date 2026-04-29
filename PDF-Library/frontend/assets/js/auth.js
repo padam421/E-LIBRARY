@@ -161,6 +161,30 @@ function normalizeText(value) {
   return String(value || "").trim();
 }
 
+function slugifyPublicUrlPart(value, fallback = "book") {
+  const slug = normalizeText(value)
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/&/g, " and ")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-")
+    .toLowerCase();
+  return slug || fallback;
+}
+
+function buildPublicBookUrl(book) {
+  const id = normalizeText(book?.id);
+  const title = normalizeText(book?.title) || "Untitled";
+  const author = normalizeText(book?.author || book?.creator);
+  if (!id) {
+    const params = new URLSearchParams({ q: title });
+    return `/?${params.toString()}`;
+  }
+  const slug = slugifyPublicUrlPart([title, author].filter(Boolean).join(" "));
+  return `/books/${encodeURIComponent(id)}/${slug}/`;
+}
+
 function hasPosterAsset(book) {
   if (book?.poster_url || book?.cover_url) return true;
   const posterId = normalizeText(book?.poster_drive_id).toLowerCase();
@@ -804,7 +828,7 @@ function renderTrainingBooks(categoryId) {
         window.openBook(book.id, title, book.pdf_drive_id, resumePage);
         return;
       }
-      window.location.href = `book-detail.html?id=${encodeURIComponent(book.id ?? "")}&title=${encodeURIComponent(title)}`;
+      window.location.href = buildPublicBookUrl(book);
     });
 
     trainingBookGrid.appendChild(card);
@@ -2948,7 +2972,7 @@ window.openSavedBook = function (id, title, pdfDriveId, epubDriveId) {
     return;
   }
 
-  window.location.href = `book-detail.html?id=${encodeURIComponent(id)}&title=${encodeURIComponent(title)}`;
+  window.location.href = buildPublicBookUrl({ id, title });
 };
 
 // 3. Render History Items (With Tooltips)
@@ -3011,7 +3035,7 @@ window.openBook = function (id, title, pdfDriveId, resumePage = null) {
     window.location.href = `view-pdf.html?id=${encodeURIComponent(readerDocumentId)}&title=${encodeURIComponent(title)}${pageQuery}`;
   } else {
     // Fallback if no PDF ID saved
-    window.location.href = `book-detail.html?id=${id}&title=${encodeURIComponent(title)}`;
+    window.location.href = buildPublicBookUrl({ id, title });
   }
 };
 
@@ -3149,12 +3173,7 @@ function closeSearch() {
 
 function openSearchResultDetail(book) {
   if (!book) return;
-  const params = new URLSearchParams();
-  const id = String(book.id ?? "").trim();
-  const title = normalizeText(book.title) || "Untitled";
-  if (id) params.set("id", id);
-  params.set("title", title);
-  window.location.href = `book-detail.html?${params.toString()}`;
+  window.location.href = buildPublicBookUrl(book);
 }
 
 if (sidebarSearchBtn) {
@@ -3263,6 +3282,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // API while the backend/database wake up.
 let _fetchPDFsRunning = false;
 let _libraryCacheRendered = false;
+let _initialSearchHandled = false;
 
 function normalizeLibraryBooksPayload(pdfs) {
   return Array.isArray(pdfs)
@@ -3308,6 +3328,17 @@ function writePublicLibraryCache(books) {
   }
 }
 
+function handleInitialSearchQuery() {
+  if (_initialSearchHandled) return;
+  const params = new URLSearchParams(window.location.search);
+  const query = normalizeText(params.get("q") || params.get("search"));
+  if (!query) return;
+
+  _initialSearchHandled = true;
+  openSearch(query);
+  runSearch(query);
+}
+
 function showLibraryLoadingStatus(message) {
   const loadingIndicator = document.getElementById("loading-indicator");
   if (!loadingIndicator || _libraryCacheRendered) return;
@@ -3342,6 +3373,7 @@ function applyLibraryBooks(books, { fromCache = false } = {}) {
   renderContinueReadingSection(allLibraryBooks);
   runSearch("");
   rerenderLibraryRowsForFreshLayout();
+  handleInitialSearchQuery();
 }
 
 async function fetchPDFs(retryCount = 0) {
@@ -3434,8 +3466,10 @@ function renderPDFRows(pdfs) {
   );
 
   const createHomeBookCard = (pdf, row) => {
-    const card = document.createElement("div");
+    const card = document.createElement("a");
     card.className = "pdf-card";
+    card.href = buildPublicBookUrl(pdf);
+    card.setAttribute("aria-label", `Open ${normalizeText(pdf.title) || "book"}`);
     card.dataset.bookId = String(pdf.id ?? "");
     card.dataset.title = normalizeText(pdf.title) || "";
     card.dataset.author = normalizeText(pdf.author || pdf.creator) || "";
@@ -3492,10 +3526,6 @@ function renderPDFRows(pdfs) {
         preloadImg.src = buildDriveThumbnailUrl(coverId, "w1200");
       });
     }
-
-    card.addEventListener("click", () => {
-      window.location.href = `book-detail.html?id=${pdf.id}&title=${encodeURIComponent(pdf.title)}`;
-    });
 
     return card;
   };

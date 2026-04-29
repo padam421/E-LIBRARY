@@ -1,0 +1,14 @@
+/admin-upload.html
+  X-Robots-Tag: noindex, nofollow
+
+/view-pdf.html
+  X-Robots-Tag: noindex, nofollow
+
+/view-epub.html
+  X-Robots-Tag: noindex, nofollow
+
+/book-detail.html
+  X-Robots-Tag: noindex, follow
+
+/support.html
+  X-Robots-Tag: noindex, follow

@@ -19,6 +19,7 @@ function resolveApiOrigin() {
 }
 
 const API_BASE = `${resolveApiOrigin()}/api`;
+const PUBLIC_SITE_ORIGIN = "https://e-library-c9t.pages.dev";
 const ACTIVE_EMAIL_KEY = "pdf_lib_active_email";
 const ACCOUNTS_KEY = "pdf_lib_accounts";
 const RECENT_HISTORY_KEY_PREFIX = "pdf_lib_recent_books";
@@ -134,7 +135,8 @@ function isLibraryActivitySavingAllowed() {
 // ── URL PARAMS ──
 function getUrlParams() {
   const params = new URLSearchParams(window.location.search);
-  return { id: params.get("id"), title: params.get("title") };
+  const cleanPathMatch = window.location.pathname.match(/^\/books\/([^/]+)(?:\/|$)/);
+  return { id: params.get("id") || cleanPathMatch?.[1] || "", title: params.get("title") || "" };
 }
 
 // ── FETCH BOOKS ──
@@ -291,6 +293,112 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function slugifyPublicUrlPart(value, fallback = "book") {
+  const slug = String(value || "")
+    .trim()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/&/g, " and ")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-")
+    .toLowerCase();
+  return slug || fallback;
+}
+
+function buildPublicBookUrl(book, { absolute = false } = {}) {
+  const id = String(book?.id ?? "").trim();
+  const title = String(book?.title || "Untitled").trim();
+  const author = String(book?.author || book?.creator || "").trim();
+  const path = id
+    ? `/books/${encodeURIComponent(id)}/${slugifyPublicUrlPart([title, author].filter(Boolean).join(" "))}/`
+    : `/books/`;
+  return absolute ? `${PUBLIC_SITE_ORIGIN}${path}` : path;
+}
+
+function getBookSeoDescription(book) {
+  const fallback = `${book?.title || "This book"} by ${book?.author || "Unknown author"} is available in E-Library.`;
+  return truncateText(book?.description || fallback, 180);
+}
+
+function getBookSeoImage(book) {
+  const coverId = getBookCoverDriveId(book);
+  return coverId ? getDriveThumbnailUrl(coverId, "w800") : `${PUBLIC_SITE_ORIGIN}/favicon.png`;
+}
+
+function upsertMeta(selector, attributes) {
+  let element = document.head.querySelector(selector);
+  if (!element) {
+    element = document.createElement("meta");
+    document.head.appendChild(element);
+  }
+  Object.entries(attributes).forEach(([key, value]) => {
+    element.setAttribute(key, String(value));
+  });
+}
+
+function upsertCanonical(href) {
+  let element = document.head.querySelector('link[rel="canonical"]');
+  if (!element) {
+    element = document.createElement("link");
+    element.setAttribute("rel", "canonical");
+    document.head.appendChild(element);
+  }
+  element.setAttribute("href", href);
+}
+
+function upsertJsonLd(id, data) {
+  let element = document.getElementById(id);
+  if (!element) {
+    element = document.createElement("script");
+    element.id = id;
+    element.type = "application/ld+json";
+    document.head.appendChild(element);
+  }
+  element.textContent = JSON.stringify(data);
+}
+
+function updateBookSeoMetadata(book) {
+  if (!book) return;
+
+  const title = `${book.title || "Book"} by ${book.author || "Unknown Author"} | E-Library`;
+  const description = getBookSeoDescription(book);
+  const canonical = buildPublicBookUrl(book, { absolute: true });
+  const image = getBookSeoImage(book);
+  const formats = getFormatLabels(book, false);
+
+  document.title = title;
+  upsertCanonical(canonical);
+  upsertMeta('meta[name="description"]', { name: "description", content: description });
+  upsertMeta('meta[name="robots"]', { name: "robots", content: "noindex, follow" });
+  upsertMeta('meta[property="og:type"]', { property: "og:type", content: "book" });
+  upsertMeta('meta[property="og:site_name"]', { property: "og:site_name", content: "E-Library" });
+  upsertMeta('meta[property="og:title"]', { property: "og:title", content: title });
+  upsertMeta('meta[property="og:description"]', { property: "og:description", content: description });
+  upsertMeta('meta[property="og:url"]', { property: "og:url", content: canonical });
+  upsertMeta('meta[property="og:image"]', { property: "og:image", content: image });
+  upsertMeta('meta[name="twitter:card"]', { name: "twitter:card", content: "summary_large_image" });
+  upsertMeta('meta[name="twitter:title"]', { name: "twitter:title", content: title });
+  upsertMeta('meta[name="twitter:description"]', { name: "twitter:description", content: description });
+  upsertMeta('meta[name="twitter:image"]', { name: "twitter:image", content: image });
+  upsertJsonLd("book-json-ld", {
+    "@context": "https://schema.org",
+    "@type": "Book",
+    name: book.title || "Book",
+    author: book.author ? { "@type": "Person", name: book.author } : undefined,
+    description,
+    url: canonical,
+    image,
+    encodingFormat: formats.map((format) => (format === "PDF" ? "application/pdf" : "application/epub+zip")),
+    isAccessibleForFree: !book.payment_required,
+    publisher: {
+      "@type": "Organization",
+      name: "E-Library",
+      url: PUBLIC_SITE_ORIGIN,
+    },
+  });
 }
 
 function getReadableFormats(book) {
@@ -1012,7 +1120,7 @@ function renderInfo(book) {
   }
   wireMyListButtons(book);
 
-  document.title = `${book.title} — PDF Library`;
+  updateBookSeoMetadata(book);
 }
 
 // ═══════════════════════════════════════════
@@ -1099,16 +1207,13 @@ function shuffleDetailBooks(books) {
 }
 
 function buildBookDetailUrl(book) {
-  const params = new URLSearchParams();
-  const id = String(book?.id ?? "").trim();
-  if (id) params.set("id", id);
-  params.set("title", String(book?.title || "Untitled"));
-  return `book-detail.html?${params.toString()}`;
+  return buildPublicBookUrl(book);
 }
 
 function createRecommendationCard(book) {
-  const card = document.createElement("div");
+  const card = document.createElement("a");
   card.className = "reco-card";
+  card.href = buildBookDetailUrl(book);
   card.dataset.bookKey = getDetailBookKey(book);
 
   const coverNode = createCoverNode(book, {
@@ -1138,10 +1243,6 @@ function createRecommendationCard(book) {
   info.appendChild(author);
   info.appendChild(category);
   card.appendChild(info);
-
-  card.addEventListener("click", () => {
-    window.location.href = buildBookDetailUrl(book);
-  });
 
   return card;
 }

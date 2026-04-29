@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin-upload.html
+Disallow: /view-pdf.html
+Disallow: /view-epub.html
+
+Sitemap: https://e-library-c9t.pages.dev/sitemap.xml
