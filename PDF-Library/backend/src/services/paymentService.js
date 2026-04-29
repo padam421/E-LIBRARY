@@ -61,6 +61,142 @@ function isMissingSupportSchemaError(error) {
   ].includes(error?.code);
 }
 
+let supportPaymentSchemaPromise = null;
+
+function getSchemaError(message, cause) {
+  const error = new Error(message);
+  error.statusCode = 503;
+  error.cause = cause;
+  return error;
+}
+
+async function hasSupportPaymentSchema() {
+  try {
+    const [scopeRows] = await db.query("SHOW COLUMNS FROM payment_orders LIKE 'scope'");
+    const [supportRows] = await db.query("SHOW TABLES LIKE 'support_contributions'");
+    return Boolean(
+      scopeRows[0] &&
+      String(scopeRows[0].Type || "").includes(SUPPORT_SCOPE) &&
+      supportRows[0],
+    );
+  } catch (error) {
+    if (isMissingSupportSchemaError(error) || isMissingPaymentSchemaError(error)) {
+      return false;
+    }
+    throw error;
+  }
+}
+
+async function ensureSupportPaymentSchemaOnce() {
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS payment_settings (
+      id TINYINT UNSIGNED NOT NULL,
+      payments_enabled TINYINT(1) NOT NULL DEFAULT 0,
+      site_premium_enabled TINYINT(1) NOT NULL DEFAULT 0,
+      currency CHAR(3) NOT NULL DEFAULT 'INR',
+      preview_page_limit INT UNSIGNED NOT NULL DEFAULT 10,
+      monthly_price_paise INT UNSIGNED NOT NULL DEFAULT 19900,
+      monthly_duration_days INT UNSIGNED NOT NULL DEFAULT 30,
+      annual_price_paise INT UNSIGNED NOT NULL DEFAULT 29900,
+      annual_duration_days INT UNSIGNED NOT NULL DEFAULT 365,
+      updated_by_email VARCHAR(255) NULL,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await db.query(`
+    INSERT INTO payment_settings (id)
+    VALUES (1)
+    ON DUPLICATE KEY UPDATE id = id
+  `);
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS payment_orders (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      user_id BIGINT UNSIGNED NULL,
+      user_email VARCHAR(255) NULL,
+      scope ENUM('site_subscription','book_purchase','support_contribution') NOT NULL,
+      plan_key VARCHAR(40) NULL,
+      book_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+      amount_paise INT UNSIGNED NOT NULL,
+      currency CHAR(3) NOT NULL DEFAULT 'INR',
+      gateway ENUM('razorpay') NOT NULL DEFAULT 'razorpay',
+      gateway_order_id VARCHAR(100) NOT NULL,
+      gateway_payment_id VARCHAR(100) NULL,
+      gateway_signature VARCHAR(255) NULL,
+      status ENUM('created','paid','failed','cancelled') NOT NULL DEFAULT 'created',
+      receipt VARCHAR(80) NOT NULL,
+      metadata_json LONGTEXT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      paid_at TIMESTAMP NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uniq_payment_orders_gateway_order (gateway_order_id),
+      INDEX idx_payment_orders_user (user_email),
+      INDEX idx_payment_orders_status (status),
+      INDEX idx_payment_orders_scope_book (scope, book_id),
+      CONSTRAINT fk_payment_orders_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await db.query("ALTER TABLE payment_orders MODIFY user_email VARCHAR(255) NULL");
+  await db.query(
+    "ALTER TABLE payment_orders MODIFY scope ENUM('site_subscription','book_purchase','support_contribution') NOT NULL",
+  );
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS support_contributions (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      order_id BIGINT UNSIGNED NOT NULL,
+      user_id BIGINT UNSIGNED NULL,
+      supporter_name VARCHAR(120) NOT NULL DEFAULT 'Anonymous reader',
+      supporter_handle VARCHAR(120) NULL,
+      supporter_email VARCHAR(255) NULL,
+      message TEXT NULL,
+      amount_paise INT UNSIGNED NOT NULL,
+      currency CHAR(3) NOT NULL DEFAULT 'INR',
+      local_amount DECIMAL(12,2) NULL,
+      local_currency CHAR(3) NULL,
+      upload_token_hash CHAR(64) NOT NULL,
+      media_drive_id VARCHAR(128) NULL,
+      media_mime_type VARCHAR(80) NULL,
+      media_file_name VARCHAR(255) NULL,
+      media_size_bytes BIGINT UNSIGNED NULL,
+      media_uploaded_at TIMESTAMP NULL,
+      is_public TINYINT(1) NOT NULL DEFAULT 1,
+      status ENUM('created','paid','media_uploaded','failed','cancelled') NOT NULL DEFAULT 'created',
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      paid_at TIMESTAMP NULL,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      UNIQUE KEY uniq_support_contributions_order (order_id),
+      UNIQUE KEY uniq_support_upload_token_hash (upload_token_hash),
+      INDEX idx_support_contributions_public (is_public, status, paid_at),
+      INDEX idx_support_contributions_user (supporter_email),
+      CONSTRAINT fk_support_contributions_order
+        FOREIGN KEY (order_id) REFERENCES payment_orders(id)
+        ON DELETE CASCADE,
+      CONSTRAINT fk_support_contributions_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureSupportPaymentSchema() {
+  if (!supportPaymentSchemaPromise) {
+    supportPaymentSchemaPromise = ensureSupportPaymentSchemaOnce()
+      .then(() => true)
+      .finally(() => {
+        supportPaymentSchemaPromise = null;
+      });
+  }
+
+  return supportPaymentSchemaPromise;
+}
+
 function toBool(value) {
   return Number(value || 0) === 1;
 }
@@ -817,7 +953,21 @@ export async function createBookPurchaseOrder(user, bookId) {
 }
 
 export async function getSupportConfig() {
-  const settings = await getPaymentSettings();
+  let settings = await getPaymentSettings();
+  let supportSchemaReady = settings.schemaReady
+    ? await hasSupportPaymentSchema()
+    : false;
+
+  if (!settings.schemaReady || !supportSchemaReady) {
+    try {
+      await ensureSupportPaymentSchema();
+      settings = await getPaymentSettings();
+      supportSchemaReady = await hasSupportPaymentSchema();
+    } catch (error) {
+      console.warn("[Payments] Support schema auto-check failed:", error?.message || error);
+    }
+  }
+
   return {
     ownerName: "Padam Kishore",
     githubUrl: "https://github.com/padam421",
@@ -827,8 +977,10 @@ export async function getSupportConfig() {
     configured: getPublicPaymentConfig().configured,
     paymentsEnabled: settings.paymentsEnabled,
     schemaReady: settings.schemaReady,
+    supportSchemaReady,
     supportEnabled: Boolean(
       settings.schemaReady &&
+      supportSchemaReady &&
       settings.paymentsEnabled &&
       getPublicPaymentConfig().configured,
     ),
@@ -842,7 +994,16 @@ export async function getSupportConfig() {
 }
 
 export async function createSupportContributionOrder(user, input = {}) {
-  const settings = await getPaymentSettings();
+  let settings = await getPaymentSettings();
+  if (!settings.schemaReady || !(await hasSupportPaymentSchema())) {
+    try {
+      await ensureSupportPaymentSchema();
+      settings = await getPaymentSettings();
+    } catch (error) {
+      throw getSchemaError("Support payment tables could not be prepared. Please try again.", error);
+    }
+  }
+
   if (!settings.schemaReady) {
     const error = new Error("Payment database tables are not installed yet.");
     error.statusCode = 503;
