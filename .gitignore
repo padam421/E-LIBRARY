@@ -26,6 +26,20 @@ Thumbs.db
 *.log
 **/*.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build / coverage / tool output
+coverage/
+dist/
+build/
+playwright-report/
+playwright-*.png
+.nyc_output/
+.wrangler/
+.vercel/
+.netlify/
 
 # Local reports / generated artifacts
 tree.json
@@ -33,3 +47,10 @@ b_files.txt
 Website_Code_Analysis_Report.*
 test-artifacts/
 PDF-Library-Backup-*/
+
+# Archives and local exports
+*.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
