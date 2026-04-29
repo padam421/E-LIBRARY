@@ -248,109 +248,6 @@
       </div>
     </main>
 
-    <section id="support-pad" class="support-pad" aria-labelledby="support-title">
-      <div class="support-pad-inner">
-        <article class="support-story" aria-label="About Padam Kishore">
-          <div class="support-profile-row">
-            <img
-              class="support-profile-photo"
-              src="assets/images/padam-kishore-profile.jpg"
-              alt="Padam Kishore"
-              loading="lazy"
-            />
-            <div>
-              <p class="support-kicker">Creator of E-Library</p>
-              <h2 id="support-title">Padam Kishore</h2>
-            </div>
-          </div>
-          <p class="support-lead">
-            E-Library is my attempt to keep useful books easy to discover, smooth to read, and available on every device. Your support helps me add more books, improve the reader, and keep the platform running with care. ✨
-          </p>
-          <p>
-            If this library helped you study, explore, or simply find a good book at the right time, you can leave a small contribution and a note. Every rupee goes back into making the collection richer and faster.
-          </p>
-          <div class="support-links" aria-label="Padam Kishore social links">
-            <a href="https://github.com/padam421" target="_blank" rel="noopener noreferrer">
-              <span class="material-symbols-outlined" aria-hidden="true">code</span>
-              GitHub
-            </a>
-            <a href="https://www.linkedin.com/in/padam-kishore-031b8b377/" target="_blank" rel="noopener noreferrer">
-              <span class="material-symbols-outlined" aria-hidden="true">work</span>
-              LinkedIn
-            </a>
-          </div>
-          <div class="recent-supporters" aria-live="polite">
-            <h3>Recent supporters</h3>
-            <div id="supporters-list" class="supporters-list">
-              <div class="supporter-empty">Supporters will appear here after successful payments.</div>
-            </div>
-          </div>
-        </article>
-
-        <article class="support-checkout" aria-label="Support payment form">
-          <div class="support-checkout-head">
-            <div>
-              <p class="support-kicker">Help add more books</p>
-              <h2>Support E-Library</h2>
-            </div>
-            <span class="support-secure-pill">
-              <span class="material-symbols-outlined" aria-hidden="true">lock</span>
-              Razorpay
-            </span>
-          </div>
-
-          <form id="support-form" class="support-form">
-            <label class="support-amount-field" for="support-amount">
-              <span>₹</span>
-              <input id="support-amount" type="number" min="99" step="1" inputmode="numeric" placeholder="Enter amount" />
-            </label>
-            <div id="support-quick-amounts" class="support-quick-amounts" aria-label="Quick support amounts"></div>
-            <div id="support-local-estimate" class="support-local-estimate">
-              Estimated in your currency; charged securely in INR.
-            </div>
-
-            <input id="support-name" type="text" maxlength="120" placeholder="Name or @yoursocial" autocomplete="name" />
-            <input id="support-email" type="email" maxlength="255" placeholder="Email for receipt (optional)" autocomplete="email" />
-            <textarea id="support-message" maxlength="1200" placeholder="Say something nice..."></textarea>
-
-            <div class="support-recorder" aria-label="Optional audio or video message">
-              <div class="support-recorder-top">
-                <div class="support-recorder-modes" role="group" aria-label="Message type">
-                  <button type="button" class="support-mode-btn active" data-support-mode="video" title="Video message">
-                    <span class="material-symbols-outlined" aria-hidden="true">videocam</span>
-                  </button>
-                  <button type="button" class="support-mode-btn" data-support-mode="audio" title="Audio message">
-                    <span class="material-symbols-outlined" aria-hidden="true">mic</span>
-                  </button>
-                </div>
-                <div id="support-record-status" class="support-record-status">Optional short message</div>
-              </div>
-              <div id="support-media-preview" class="support-media-preview hidden"></div>
-              <div class="support-recorder-actions">
-                <button type="button" id="support-record-btn" class="support-mini-btn">
-                  <span class="material-symbols-outlined" aria-hidden="true">radio_button_checked</span>
-                  Record
-                </button>
-                <button type="button" id="support-stop-btn" class="support-mini-btn" disabled>
-                  <span class="material-symbols-outlined" aria-hidden="true">stop_circle</span>
-                  Stop
-                </button>
-                <button type="button" id="support-clear-media-btn" class="support-mini-btn" disabled>
-                  <span class="material-symbols-outlined" aria-hidden="true">delete</span>
-                  Clear
-                </button>
-              </div>
-            </div>
-
-            <button id="support-submit-btn" class="support-submit-btn" type="submit">
-              <span class="material-symbols-outlined" aria-hidden="true">favorite</span>
-              Support
-            </button>
-            <div id="support-status" class="support-status" role="status" aria-live="polite"></div>
-          </form>
-        </article>
-      </div>
-    </section>
     <!-- START OF CHANGE PROFILE PICTURE MODAL -->
     <!-- START OF SIDEBAR MENU -->
     <!-- The dark overlay that closes the menu when clicked -->
@@ -602,7 +499,7 @@
 
     <!-- Site Footer -->
     <footer class="site-footer">
-      <a class="footer-support-cta" href="#support-pad">
+      <a class="footer-support-cta" href="support.html" target="_blank" rel="noopener noreferrer">
         <span class="material-symbols-outlined" aria-hidden="true">auto_stories</span>
         Help us add more books
       </a>
@@ -617,7 +514,6 @@
     <!-- JavaScript Connections (MUST BE AT THE VERY BOTTOM) -->
     <script src="assets/js/ai-sidebar.js?v=16"></script>
     <script src="assets/js/payments.js?v=session-bridge-1"></script>
-    <script src="assets/js/support.js?v=1"></script>
 <script src="assets/js/auth.js?v=sleep-fix-1"></script>
   </body>
 </html>

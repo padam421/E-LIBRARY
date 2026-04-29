@@ -3278,6 +3278,64 @@ body.library-reduce-motion *::after {
 /* =========================================
    SUPPORT PAD
    ========================================= */
+.support-page {
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(14, 165, 233, 0.12), transparent 34%),
+    radial-gradient(circle at 82% 8%, rgba(250, 204, 21, 0.1), transparent 30%),
+    #050507;
+}
+
+.support-page-header {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 76px;
+  padding: 16px clamp(16px, 4vw, 56px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(5, 5, 7, 0.82);
+  backdrop-filter: blur(16px);
+}
+
+.support-page-brand,
+.support-page-library-link {
+  display: inline-flex;
+  align-items: center;
+  color: #f7f7f8;
+  text-decoration: none;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  font-weight: 900;
+}
+
+.support-page-brand {
+  gap: 10px;
+  font-size: 18px;
+}
+
+.support-page-brand .material-symbols-outlined {
+  color: #fde047;
+}
+
+.support-page-library-link {
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 13px;
+}
+
+.support-page-library-link:hover {
+  border-color: rgba(14, 165, 233, 0.54);
+  background: rgba(14, 165, 233, 0.14);
+}
+
 .support-pad {
   box-sizing: border-box;
   width: 100%;
@@ -3285,6 +3343,12 @@ body.library-reduce-motion *::after {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0)),
     #050507;
+}
+
+.support-page .support-pad {
+  min-height: calc(100vh - 76px);
+  padding: clamp(28px, 5vw, 64px) 24px;
+  background: transparent;
 }
 
 .support-pad *,
@@ -3532,6 +3596,15 @@ body.library-reduce-motion *::after {
   font-size: 24px;
   font-weight: 700;
   outline: none;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.support-amount-field input::-webkit-outer-spin-button,
+.support-amount-field input::-webkit-inner-spin-button {
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .support-form input,
@@ -3751,8 +3824,27 @@ body.library-reduce-motion *::after {
 }
 
 @media (max-width: 640px) {
+  .support-page-header {
+    min-height: 66px;
+    padding: 12px 14px;
+  }
+
+  .support-page-brand {
+    font-size: 16px;
+  }
+
+  .support-page-library-link {
+    min-height: 36px;
+    padding: 0 11px;
+  }
+
   .support-pad {
     padding: 36px 14px 18px;
+  }
+
+  .support-page .support-pad {
+    min-height: calc(100vh - 66px);
+    padding: 20px 14px 28px;
   }
 
   .support-story,

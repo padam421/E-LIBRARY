@@ -35,7 +35,7 @@
   }
 
   const API_ORIGIN = resolveApiOrigin();
-  const DEFAULT_QUICK_AMOUNTS = [9900, 24900, 49900];
+  const DEFAULT_QUICK_AMOUNTS = [100, 9900, 24900];
   const MAX_RECORDING_MS = 60 * 1000;
   const COUNTRY_TO_CURRENCY = {
     US: "USD",
@@ -252,7 +252,7 @@
       if (!els.amount.value) {
         els.amount.value = Math.round(Number((supportConfig.quickAmountsPaise || DEFAULT_QUICK_AMOUNTS)[0]) / 100);
       }
-      els.amount.min = String(Math.ceil(Number(supportConfig.minAmountPaise || 1000) / 100));
+      els.amount.min = String(Math.ceil(Number(supportConfig.minAmountPaise || 100) / 100));
       setCheckoutEnabled(Boolean(supportConfig.supportEnabled));
       setRecorderEnabled(Boolean(supportConfig.mediaEnabled));
       if (!supportConfig.supportEnabled) {
@@ -402,7 +402,7 @@
   async function submitSupport(event) {
     event.preventDefault();
     const amountRupees = Number(els.amount.value || 0);
-    const minRupees = Math.ceil(Number(supportConfig?.minAmountPaise || 1000) / 100);
+    const minRupees = Math.ceil(Number(supportConfig?.minAmountPaise || 100) / 100);
     if (!Number.isFinite(amountRupees) || amountRupees < minRupees) {
       setStatus(`Please choose at least ${formatMoney(minRupees * 100, "INR")}.`, "error");
       return;

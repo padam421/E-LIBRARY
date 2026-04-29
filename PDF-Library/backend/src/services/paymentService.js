@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import https from "https";
 import { Readable } from "stream";
 
 import db from "../config/db.js";
@@ -11,7 +12,7 @@ import {
 
 const DEFAULT_CURRENCY = "INR";
 const SUPPORT_SCOPE = "support_contribution";
-const SUPPORT_MIN_AMOUNT_PAISE = readPositiveIntEnv("SUPPORT_MIN_AMOUNT_PAISE", 9900, {
+const SUPPORT_MIN_AMOUNT_PAISE = readPositiveIntEnv("SUPPORT_MIN_AMOUNT_PAISE", 100, {
   min: 100,
 });
 const SUPPORT_MAX_AMOUNT_PAISE = readPositiveIntEnv("SUPPORT_MAX_AMOUNT_PAISE", 10000000, {
@@ -20,7 +21,11 @@ const SUPPORT_MAX_AMOUNT_PAISE = readPositiveIntEnv("SUPPORT_MAX_AMOUNT_PAISE", 
 const SUPPORT_MEDIA_MAX_BYTES = readPositiveIntEnv("SUPPORT_MEDIA_MAX_BYTES", 12 * 1024 * 1024, {
   min: 1024,
 });
-const SUPPORT_QUICK_AMOUNTS = [9900, 24900, 49900];
+const RAZORPAY_REQUEST_TIMEOUT_MS = readPositiveIntEnv("RAZORPAY_REQUEST_TIMEOUT_MS", 15000, {
+  min: 5000,
+  max: 60000,
+});
+const SUPPORT_QUICK_AMOUNTS = [100, 9900, 24900];
 const SUPPORT_MEDIA_TYPES = new Set([
   "audio/webm",
   "audio/mp4",
@@ -229,11 +234,11 @@ function timingSafeEqualStrings(left, right) {
 }
 
 export function getPublicPaymentConfig() {
-  const { keyId } = getRazorpayCredentials();
+  const { keyId, keySecret } = getRazorpayCredentials();
   return {
     provider: "razorpay",
     keyId,
-    configured: Boolean(keyId),
+    configured: Boolean(keyId && keySecret),
   };
 }
 
@@ -608,6 +613,51 @@ export async function updateBooksPremiumBulk(ids, input, actorEmail) {
   return { updated: cleanIds.length, ids: cleanIds };
 }
 
+function requestRazorpayOrder({ authHeader, body }) {
+  const requestBody = JSON.stringify(body);
+
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      {
+        protocol: "https:",
+        hostname: "api.razorpay.com",
+        path: "/v1/orders",
+        method: "POST",
+        timeout: RAZORPAY_REQUEST_TIMEOUT_MS,
+        headers: {
+          Authorization: authHeader,
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(requestBody),
+        },
+      },
+      (res) => {
+        const chunks = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("end", () => {
+          const responseBody = Buffer.concat(chunks).toString("utf8");
+          let data = {};
+          try {
+            data = responseBody ? JSON.parse(responseBody) : {};
+          } catch {
+            data = {};
+          }
+
+          resolve({
+            ok: Number(res.statusCode || 0) >= 200 && Number(res.statusCode || 0) < 300,
+            status: Number(res.statusCode || 500),
+            data,
+          });
+        });
+      },
+    );
+
+    req.on("timeout", () => req.destroy(new Error("Razorpay request timed out.")));
+    req.on("error", reject);
+    req.write(requestBody);
+    req.end();
+  });
+}
+
 async function createRazorpayOrder({ amountPaise, currency, receipt, notes }) {
   const { keyId, keySecret } = getRazorpayCredentials();
   if (!keyId || !keySecret) {
@@ -616,22 +666,27 @@ async function createRazorpayOrder({ amountPaise, currency, receipt, notes }) {
     throw error;
   }
 
-  const response = await fetch("https://api.razorpay.com/v1/orders", {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString("base64")}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      amount: amountPaise,
-      currency,
-      receipt,
-      payment_capture: 1,
-      notes,
-    }),
-  });
+  const authHeader = `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString("base64")}`;
+  let response;
+  try {
+    response = await requestRazorpayOrder({
+      authHeader,
+      body: {
+        amount: amountPaise,
+        currency,
+        receipt,
+        payment_capture: 1,
+        notes,
+      },
+    });
+  } catch (fetchError) {
+    const error = new Error("Could not connect to Razorpay. Please try again in a moment.");
+    error.statusCode = 502;
+    error.cause = fetchError;
+    throw error;
+  }
 
-  const payload = await response.json().catch(() => ({}));
+  const payload = response.data || {};
   if (!response.ok) {
     const error = new Error(payload?.error?.description || "Razorpay order creation failed.");
     error.statusCode = response.status;
