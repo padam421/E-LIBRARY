@@ -202,7 +202,7 @@
     <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          JAVASCRIPT â€” Auth Check + Google Sign-In
          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
-    <script src="assets/js/payments.js?v=1"></script>
+    <script src="assets/js/payments.js?v=session-bridge-1"></script>
     <script>
       // â”€â”€ Shared Client ID (same as auth.js on index.html) â”€â”€
       const CLIENT_ID =
@@ -403,6 +403,11 @@
         if (expiryKey) localStorage.removeItem(expiryKey);
       }
 
+      function storeSessionToken(sessionToken, emailKey = getActiveEmailKey()) {
+        if (!sessionToken || !emailKey) return;
+        writeScopedValue(LS_SESSION_TOKEN_PREFIX, sessionToken, emailKey);
+      }
+
       function getValidAccessToken(emailKey = getActiveEmailKey()) {
         const token = readScopedValue(LS_ACCESS_TOKEN_PREFIX, emailKey);
         if (!token) return null;
@@ -422,6 +427,47 @@
 
       function getReaderToken(emailKey = getActiveEmailKey()) {
         return readScopedValue(LS_SESSION_TOKEN_PREFIX, emailKey) || getValidAccessToken(emailKey);
+      }
+
+      function getSessionAuthHeaders(emailKey = getActiveEmailKey()) {
+        const token = readScopedValue(LS_SESSION_TOKEN_PREFIX, emailKey);
+        return token ? { Authorization: `Bearer ${token}` } : {};
+      }
+
+      function getCachedActiveAccount() {
+        const activeKey = getActiveEmailKey();
+        if (!activeKey) return null;
+
+        try {
+          const accounts = JSON.parse(localStorage.getItem(LS_ACCOUNTS) || "[]");
+          if (!Array.isArray(accounts)) return null;
+          return accounts.find((account) => normalizeEmailKey(account?.email) === activeKey) || null;
+        } catch {
+          return null;
+        }
+      }
+
+      function persistReaderAccount(user) {
+        if (!user?.email) return null;
+
+        let accounts = [];
+        try {
+          const parsed = JSON.parse(localStorage.getItem(LS_ACCOUNTS) || "[]");
+          accounts = Array.isArray(parsed) ? parsed : [];
+        } catch {
+          accounts = [];
+        }
+
+        const existing = accounts.find((account) => normalizeEmailKey(account?.email) === normalizeEmailKey(user.email));
+        if (!existing) {
+          accounts.push(user);
+        } else {
+          Object.assign(existing, user);
+        }
+
+        localStorage.setItem(LS_ACCOUNTS, JSON.stringify(accounts));
+        localStorage.setItem(LS_ACTIVE, user.email);
+        return user;
       }
 
       function getInitials(name, email) {
@@ -476,6 +522,7 @@
           const response = await Promise.race([
             fetch(buildApiUrl("/api/auth/session"), {
               credentials: "include",
+              headers: getSessionAuthHeaders(),
             }),
             new Promise((_, reject) =>
               setTimeout(() => reject(new Error("Session check timed out")), 8000)
@@ -484,10 +531,29 @@
           if (!response.ok) return null;
 
           const data = await response.json();
+          if (data?.sessionToken && data?.user?.email) {
+            storeSessionToken(data.sessionToken, normalizeEmailKey(data.user.email));
+          }
           return data?.user?.email ? data.user : null;
         } catch {
           return null;
         }
+      }
+
+      async function restoreCachedReaderUser() {
+        const cachedUser = getCachedActiveAccount();
+        if (!cachedUser?.email) return null;
+
+        const emailKey = normalizeEmailKey(cachedUser.email);
+        const accessToken = getValidAccessToken(emailKey);
+        if (accessToken) {
+          const syncedUser = await syncToBackend(accessToken);
+          if (syncedUser?.email) {
+            return persistReaderAccount(syncedUser);
+          }
+        }
+
+        return cachedUser;
       }
 
       async function fetchReaderAccess() {
@@ -710,7 +776,6 @@
           window.VIEWER_DOCUMENT_FORMAT = "pdf";
           window.VIEWER_BOOK_TITLE = bookTitle;
         } else {
-          localStorage.removeItem(LS_ACTIVE);
           document.getElementById("reader-title").textContent =
             "Error: No Document ID provided.";
         }
@@ -720,27 +785,17 @@
 
         (async () => {
           const restoreVersion = authStateVersion;
-          const user = await fetchSessionUser();
+          const user = await fetchSessionUser() || await restoreCachedReaderUser();
           if (restoreVersion !== authStateVersion) {
             return;
           }
           if (user?.email) {
-            let accounts = JSON.parse(localStorage.getItem(LS_ACCOUNTS) || "[]");
-            if (!Array.isArray(accounts)) accounts = [];
-            const existing = accounts.find((account) => account.email === user.email);
-            if (!existing) {
-              accounts.push(user);
-            } else {
-              Object.assign(existing, user);
-            }
-            localStorage.setItem(LS_ACCOUNTS, JSON.stringify(accounts));
-            localStorage.setItem(LS_ACTIVE, user.email);
+            persistReaderAccount(user);
           // â”€â”€ AUTHENTICATED â”€â”€ unlock immediately
-          await handleAuthenticatedReader(user, /* animate = */ false);
-          return;
-        }
+            await handleAuthenticatedReader(user, /* animate = */ false);
+            return;
+          }
 
-          localStorage.removeItem(LS_ACTIVE);
           // â”€â”€ UNAUTHENTICATED â”€â”€ show gate immediately, then silently try to load preview
           setGateForSignIn();
           showGatedMode();
@@ -867,16 +922,13 @@
           }
 
           // Save to localStorage (same keys as auth.js â€” shared session)
-          let accounts = JSON.parse(localStorage.getItem(LS_ACCOUNTS)) || [];
-          const existing = accounts.find(a => a.email === newUser.email);
-          if (!existing) {
-            accounts.push(newUser);
-          } else {
-            Object.assign(existing, newUser);
-          }
           authStateVersion = Math.max(authStateVersion, requestVersion);
-          localStorage.setItem(LS_ACCOUNTS, JSON.stringify(accounts));
-          localStorage.setItem(LS_ACTIVE, newUser.email);
+          persistReaderAccount(newUser);
+          storeAccessToken(
+            tokenResponse.access_token,
+            Number(tokenResponse.expires_in || 0),
+            normalizeEmailKey(newUser.email),
+          );
 
           await handleAuthenticatedReader(newUser, /* animate = */ false);
           return;
@@ -1010,6 +1062,10 @@
             throw new Error("Verified user profile missing from backend response.");
           }
 
+          if (data.sessionToken) {
+            storeSessionToken(data.sessionToken, normalizeEmailKey(user.email));
+          }
+
           // Save DB user ID for future use
           const userId = data.userId || (data.user && data.user.id);
           if (userId) {
@@ -1048,7 +1104,7 @@
     <script>
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
-    <script src="assets/js/pdf-engine.js?v=5"></script>
+    <script src="assets/js/pdf-engine.js?v=session-bridge-1"></script>
     <script src="assets/js/reader-controls.js?v=3"></script>
 
     <!-- Theme Toggle -->

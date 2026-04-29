@@ -184,6 +184,18 @@ function resolveApiOrigin() {
 }
 
 const API_ORIGIN = resolveApiOrigin();
+const ACTIVE_EMAIL_KEY = "pdf_lib_active_email";
+const SESSION_TOKEN_KEY_PREFIX = "pdf_lib_session_token_v1";
+
+function getReaderSessionHeaders() {
+  const email = normalizeEmailKey(localStorage.getItem(ACTIVE_EMAIL_KEY));
+  if (!email) return {};
+
+  const token = String(
+    localStorage.getItem(`${SESSION_TOKEN_KEY_PREFIX}::${email}`) || "",
+  ).trim();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 function parseBookDocumentToken(documentId) {
   const match = String(documentId || "").trim().match(/^book:(\d+):epub$/);
@@ -795,6 +807,7 @@ async function loadEpub(documentId, previewOnly = false) {
     {
       credentials: "include",
       cache: "no-store",
+      headers: previewOnly ? {} : getReaderSessionHeaders(),
     },
   );
 

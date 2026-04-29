@@ -1149,16 +1149,48 @@ function initializeGoogleIdentityClient() {
 
 async function fetchServerSessionUser() {
   try {
+    const headers = {};
+    const sessionToken = getStoredSessionToken();
+    if (sessionToken) {
+      headers.Authorization = `Bearer ${sessionToken}`;
+    }
+
     const response = await fetch(buildApiUrl("/api/auth/session"), {
       credentials: "include",
+      headers,
     });
     if (!response.ok) return null;
 
     const data = await response.json();
+    if (data?.sessionToken && data?.user?.email) {
+      storeSessionToken(data.sessionToken, data.user.email);
+    }
     return data?.user?.email ? data.user : null;
   } catch {
     return null;
   }
+}
+
+function getStoredSessionToken(email = activeEmail) {
+  return readScopedValue(SESSION_TOKEN_KEY_PREFIX, email);
+}
+
+function storeSessionToken(sessionToken, email = activeEmail) {
+  if (!sessionToken || !email) return;
+  writeScopedValue(SESSION_TOKEN_KEY_PREFIX, sessionToken, email);
+}
+
+function storeAccessToken(accessToken, expiresInSeconds, email = activeEmail) {
+  if (!accessToken || !email) return;
+  writeScopedValue(ACCESS_TOKEN_KEY_PREFIX, accessToken, email);
+
+  const expiresIn = Number(expiresInSeconds || 0);
+  if (Number.isFinite(expiresIn) && expiresIn > 0) {
+    writeScopedValue(ACCESS_TOKEN_EXPIRY_KEY_PREFIX, Date.now() + expiresIn * 1000, email);
+    return;
+  }
+
+  removeScopedValue(ACCESS_TOKEN_EXPIRY_KEY_PREFIX, email);
 }
 
 function clearLegacyReaderTokens(email = activeEmail) {
@@ -1196,6 +1228,18 @@ function restoreSavedSession() {
     accounts = [];
   }
 
+  const savedActiveEmail = normalizeEmailKey(localStorage.getItem("pdf_lib_active_email"));
+  const savedActiveAccount =
+    accounts.find((account) => normalizeEmailKey(account?.email) === savedActiveEmail) ||
+    accounts[0] ||
+    null;
+  activeEmail = savedActiveAccount?.email || null;
+  if (activeEmail) {
+    localStorage.setItem("pdf_lib_active_email", activeEmail);
+  } else {
+    localStorage.removeItem("pdf_lib_active_email");
+  }
+
   updateUI();
 
   restoreSessionPromise = (async () => {
@@ -1215,11 +1259,17 @@ function restoreSavedSession() {
       activeEmail = sessionUser.email;
       localStorage.setItem("pdf_lib_accounts", JSON.stringify(accounts));
       localStorage.setItem("pdf_lib_active_email", activeEmail);
-      clearLegacyReaderTokens(activeEmail);
     } else {
-      accounts.forEach((account) => clearLegacyReaderTokens(account?.email));
-      activeEmail = null;
-      localStorage.removeItem("pdf_lib_active_email");
+      const stillActive =
+        accounts.find((account) => normalizeEmailKey(account?.email) === normalizeEmailKey(activeEmail)) ||
+        accounts[0] ||
+        null;
+      activeEmail = stillActive?.email || null;
+      if (activeEmail) {
+        localStorage.setItem("pdf_lib_active_email", activeEmail);
+      } else {
+        localStorage.removeItem("pdf_lib_active_email");
+      }
     }
 
     updateUI();
@@ -1321,7 +1371,8 @@ async function handleLogin(accessToken, _expiresInSeconds = 0, context = {}) {
   activeEmail = user.email;
   localStorage.setItem("pdf_lib_accounts", JSON.stringify(accounts));
   localStorage.setItem("pdf_lib_active_email", activeEmail);
-  clearLegacyReaderTokens(user.email);
+  storeSessionToken(data.sessionToken, user.email);
+  storeAccessToken(accessToken, _expiresInSeconds, user.email);
 
   console.log("Backend Response:", data.message);
 

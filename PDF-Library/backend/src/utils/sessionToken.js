@@ -1,7 +1,12 @@
 import crypto from "crypto";
 import "../config/loadEnv.js";
 
-const DEFAULT_TTL_SECONDS = Number(process.env.SESSION_TOKEN_TTL_SECONDS || 60 * 60 * 12);
+const MIN_SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
+const configuredTtlSeconds = Number(process.env.SESSION_TOKEN_TTL_SECONDS || MIN_SESSION_TTL_SECONDS);
+const DEFAULT_TTL_SECONDS =
+  Number.isFinite(configuredTtlSeconds) && configuredTtlSeconds > 0
+    ? Math.max(configuredTtlSeconds, MIN_SESSION_TTL_SECONDS)
+    : MIN_SESSION_TTL_SECONDS;
 export const SESSION_COOKIE_NAME = "pdf_library_session";
 let hasWarnedAboutFallbackSecret = false;
 
@@ -225,6 +230,15 @@ function parseCookieHeader(rawCookieHeader) {
 }
 
 export function readSessionTokenFromRequest(req) {
+  const authorizationHeader = String(req?.headers?.authorization || "").trim();
+  const bearerMatch = authorizationHeader.match(/^Bearer\s+(.+)$/i);
+  if (bearerMatch?.[1]) {
+    return bearerMatch[1].trim();
+  }
+
+  const headerToken = String(req?.headers?.["x-pdf-library-session"] || "").trim();
+  if (headerToken) return headerToken;
+
   const cookies = parseCookieHeader(req?.headers?.cookie);
   return String(cookies?.[SESSION_COOKIE_NAME] || "").trim();
 }

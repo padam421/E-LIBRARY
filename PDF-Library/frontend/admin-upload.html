@@ -1100,6 +1100,11 @@
       let bulkPreparedBooks = [];
       let currentAdminUser = null;
       let csrfToken = "";
+      const LS_ACCOUNTS = "pdf_lib_accounts";
+      const LS_ACTIVE = "pdf_lib_active_email";
+      const LS_SESSION_TOKEN_PREFIX = "pdf_lib_session_token_v1";
+      const LS_ACCESS_TOKEN_PREFIX = "pdf_lib_google_access_token_v1";
+      const LS_ACCESS_TOKEN_EXPIRY_PREFIX = "pdf_lib_google_access_token_expiry_v1";
       let activityPage = 1;
       let activityTotalPages = 1;
       let activityLimit = 50;
@@ -1118,6 +1123,10 @@
       function api(path, options = {}) {
         const method = String(options.method || "GET").toUpperCase();
         const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+        const sessionToken = getStoredSessionToken();
+        if (sessionToken && !headers.Authorization) {
+          headers.Authorization = `Bearer ${sessionToken}`;
+        }
         if (!["GET", "HEAD", "OPTIONS"].includes(method) && csrfToken) {
           headers["X-CSRF-Token"] = csrfToken;
         }
@@ -1127,6 +1136,85 @@
           headers,
           ...options,
         });
+      }
+
+      function normalizeEmailKey(email) {
+        return String(email || "").trim().toLowerCase();
+      }
+
+      function getActiveEmailKey() {
+        return normalizeEmailKey(localStorage.getItem(LS_ACTIVE));
+      }
+
+      function getScopedStorageKey(prefix, emailKey = getActiveEmailKey()) {
+        return emailKey ? `${prefix}::${emailKey}` : null;
+      }
+
+      function getStoredSessionToken(emailKey = getActiveEmailKey()) {
+        const key = getScopedStorageKey(LS_SESSION_TOKEN_PREFIX, emailKey);
+        return key ? String(localStorage.getItem(key) || "").trim() : "";
+      }
+
+      function writeScopedValue(prefix, value, emailKey = getActiveEmailKey()) {
+        const key = getScopedStorageKey(prefix, emailKey);
+        if (key && value) localStorage.setItem(key, String(value));
+      }
+
+      function persistSharedAuth(data, tokenResponse = null) {
+        const user = data?.user;
+        if (!user?.email) return;
+
+        let accounts = [];
+        try {
+          const parsed = JSON.parse(localStorage.getItem(LS_ACCOUNTS) || "[]");
+          accounts = Array.isArray(parsed) ? parsed : [];
+        } catch {
+          accounts = [];
+        }
+
+        const emailKey = normalizeEmailKey(user.email);
+        const existing = accounts.find((account) => normalizeEmailKey(account?.email) === emailKey);
+        if (!existing) accounts.push(user);
+        else Object.assign(existing, user);
+
+        localStorage.setItem(LS_ACCOUNTS, JSON.stringify(accounts));
+        localStorage.setItem(LS_ACTIVE, user.email);
+        writeScopedValue(LS_SESSION_TOKEN_PREFIX, data.sessionToken, emailKey);
+        if (tokenResponse?.access_token) {
+          writeScopedValue(LS_ACCESS_TOKEN_PREFIX, tokenResponse.access_token, emailKey);
+          const expiresIn = Number(tokenResponse.expires_in || 0);
+          if (Number.isFinite(expiresIn) && expiresIn > 0) {
+            writeScopedValue(LS_ACCESS_TOKEN_EXPIRY_PREFIX, Date.now() + expiresIn * 1000, emailKey);
+          }
+        }
+      }
+
+      function clearSharedActiveAccount() {
+        const activeEmail = getActiveEmailKey();
+        if (!activeEmail) return;
+
+        let accounts = [];
+        try {
+          const parsed = JSON.parse(localStorage.getItem(LS_ACCOUNTS) || "[]");
+          accounts = Array.isArray(parsed) ? parsed : [];
+        } catch {
+          accounts = [];
+        }
+
+        accounts = accounts.filter((account) => normalizeEmailKey(account?.email) !== activeEmail);
+        [LS_SESSION_TOKEN_PREFIX, LS_ACCESS_TOKEN_PREFIX, LS_ACCESS_TOKEN_EXPIRY_PREFIX]
+          .forEach((prefix) => {
+            const key = getScopedStorageKey(prefix, activeEmail);
+            if (key) localStorage.removeItem(key);
+          });
+
+        if (accounts.length > 0) {
+          localStorage.setItem(LS_ACCOUNTS, JSON.stringify(accounts));
+          localStorage.setItem(LS_ACTIVE, accounts[0].email);
+        } else {
+          localStorage.removeItem(LS_ACCOUNTS);
+          localStorage.removeItem(LS_ACTIVE);
+        }
       }
 
       function escapeHtml(str) {
@@ -1186,6 +1274,7 @@
           if (!res.ok) return null;
           const data = await res.json();
           csrfToken = data?.csrfToken || csrfToken;
+          persistSharedAuth(data);
           return data?.user?.email ? data.user : null;
         } catch { return null; }
       }
@@ -1211,6 +1300,7 @@
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "Login failed.");
           csrfToken = data?.csrfToken || csrfToken;
+          persistSharedAuth(data, tokenResponse);
           // Check admin status
           const checkRes = await api("/api/admin/books");
           if (checkRes.status === 403) {
@@ -1227,6 +1317,7 @@
 
       async function handleLogout() {
         await api("/api/auth/logout", { method: "POST" });
+        clearSharedActiveAccount();
         window.location.reload();
       }
 

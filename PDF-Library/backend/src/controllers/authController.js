@@ -13,12 +13,13 @@ import {
   verifySessionToken,
 } from "../utils/sessionToken.js";
 
-function buildAuthResponse(user, userId, message, csrfToken = null) {
+function buildAuthResponse(user, userId, message, csrfToken = null, sessionToken = null) {
   return {
     message,
     userId,
     user,
     csrfToken,
+    sessionToken,
   };
 }
 
@@ -91,6 +92,7 @@ export const loginUser = async (req, res) => {
         mysqlUserId,
         "Google login verified and user synced.",
         csrfToken,
+        sessionToken,
       ),
     );
   } catch (error) {
@@ -113,6 +115,9 @@ export const getSessionUser = async (req, res) => {
 
   try {
     const sessionUser = verifySessionToken(sessionToken);
+    const refreshedSessionToken = createSessionToken(sessionUser);
+    attachSessionCookie(res, refreshedSessionToken);
+
     const [existingUsers] = await db.query(
       "SELECT id, role FROM users WHERE email = ? LIMIT 1",
       [sessionUser.email],
@@ -124,7 +129,8 @@ export const getSessionUser = async (req, res) => {
         attachRole(sessionUser, dbUser?.role),
         dbUser?.id ?? null,
         "Active session restored.",
-        createCsrfToken(sessionToken),
+        createCsrfToken(refreshedSessionToken),
+        refreshedSessionToken,
       ),
     );
   } catch (error) {

@@ -15,9 +15,25 @@
   }
 
   const API_ORIGIN = resolveApiOrigin();
+  const ACTIVE_EMAIL_KEY = "pdf_lib_active_email";
+  const SESSION_TOKEN_KEY_PREFIX = "pdf_lib_session_token_v1";
 
   function buildApiUrl(path) {
     return `${API_ORIGIN}${path}`;
+  }
+
+  function normalizeEmailKey(email) {
+    return String(email || "").trim().toLowerCase();
+  }
+
+  function getReaderSessionHeaders(extraHeaders = {}) {
+    const email = normalizeEmailKey(localStorage.getItem(ACTIVE_EMAIL_KEY));
+    const token = email
+      ? String(localStorage.getItem(`${SESSION_TOKEN_KEY_PREFIX}::${email}`) || "").trim()
+      : "";
+    return token
+      ? { ...extraHeaders, Authorization: `Bearer ${token}` }
+      : { ...extraHeaders };
   }
 
   function formatMoney(amountPaise, currency = "INR") {
@@ -61,6 +77,7 @@
 
     const response = await fetch(buildApiUrl(`/api/payments/access?bookId=${encodeURIComponent(bookId)}`), {
       credentials: "include",
+      headers: getReaderSessionHeaders(),
     });
     return readJsonResponse(response);
   }
@@ -96,7 +113,7 @@
     const response = await fetch(buildApiUrl(endpoint), {
       method: "POST",
       credentials: "include",
-      headers: { "Content-Type": "application/json" },
+      headers: getReaderSessionHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(body),
     });
     return readJsonResponse(response);
@@ -106,7 +123,7 @@
     const verifyResponse = await fetch(buildApiUrl("/api/payments/verify"), {
       method: "POST",
       credentials: "include",
-      headers: { "Content-Type": "application/json" },
+      headers: getReaderSessionHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(response),
     });
     return readJsonResponse(verifyResponse);
