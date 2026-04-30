@@ -91,8 +91,8 @@ function validateProduction() {
   validateSessionSecret();
 
   if (!hasValue("FIREBASE_SERVICE_ACCOUNT_JSON") && !hasValue("FIREBASE_SERVICE_ACCOUNT_BASE64")) {
-    fail(
-      "Production Firebase credentials must come from FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_SERVICE_ACCOUNT_BASE64.",
+    warn(
+      "Firebase credentials are not configured. Google sign-in will still use MySQL, but Firestore sync will be skipped.",
     );
   }
 

@@ -33,9 +33,10 @@ function readServiceAccount() {
   }
 
   if (isProduction) {
-    throw new Error(
-      "[Firebase] Production cannot use local firebase-key.json. Set FIREBASE_SERVICE_ACCOUNT_BASE64 or FIREBASE_SERVICE_ACCOUNT_JSON in the hosting environment.",
+    console.warn(
+      "[Firebase] Production credentials are not configured. Firestore sync is disabled; MySQL auth remains available.",
     );
+    return null;
   }
 
   if (fs.existsSync(keyPath)) {
@@ -52,14 +53,16 @@ function readServiceAccount() {
 
 const serviceAccount = readServiceAccount();
 
-if (admin.apps.length === 0) {
+if (serviceAccount && admin.apps.length === 0) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
     projectId: serviceAccount.project_id || process.env.FIREBASE_PROJECT_ID,
   });
 }
 
-const firestore = admin.firestore();
-console.log("[Firebase] Firestore initialized.");
+const firestore = serviceAccount ? admin.firestore() : null;
+if (firestore) {
+  console.log("[Firebase] Firestore initialized.");
+}
 
 export default firestore;

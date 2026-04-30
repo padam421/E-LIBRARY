@@ -69,18 +69,20 @@ export const loginUser = async (req, res) => {
       console.log(`[Auth] New user created from verified Google login: ${googleUser.email}`);
     }
 
-    await firestore.collection("users").doc(googleUser.email).set(
-      {
-        mysql_id: mysqlUserId,
-        email: googleUser.email,
-        name: googleUser.name,
-        profile_picture: googleUser.picture,
-        given_name: googleUser.given_name,
-        google_sub: googleUser.sub,
-        last_login: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true },
-    );
+    if (firestore) {
+      await firestore.collection("users").doc(googleUser.email).set(
+        {
+          mysql_id: mysqlUserId,
+          email: googleUser.email,
+          name: googleUser.name,
+          profile_picture: googleUser.picture,
+          given_name: googleUser.given_name,
+          google_sub: googleUser.sub,
+          last_login: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+    }
 
     const sessionToken = createSessionToken(googleUser);
     attachSessionCookie(res, sessionToken);
