@@ -21,10 +21,11 @@ function normalizeDriveId(driveId) {
 }
 
 /**
- * Video streaming proxy controller with Google Drive fallback.
+ * Video streaming proxy controller.
  *
  * Primary path: stream through the backend using the Google Drive API.
- * Fallback path: redirect to Google Drive preview/download when the file is public.
+ * If streaming fails, return an error so the frontend can show a retry state
+ * instead of exposing a downloadable Google Drive fallback.
  */
 export const streamVideo = async (req, res) => {
   if (!req.allowResolvedDriveId && !rawDriveRoutesAllowed()) {
@@ -73,6 +74,7 @@ export const streamVideo = async (req, res) => {
         "Accept-Ranges": "bytes",
         "Content-Length": chunkSize,
         "Content-Type": mimeType,
+        "Content-Disposition": "inline",
         "Cache-Control": "public, max-age=86400",
       });
 
@@ -92,6 +94,7 @@ export const streamVideo = async (req, res) => {
       "Content-Length": fileSize,
       "Content-Type": mimeType,
       "Accept-Ranges": "bytes",
+      "Content-Disposition": "inline",
       "Cache-Control": "public, max-age=86400",
     });
 
@@ -102,10 +105,12 @@ export const streamVideo = async (req, res) => {
 
     streamResponse.data.pipe(res);
   } catch (error) {
-    console.error("Video proxy error, falling back to Google Drive redirect:", error.message);
-
-    const directUrl = `https://drive.google.com/uc?export=download&id=${encodeURIComponent(driveId)}`;
-    res.redirect(302, directUrl);
+    console.error("Video proxy error:", error.message);
+    if (res.headersSent) {
+      res.end();
+      return;
+    }
+    res.status(502).json({ error: "Video preview is unavailable right now." });
   }
 };
 

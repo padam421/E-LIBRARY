@@ -259,6 +259,22 @@ function getVideoDriveId(book) {
   return isLikelyDriveFileId(book?.video_drive_id);
 }
 
+function getResolvedVideoUrl(book) {
+  const rawUrl = String(book?.video_url || "").trim();
+  if (rawUrl) {
+    if (/^https?:\/\//i.test(rawUrl)) return rawUrl;
+    return `${resolveApiOrigin()}${rawUrl.startsWith("/") ? rawUrl : `/${rawUrl}`}`;
+  }
+
+  const bookId = getNumericBookId(book?.id);
+  if (bookId) {
+    return `${resolveApiOrigin()}/api/video/book/${encodeURIComponent(bookId)}/stream`;
+  }
+
+  const driveId = getVideoDriveId(book);
+  return driveId ? `${resolveApiOrigin()}/api/video/${encodeURIComponent(driveId)}` : "";
+}
+
 function hasPoster(book) {
   return Boolean(normalizeDriveAssetId(book?.poster_drive_id));
 }
@@ -966,6 +982,8 @@ function renderHero(book) {
   const heroSection = document.getElementById("hero-section");
   const heroVideo = document.getElementById("hero-video");
   const heroPoster = document.getElementById("hero-poster");
+  const heroVideoError = document.getElementById("hero-video-error");
+  const heroVideoRetry = document.getElementById("hero-video-retry");
   const heroTitle = document.getElementById("hero-title");
   const heroOverlay = document.getElementById("hero-title-overlay");
 
@@ -973,40 +991,117 @@ function renderHero(book) {
 
   if (hasVideo(book)) {
     heroSection.classList.remove("no-video-state");
+    heroSection.classList.add("loading");
     heroVideo.style.display = "block";
+    heroVideo.classList.remove("is-hidden");
     heroPoster.style.display = "block";
     heroPoster.classList.remove("fade-out");
+    if (heroVideoError) heroVideoError.classList.add("hidden");
     if (heroOverlay) heroOverlay.classList.remove("subtle");
 
-    // ── STEP 1: Show poster immediately ──
     const posterId = getBookCoverDriveId(book);
+    const posterUrl = posterId ? getDriveThumbnailUrl(posterId, "w1280") : "";
     if (posterId) {
-      heroPoster.src = getDriveThumbnailUrl(posterId, "w1280");
+      heroPoster.src = posterUrl;
       heroPoster.style.display = "block";
+      heroVideo.poster = posterUrl;
     } else {
       heroPoster.removeAttribute("src");
+      heroVideo.removeAttribute("poster");
       heroPoster.style.display = "none";
     }
 
-    // ── STEP 2: Load video BEHIND poster ──
-    const videoId = getVideoDriveId(book);
-    heroVideo.src = book.video_url
-      ? `${resolveApiOrigin()}${book.video_url}`
-      : `https://drive.google.com/file/d/${encodeURIComponent(videoId)}/preview`;
+    const showPosterState = () => {
+      heroSection.classList.remove("loading");
+      heroPoster.classList.remove("fade-out");
+      if (heroVideoError) heroVideoError.classList.add("hidden");
+      if (heroOverlay) heroOverlay.classList.remove("subtle");
+    };
 
-    // ── STEP 3: After 3 seconds, fade poster → reveal video ──
-    setTimeout(() => {
+    const showPlaybackState = () => {
+      heroSection.classList.remove("loading");
+      heroVideo.classList.remove("is-hidden");
       heroPoster.classList.add("fade-out");
-      // Make title subtle so video is prominent
+      if (heroVideoError) heroVideoError.classList.add("hidden");
       if (heroOverlay) heroOverlay.classList.add("subtle");
-    }, 3000);
+    };
+
+    const showErrorState = () => {
+      heroSection.classList.remove("loading");
+      heroVideo.classList.add("is-hidden");
+      heroPoster.classList.remove("fade-out");
+      if (heroVideoError) heroVideoError.classList.remove("hidden");
+      if (heroOverlay) heroOverlay.classList.add("subtle");
+    };
+
+    heroVideo.controls = true;
+    heroVideo.playsInline = true;
+    heroVideo.setAttribute("playsinline", "");
+    heroVideo.setAttribute("webkit-playsinline", "true");
+    heroVideo.setAttribute("controlslist", "nodownload noplaybackrate");
+    heroVideo.setAttribute("disablepictureinpicture", "true");
+
+    heroVideo.onloadedmetadata = () => {
+      heroSection.classList.remove("loading");
+    };
+    heroVideo.oncanplay = () => {
+      heroSection.classList.remove("loading");
+    };
+    heroVideo.onplay = showPlaybackState;
+    heroVideo.onpause = () => {
+      if ((heroVideo.currentTime || 0) <= 0.1) {
+        showPosterState();
+      }
+    };
+    heroVideo.onended = showPosterState;
+    heroVideo.onerror = showErrorState;
+    heroVideo.onabort = () => {
+      heroSection.classList.remove("loading");
+    };
+    heroVideo.onstalled = () => {
+      heroSection.classList.remove("loading");
+    };
+
+    const videoUrl = getResolvedVideoUrl(book);
+    if (heroVideoRetry) {
+      heroVideoRetry.onclick = () => {
+        heroSection.classList.add("loading");
+        heroVideo.classList.remove("is-hidden");
+        if (heroVideoError) heroVideoError.classList.add("hidden");
+        heroPoster.classList.remove("fade-out");
+        if (videoUrl) {
+          heroVideo.src = videoUrl;
+          heroVideo.load();
+        } else {
+          showErrorState();
+        }
+      };
+    }
+
+    if (!videoUrl) {
+      showErrorState();
+      return;
+    }
+
+    if (heroVideo.dataset.videoSrc !== videoUrl) {
+      heroVideo.pause();
+      heroVideo.src = videoUrl;
+      heroVideo.dataset.videoSrc = videoUrl;
+    }
+    heroVideo.load();
   } else {
     // No video — show poster + complete info layout
+    heroSection.classList.remove("loading");
+    heroVideo.pause();
     heroVideo.removeAttribute("src");
+    heroVideo.removeAttribute("poster");
+    heroVideo.load();
     heroVideo.style.display = "none";
+    heroVideo.classList.remove("is-hidden");
     heroPoster.removeAttribute("src");
     heroPoster.style.display = "none";
     heroPoster.classList.remove("fade-out");
+    if (heroVideoError) heroVideoError.classList.add("hidden");
     if (heroOverlay) heroOverlay.classList.remove("subtle");
     heroSection.classList.add("no-video-state");
 
