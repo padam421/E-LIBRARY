@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 
     <!-- Styles -->
-    <link rel="stylesheet" href="assets/css/book-detail.css?v=video-mobile-1" />
+    <link rel="stylesheet" href="assets/css/book-detail.css?v=seo-1" />
     <link rel="stylesheet" href="assets/css/theme-toggle.css" />
     <link rel="stylesheet" href="assets/css/theme-toggle-detail.css" />
   </head>
@@ -44,21 +44,13 @@
       />
 
       <!-- Video iframe (Google Drive preview — loads behind poster) -->
-      <video
+      <iframe
         id="hero-video"
         class="hero-video"
-        controls
-        playsinline
-        webkit-playsinline="true"
-        preload="metadata"
-        controlslist="nodownload noplaybackrate"
-        disablepictureinpicture
-      ></video>
-
-      <div class="hero-video-error hidden" id="hero-video-error" role="status" aria-live="polite">
-        <p>Unable to load preview video right now.</p>
-        <button type="button" class="hero-video-retry" id="hero-video-retry">Try Again</button>
-      </div>
+        allow="autoplay; fullscreen; encrypted-media"
+        allowfullscreen
+        frameborder="0"
+      ></iframe>
 
       <!-- Gradient overlays -->
       <div class="hero-gradient-bottom"></div>
@@ -195,6 +187,6 @@
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.7/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="assets/js/ai-sidebar.js?v=14"></script>
-    <script src="assets/js/book-detail.js?v=video-mobile-1"></script>
+    <script src="assets/js/book-detail.js?v=seo-1"></script>
   </body>
 </html>
