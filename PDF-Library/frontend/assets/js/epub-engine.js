@@ -792,12 +792,16 @@ async function buildChapter(item, index, tocMap) {
     tocMap.get(item.path) ||
     chapterDoc.querySelector("h1, h2, h3, title")?.textContent?.replace(/\s+/g, " ").trim() ||
     `Chapter ${index + 1}`;
+  const plainText = (body.textContent || "").replace(/\s+/g, " ").trim();
+  const mediaCount = body.querySelectorAll("img, svg, picture, video, audio").length;
 
   return {
     path: item.path,
     title,
     css,
     html: body.innerHTML,
+    textLength: plainText.length,
+    mediaCount,
   };
 }
 
@@ -1852,8 +1856,47 @@ function updateBookmarkButton() {
   );
 }
 
+function isLikelyFrontMatterChapter(chapter) {
+  const title = String(chapter?.title || "").toLowerCase();
+  const path = String(chapter?.path || "").toLowerCase();
+  const textLength = Number(chapter?.textLength || 0);
+  const frontMatterMarkers = [
+    "cover",
+    "title page",
+    "copyright",
+    "contents",
+    "toc",
+    "praise",
+    "dedication",
+    "also by",
+    "titles by",
+    "books by",
+    "about the author",
+  ];
+
+  if (frontMatterMarkers.some((marker) => title.includes(marker) || path.includes(marker))) {
+    return true;
+  }
+
+  return textLength < 80 && Number(chapter?.mediaCount || 0) > 0;
+}
+
+function getDefaultStartChapter() {
+  const firstReadableIndex = chapters.findIndex((chapter) => {
+    const textLength = Number(chapter?.textLength || 0);
+    return textLength >= 180 && !isLikelyFrontMatterChapter(chapter);
+  });
+
+  if (firstReadableIndex >= 0) return firstReadableIndex + 1;
+
+  const firstTextIndex = chapters.findIndex((chapter) => Number(chapter?.textLength || 0) > 0);
+  if (firstTextIndex >= 0) return firstTextIndex + 1;
+
+  return 1;
+}
+
 function readInitialChapter() {
-  const requestedStart = Math.floor(Number(window.VIEWER_INITIAL_PAGE || 1));
+  const requestedStart = Math.floor(Number(window.VIEWER_INITIAL_PAGE));
   if (requestedStart > 0) return requestedStart;
 
   try {
@@ -1873,7 +1916,7 @@ function readInitialChapter() {
     // Ignore broken bookmark.
   }
 
-  return 1;
+  return getDefaultStartChapter();
 }
 
 window.initEpubViewer = async function(documentId, previewOnly = false) {
