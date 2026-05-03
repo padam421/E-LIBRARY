@@ -1,3 +1,7 @@
+/sitemap.xml
+  Content-Type: application/xml; charset=utf-8
+  Cache-Control: public, max-age=300, stale-while-revalidate=1800
+
 /admin-upload.html
   X-Robots-Tag: noindex, nofollow
 

@@ -18,11 +18,13 @@ function xmlResponse(xml, status = 200) {
   });
 }
 
-function urlEntry(url) {
-  return `  <url><loc>${escapeXml(url)}</loc></url>`;
+function urlEntry(url, lastmod) {
+  return `  <url>\n    <loc>${escapeXml(url)}</loc>\n    <lastmod>${lastmod}</lastmod>\n  </url>`;
 }
 
 export async function onRequestGet(context) {
+  const today = new Date().toISOString().slice(0, 10);
+
   let books = [];
   try {
     books = await fetchPublicBooks(context.env);
@@ -36,7 +38,9 @@ export async function onRequestGet(context) {
   const languages = uniqueBySlug(books, (book) => book.language || "English").map(
     ({ slug }) => `${SITE_ORIGIN}/books/language/${slug}/`,
   );
-  const urls = [
+
+  // Static pages always included — guarantees a valid sitemap even if API fails
+  const staticUrls = [
     `${SITE_ORIGIN}/`,
     `${SITE_ORIGIN}/books/`,
     `${SITE_ORIGIN}/about.html`,
@@ -44,14 +48,19 @@ export async function onRequestGet(context) {
     `${SITE_ORIGIN}/best-free-books.html`,
     `${SITE_ORIGIN}/privacy.html`,
     `${SITE_ORIGIN}/terms.html`,
+  ];
+
+  const dynamicUrls = [
     ...categories,
     ...languages,
     ...books.map(getBookUrl),
-  ].slice(0, 50000);
+  ];
+
+  const urls = [...staticUrls, ...dynamicUrls].slice(0, 50000);
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.map(urlEntry).join("\n")}
+${urls.map((url) => urlEntry(url, today)).join("\n")}
 </urlset>`;
 
   return xmlResponse(xml);
