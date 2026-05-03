@@ -1,6 +1,11 @@
 import db from "../config/db.js";
 import { OWNER_ADMIN_EMAIL, isOwnerEmail, normalizeEmail } from "../config/adminAccess.js";
 import { invalidatePDFCache } from "../models/pdfModel.js";
+import {
+  getDefaultBookStorageProvider,
+  normalizeStorageProvider,
+  sanitizeAssetReference,
+} from "../services/bookStorage.js";
 
 const MAX_BULK_BOOKS_PER_REQUEST = 1000;
 const MAX_BULK_DELETE_PER_REQUEST = 1000;
@@ -11,51 +16,26 @@ function sanitizeText(value, maxLen = 255) {
   return String(value || "").trim().slice(0, maxLen) || null;
 }
 
-function sanitizeDriveId(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return null;
+function getStorageProviderInput(input) {
+  if (!input || typeof input !== "object") return undefined;
+  const hasOwn = (key) => Object.prototype.hasOwnProperty.call(input, key);
+  if (hasOwn("storage_provider")) return input.storage_provider;
+  if (hasOwn("storageProvider")) return input.storageProvider;
+  if (hasOwn("provider")) return input.provider;
+  return undefined;
+}
 
-  const placeholderText = raw
-    .toLowerCase()
-    .replace(/[_-]+/g, " ")
-    .replace(/[^\w\s]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+function hasStorageProviderInput(input) {
+  return getStorageProviderInput(input) !== undefined;
+}
 
-  const emptyAssetLabels = new Set([
-    "no poster available",
-    "no cover available",
-    "no image available",
-    "no pdf available",
-    "no epub available",
-    "no video available",
-    "no video",
-    "no file available",
-    "not available",
-    "video not available",
-    "file not available",
-    "file does not exist",
-    "file not found",
-    "missing",
-    "none",
-    "null",
-    "undefined",
-    "n a",
-    "na",
-    "0",
-    "-",
-  ]);
-
-  if (emptyAssetLabels.has(placeholderText)) {
-    return null;
+function parseStorageProvider(input, defaultValue = getDefaultBookStorageProvider()) {
+  const value = getStorageProviderInput(input);
+  if (value === undefined || value === null || String(value).trim() === "") {
+    return normalizeStorageProvider(defaultValue);
   }
 
-  const driveIdMatch =
-    raw.match(/\/d\/([a-zA-Z0-9_-]+)/) ||
-    raw.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||
-    raw.match(/\/folders\/([a-zA-Z0-9_-]+)/);
-
-  return driveIdMatch ? driveIdMatch[1] : raw;
+  return normalizeStorageProvider(value);
 }
 
 function getBookWriteErrorMessage(error, fallbackMessage) {
@@ -127,11 +107,19 @@ function parsePrivacyFlag(input, defaultValue = 1) {
 }
 
 function buildBookRecord(input, rowNumber = 1) {
+  const storageProvider = parseStorageProvider(input);
   const safeTitle = sanitizeText(input?.title, 255);
-  const safePdfId = sanitizeDriveId(input?.pdf_drive_id || input?.pdfDriveId || input?.pdf);
-  const safeEpubId = sanitizeDriveId(input?.epub_drive_id || input?.epubDriveId || input?.epub);
-  const posterDriveId = sanitizeDriveId(
+  const safePdfId = sanitizeAssetReference(
+    input?.pdf_drive_id || input?.pdfDriveId || input?.pdf,
+    storageProvider,
+  );
+  const safeEpubId = sanitizeAssetReference(
+    input?.epub_drive_id || input?.epubDriveId || input?.epub,
+    storageProvider,
+  );
+  const posterDriveId = sanitizeAssetReference(
     input?.poster_drive_id || input?.posterDriveId || input?.cover_drive_id || input?.coverDriveId,
+    storageProvider,
   );
 
   const errors = [];
@@ -149,9 +137,16 @@ function buildBookRecord(input, rowNumber = 1) {
       author: sanitizeText(input?.author, 255),
       description: sanitizeText(input?.description, 5000),
       category: sanitizeText(input?.category, 100),
+      storage_provider: storageProvider,
       poster_drive_id: posterDriveId,
-      cover_drive_id: sanitizeDriveId(input?.cover_drive_id || input?.coverDriveId),
-      video_drive_id: sanitizeDriveId(input?.video_drive_id || input?.videoDriveId),
+      cover_drive_id: sanitizeAssetReference(
+        input?.cover_drive_id || input?.coverDriveId,
+        storageProvider,
+      ),
+      video_drive_id: sanitizeAssetReference(
+        input?.video_drive_id || input?.videoDriveId,
+        storageProvider,
+      ),
       pdf_drive_id: safePdfId,
       epub_drive_id: safeEpubId,
       is_private: parsePrivacyFlag(input, 1),
@@ -165,6 +160,7 @@ function flattenBooksForInsert(books, actorEmail) {
     book.author,
     book.description,
     book.category,
+    book.storage_provider,
     book.poster_drive_id,
     book.cover_drive_id,
     book.video_drive_id,
@@ -177,11 +173,11 @@ function flattenBooksForInsert(books, actorEmail) {
 }
 
 async function insertBooks(books, actorEmail, executor = db) {
-  const placeholders = books.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
+  const placeholders = books.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
   const [result] = await executor.query(
     `INSERT INTO books_data
        (title, author, description, category,
-        poster_drive_id, cover_drive_id, video_drive_id, pdf_drive_id,
+        storage_provider, poster_drive_id, cover_drive_id, video_drive_id, pdf_drive_id,
         epub_drive_id, is_private, created_by_email, updated_by_email)
      VALUES ${placeholders}`,
     flattenBooksForInsert(books, actorEmail),
@@ -472,6 +468,7 @@ export const createBook = async (req, res) => {
       title: book.title,
       author: book.author,
       category: book.category,
+      storage_provider: book.storage_provider,
       pdf_drive_id: book.pdf_drive_id,
       epub_drive_id: book.epub_drive_id,
       is_private: book.is_private,
@@ -556,7 +553,7 @@ export const updateBook = async (req, res) => {
 
   try {
     const [existingRows] = await db.query(
-      "SELECT id, title, author, category, pdf_drive_id, epub_drive_id, is_private FROM books_data WHERE id = ? LIMIT 1",
+      "SELECT id, title, author, category, storage_provider, pdf_drive_id, epub_drive_id, is_private FROM books_data WHERE id = ? LIMIT 1",
       [bookId],
     );
 
@@ -567,11 +564,14 @@ export const updateBook = async (req, res) => {
     if (!hasPrivacyInput(req.body)) {
       book.is_private = Number(existingRows[0].is_private || 0) === 1 ? 1 : 0;
     }
+    if (!hasStorageProviderInput(req.body)) {
+      book.storage_provider = normalizeStorageProvider(existingRows[0].storage_provider);
+    }
 
     const [result] = await db.query(
       `UPDATE books_data
           SET title = ?, author = ?, description = ?, category = ?,
-              poster_drive_id = ?, cover_drive_id = ?, video_drive_id = ?, pdf_drive_id = ?,
+              storage_provider = ?, poster_drive_id = ?, cover_drive_id = ?, video_drive_id = ?, pdf_drive_id = ?,
               epub_drive_id = ?, is_private = ?,
               updated_by_email = ?
         WHERE id = ?`,
@@ -580,6 +580,7 @@ export const updateBook = async (req, res) => {
         book.author,
         book.description,
         book.category,
+        book.storage_provider,
         book.poster_drive_id,
         book.cover_drive_id,
         book.video_drive_id,
@@ -600,6 +601,8 @@ export const updateBook = async (req, res) => {
       new_title: book.title,
       previous_category: existingRows[0].category,
       new_category: book.category,
+      previous_storage_provider: normalizeStorageProvider(existingRows[0].storage_provider),
+      new_storage_provider: book.storage_provider,
       previous_pdf_drive_id: existingRows[0].pdf_drive_id,
       new_pdf_drive_id: book.pdf_drive_id,
       previous_epub_drive_id: existingRows[0].epub_drive_id,

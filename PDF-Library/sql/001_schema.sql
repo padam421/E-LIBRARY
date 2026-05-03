@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS books_data (
   video_drive_id   VARCHAR(255)     NULL,
   pdf_drive_id     VARCHAR(255)     NULL,
   epub_drive_id    VARCHAR(255)     NULL,
-  storage_provider ENUM('drive','gcs','url') NOT NULL DEFAULT 'drive',
+  storage_provider ENUM('drive','r2','gcs','url') NOT NULL DEFAULT 'drive',
   gcs_bucket       VARCHAR(255)     NULL,
   gcs_object_key   VARCHAR(1024)    NULL,
   source_url       TEXT             NULL,

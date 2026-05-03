@@ -1,5 +1,6 @@
 import db from "../config/db.js";
 import { readPositiveIntEnv } from "../config/runtimeLimits.js";
+import { normalizeStorageProvider } from "../services/bookStorage.js";
 
 const cacheTtlMs = readPositiveIntEnv("PUBLIC_BOOKS_CACHE_TTL_MS", 30000, {
   min: 0,
@@ -110,6 +111,7 @@ function buildPublicPaymentSummary(row) {
 
 function toPublicBook(row) {
   const id = row?.id;
+  const storageProvider = normalizeStorageProvider(row?.storage_provider);
   const hasPdf = Boolean(String(row?.pdf_drive_id || "").trim());
   const hasEpub = Boolean(String(row?.epub_drive_id || "").trim());
   const hasCover = Boolean(String(row?.poster_drive_id || row?.cover_drive_id || "").trim());
@@ -125,6 +127,7 @@ function toPublicBook(row) {
     has_pdf: hasPdf,
     has_epub: hasEpub,
     has_video: hasVideo,
+    storage_provider: storageProvider,
     pdf_drive_id: hasPdf ? `book:${id}:pdf` : null,
     epub_drive_id: hasEpub ? `book:${id}:epub` : null,
     cover_url: hasCover ? publicAssetUrl("cover", id, "size=w400") : "",
@@ -155,7 +158,7 @@ export const getAllPDFs = async () => {
     const [rows] = await db.query(
       `SELECT b.id, b.title, b.author, b.description, b.category,
               b.poster_drive_id, b.cover_drive_id, b.video_drive_id,
-              b.pdf_drive_id, b.epub_drive_id, b.is_private,
+              b.pdf_drive_id, b.epub_drive_id, b.is_private, b.storage_provider,
               COALESCE(ps.payments_enabled, 0) AS payments_enabled,
               COALESCE(ps.site_premium_enabled, 0) AS site_premium_enabled,
               COALESCE(ps.preview_page_limit, 10) AS preview_page_limit,
@@ -187,7 +190,8 @@ export const getAllPDFs = async () => {
       const [rows] = await db.query(
         `SELECT id, title, author, description, category,
                 poster_drive_id, cover_drive_id, video_drive_id,
-                pdf_drive_id, epub_drive_id, is_private
+                pdf_drive_id, epub_drive_id, is_private,
+                'drive' AS storage_provider
            FROM books_data
            ${whereSql}
           ORDER BY id DESC`,
@@ -225,13 +229,28 @@ export async function getBookAssetById(bookId, assetType, options = {}) {
     throw error;
   }
 
-  const [rows] = await db.query(
-    `SELECT id, title, is_private, ${column} AS drive_id
-       FROM books_data
-      WHERE id = ?
-      LIMIT 1`,
-    [id],
-  );
+  let rows;
+  try {
+    [rows] = await db.query(
+      `SELECT id, title, is_private, storage_provider, ${column} AS drive_id
+         FROM books_data
+        WHERE id = ?
+        LIMIT 1`,
+      [id],
+    );
+  } catch (error) {
+    if (error?.code !== "ER_BAD_FIELD_ERROR") {
+      throw error;
+    }
+
+    [rows] = await db.query(
+      `SELECT id, title, is_private, 'drive' AS storage_provider, ${column} AS drive_id
+         FROM books_data
+        WHERE id = ?
+        LIMIT 1`,
+      [id],
+    );
+  }
   const row = rows[0];
   if (!row) {
     const error = new Error("Book not found.");
@@ -245,8 +264,8 @@ export async function getBookAssetById(bookId, assetType, options = {}) {
     throw error;
   }
 
-  const driveId = String(row.drive_id || "").trim();
-  if (!driveId || driveId.toLowerCase() === "no video available") {
+  const assetRef = String(row.drive_id || "").trim();
+  if (!assetRef || assetRef.toLowerCase() === "no video available") {
     const error = new Error("Requested asset is not available.");
     error.statusCode = 404;
     throw error;
@@ -255,7 +274,9 @@ export async function getBookAssetById(bookId, assetType, options = {}) {
   return {
     bookId: row.id,
     title: row.title || "Book",
-    driveId,
+    assetRef,
+    driveId: assetRef,
+    storageProvider: normalizeStorageProvider(row.storage_provider),
     isPrivate: Number(row.is_private || 0) === 1,
   };
 }

@@ -71,9 +71,19 @@ async function main() {
   await ensureColumn(
     columns,
     "storage_provider",
-    "storage_provider ENUM('drive','gcs','url') NOT NULL DEFAULT 'drive' AFTER pdf_drive_id",
+    "storage_provider ENUM('drive','r2','gcs','url') NOT NULL DEFAULT 'drive' AFTER pdf_drive_id",
     "Adding storage_provider column.",
   );
+  const storageProviderColumn = columns.get("storage_provider");
+  if (
+    storageProviderColumn
+    && !String(storageProviderColumn.Type || "").toLowerCase().includes("'r2'")
+  ) {
+    await runAlter(
+      "ALTER TABLE books_data MODIFY COLUMN storage_provider ENUM('drive','r2','gcs','url') NOT NULL DEFAULT 'drive'",
+      "Updating storage_provider column to include R2.",
+    );
+  }
   await ensureColumn(
     columns,
     "epub_drive_id",

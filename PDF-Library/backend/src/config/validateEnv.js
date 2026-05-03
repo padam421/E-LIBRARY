@@ -69,6 +69,36 @@ function validateSessionSecret() {
   }
 }
 
+function validateBookStorageProvider() {
+  const allowedProviders = new Set(["drive", "r2", "gcs", "url", ""]);
+  const provider = String(process.env.DEFAULT_BOOK_STORAGE_PROVIDER || "")
+    .trim()
+    .toLowerCase();
+
+  if (!allowedProviders.has(provider)) {
+    fail("DEFAULT_BOOK_STORAGE_PROVIDER must be one of: drive, r2, gcs, url.");
+  }
+
+  const hasAnyR2Setting = [
+    "R2_ACCOUNT_ID",
+    "R2_ENDPOINT",
+    "R2_ACCESS_KEY_ID",
+    "R2_SECRET_ACCESS_KEY",
+    "R2_BUCKET_NAME",
+  ].some(hasValue);
+
+  if (provider !== "r2" && !hasAnyR2Setting) {
+    return;
+  }
+
+  validateRequired(["R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME"]);
+  validateNoPlaceholders(["R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME"]);
+
+  if (!hasValue("R2_ENDPOINT") && !hasValue("R2_ACCOUNT_ID")) {
+    fail("Set either R2_ENDPOINT or R2_ACCOUNT_ID when using R2 storage.");
+  }
+}
+
 function validateProduction() {
   const requiredProductionVariables = [
     "CORS_ORIGIN",
@@ -89,6 +119,7 @@ function validateProduction() {
   validateRequired(requiredProductionVariables);
   validateNoPlaceholders(requiredProductionVariables);
   validateSessionSecret();
+  validateBookStorageProvider();
 
   if (!hasValue("FIREBASE_SERVICE_ACCOUNT_JSON") && !hasValue("FIREBASE_SERVICE_ACCOUNT_BASE64")) {
     warn(
@@ -115,6 +146,12 @@ function validateDevelopment() {
   const missing = ["DB_HOST", "DB_USER", "DB_NAME"].filter((name) => !hasValue(name));
   if (missing.length > 0) {
     warn(`Missing local development settings: ${missing.join(", ")}`);
+  }
+
+  try {
+    validateBookStorageProvider();
+  } catch (error) {
+    warn(String(error?.message || error).replace(/^\[Env\]\s*/, ""));
   }
 }
 

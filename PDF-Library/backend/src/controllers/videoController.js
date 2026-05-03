@@ -1,5 +1,9 @@
 import drive from "../config/drive.js";
 import { getBookAssetById } from "../models/pdfModel.js";
+import {
+  getR2ObjectResponse,
+  normalizeStorageProvider,
+} from "../services/bookStorage.js";
 
 function rawDriveRoutesAllowed() {
   const configured = String(process.env.ALLOW_RAW_DRIVE_ROUTES || "")
@@ -18,6 +22,30 @@ function normalizeDriveId(driveId) {
     throw error;
   }
   return id;
+}
+
+function getResponseHeader(response, name) {
+  const headers = response?.headers || {};
+  return headers[String(name || "").toLowerCase()] || null;
+}
+
+function setVideoHeaders(res, options = {}) {
+  const contentLength = options.contentLength;
+  const contentRange = options.contentRange;
+  const contentType = options.contentType || "video/mp4";
+  const acceptRanges = options.acceptRanges || "bytes";
+
+  res.setHeader("Content-Type", contentType);
+  res.setHeader("Accept-Ranges", acceptRanges);
+  res.setHeader("Cache-Control", "public, max-age=86400");
+
+  if (contentLength) {
+    res.setHeader("Content-Length", contentLength);
+  }
+
+  if (contentRange) {
+    res.setHeader("Content-Range", contentRange);
+  }
 }
 
 /**
@@ -114,6 +142,36 @@ export const streamVideoByBookId = async (req, res) => {
     const asset = await getBookAssetById(req.params.bookId, "video", {
       publicOnly: true,
     });
+
+    if (normalizeStorageProvider(asset.storageProvider) === "r2") {
+      const rangeHeader = String(req.headers.range || "").trim();
+      const response = await getR2ObjectResponse(asset.assetRef, { rangeHeader });
+      const upstreamStream = response.body;
+
+      if (!upstreamStream) {
+        return res.status(404).json({ error: "Video not found." });
+      }
+
+      setVideoHeaders(res, {
+        contentLength: getResponseHeader(response, "content-length"),
+        contentRange: getResponseHeader(response, "content-range"),
+        contentType: getResponseHeader(response, "content-type") || "video/mp4",
+        acceptRanges: getResponseHeader(response, "accept-ranges") || "bytes",
+      });
+      res.status(rangeHeader ? 206 : 200);
+      req.on("close", () => upstreamStream.destroy?.());
+      upstreamStream.on?.("error", (streamError) => {
+        console.error("[Video] R2 stream error:", streamError);
+        if (!res.headersSent) {
+          res.status(500).json({ error: "Failed to stream video." });
+        } else {
+          res.destroy(streamError);
+        }
+      });
+      upstreamStream.pipe(res);
+      return;
+    }
+
     req.allowResolvedDriveId = true;
     req.params.driveId = asset.driveId;
     return streamVideo(req, res);
@@ -169,6 +227,13 @@ export const getVideoUrlByBookId = async (req, res) => {
       publicOnly: true,
     });
 
+    if (normalizeStorageProvider(asset.storageProvider) === "r2") {
+      return res.json({
+        url: `/api/video/book/${encodeURIComponent(asset.bookId)}/stream`,
+        method: "proxy",
+      });
+    }
+
     await drive.files.get({
       fileId: asset.driveId,
       fields: "id",
@@ -192,6 +257,14 @@ export const redirectVideoEmbedByBookId = async (req, res) => {
       publicOnly: true,
     });
     res.setHeader("Cache-Control", "public, max-age=3600");
+
+    if (normalizeStorageProvider(asset.storageProvider) === "r2") {
+      return res.redirect(
+        302,
+        `/api/video/book/${encodeURIComponent(asset.bookId)}/stream`,
+      );
+    }
+
     return res.redirect(
       302,
       `https://drive.google.com/file/d/${encodeURIComponent(asset.driveId)}/preview`,

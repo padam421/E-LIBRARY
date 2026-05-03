@@ -10,6 +10,11 @@ import {
   getAuthenticatedPaymentUser,
   getReaderAccess,
 } from "../services/paymentService.js";
+import {
+  createAssetCacheKey,
+  getR2ObjectResponse,
+  normalizeStorageProvider,
+} from "../services/bookStorage.js";
 
 function normalizeDriveId(driveId) {
   const id = String(driveId || "").trim();
@@ -31,6 +36,13 @@ const PREVIEW_CACHE_TTL_MS = 1000 * 60 * 30;
 const PREVIEW_CACHE_MAX_ENTRIES = Number(process.env.PREVIEW_CACHE_MAX_ENTRIES || 50);
 const previewCache = new Map();
 const previewBuilds = new Map();
+
+function createDriveAsset(driveId) {
+  return {
+    storageProvider: "drive",
+    assetRef: String(driveId || "").trim(),
+  };
+}
 
 function rawDriveRoutesAllowed() {
   const configured = String(process.env.ALLOW_RAW_DRIVE_ROUTES || "")
@@ -68,8 +80,11 @@ function setCachedPreview(driveId, buffer) {
   });
 }
 
-function getPreviewCacheKey(kind, driveId) {
-  return `${kind}:${String(driveId || "").trim()}`;
+function getPreviewCacheKey(kind, asset) {
+  return createAssetCacheKey(kind, {
+    storageProvider: normalizeStorageProvider(asset?.storageProvider),
+    assetRef: asset?.assetRef,
+  });
 }
 
 function sendPaymentRequired(res, access) {
@@ -80,8 +95,8 @@ function sendPaymentRequired(res, access) {
   });
 }
 
-async function buildPreviewPdfBuffer(driveId) {
-  const sourceBytes = await fetchDrivePdfBuffer(driveId);
+async function buildPreviewPdfBuffer(asset) {
+  const sourceBytes = await fetchBookAssetBuffer(asset);
   const sourcePdf = await PDFDocument.load(sourceBytes);
   const previewPdf = await PDFDocument.create();
   const previewCount = Math.min(PREVIEW_PAGE_LIMIT, sourcePdf.getPageCount());
@@ -98,7 +113,7 @@ async function buildPreviewPdfBuffer(driveId) {
 
   const previewBytes = await previewPdf.save();
   const previewBuffer = Buffer.from(previewBytes);
-  setCachedPreview(driveId, previewBuffer);
+  setCachedPreview(getPreviewCacheKey("pdf", asset), previewBuffer);
   return previewBuffer;
 }
 
@@ -154,8 +169,8 @@ function findZipFile(zip, path) {
   );
 }
 
-async function buildPreviewEpubBuffer(driveId) {
-  const sourceBuffer = await fetchDrivePdfBuffer(driveId);
+async function buildPreviewEpubBuffer(asset) {
+  const sourceBuffer = await fetchBookAssetBuffer(asset);
   const zip = await JSZip.loadAsync(sourceBuffer);
   const containerEntry = findZipFile(zip, "META-INF/container.xml");
   if (!containerEntry) {
@@ -230,7 +245,7 @@ async function buildPreviewEpubBuffer(driveId) {
     compressionOptions: { level: 6 },
   });
 
-  const cacheKey = getPreviewCacheKey("epub", driveId);
+  const cacheKey = getPreviewCacheKey("epub", asset);
   setCachedPreview(cacheKey, previewBuffer);
   return previewBuffer;
 }
@@ -251,6 +266,59 @@ async function fetchDrivePdfBuffer(driveId) {
   const response = await fetchDriveResponse(driveId);
   const arrayBuffer = await response.arrayBuffer();
   return Buffer.from(arrayBuffer);
+}
+
+function getResponseHeader(response, name) {
+  if (typeof response?.headers?.get === "function") {
+    return response.headers.get(name);
+  }
+
+  const headers = response?.headers || {};
+  return headers[String(name || "").toLowerCase()] || null;
+}
+
+function getResponseStatus(response) {
+  if (Number.isInteger(response?.statusCode)) return response.statusCode;
+  if (Number.isInteger(response?.status)) return response.status;
+  return 200;
+}
+
+function toNodeReadable(body) {
+  if (!body) return null;
+  if (typeof body.pipe === "function") return body;
+  return Readable.fromWeb(body);
+}
+
+async function streamToBuffer(body) {
+  const stream = toNodeReadable(body);
+  if (!stream) return Buffer.alloc(0);
+
+  const chunks = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks);
+}
+
+async function fetchBookAssetResponse(asset, options = {}) {
+  const storageProvider = normalizeStorageProvider(asset?.storageProvider);
+  if (storageProvider === "r2") {
+    return getR2ObjectResponse(asset.assetRef, options);
+  }
+
+  return fetchDriveResponse(asset.assetRef, {
+    headers: options.rangeHeader ? { Range: options.rangeHeader } : {},
+  });
+}
+
+async function fetchBookAssetBuffer(asset) {
+  const storageProvider = normalizeStorageProvider(asset?.storageProvider);
+  if (storageProvider === "r2") {
+    const response = await getR2ObjectResponse(asset.assetRef);
+    return streamToBuffer(response.body);
+  }
+
+  return fetchDrivePdfBuffer(asset.assetRef);
 }
 
 function setPdfHeaders(res, options = {}) {
@@ -380,24 +448,22 @@ export const streamPdfByBookId = async (req, res) => {
       return sendPaymentRequired(res, access);
     }
 
-    const response = await fetchDriveResponse(asset.driveId, {
-      headers: rangeHeader ? { Range: rangeHeader } : {},
-    });
+    const response = await fetchBookAssetResponse(asset, { rangeHeader });
 
     setPdfHeaders(res, {
       filename: `${asset.title || "document"}.pdf`,
-      contentLength: response.headers.get("content-length"),
-      contentRange: response.headers.get("content-range"),
-      acceptRanges: response.headers.get("accept-ranges") || "bytes",
-      lastModified: response.headers.get("last-modified"),
-      etag: response.headers.get("etag"),
+      contentLength: getResponseHeader(response, "content-length"),
+      contentRange: getResponseHeader(response, "content-range"),
+      acceptRanges: getResponseHeader(response, "accept-ranges") || "bytes",
+      lastModified: getResponseHeader(response, "last-modified"),
+      etag: getResponseHeader(response, "etag"),
     });
 
-    res.status(response.status === 206 ? 206 : 200);
+    res.status(getResponseStatus(response) === 206 ? 206 : 200);
 
-    if (!response.body) return res.end();
+    const upstreamStream = toNodeReadable(response.body);
+    if (!upstreamStream) return res.end();
 
-    const upstreamStream = Readable.fromWeb(response.body);
     req.on("close", () => upstreamStream.destroy());
     upstreamStream.on("error", (streamError) => {
       console.error("Error proxying book PDF stream:", streamError);
@@ -528,24 +594,22 @@ export const streamEpubByBookId = async (req, res) => {
       return sendPaymentRequired(res, access);
     }
 
-    const response = await fetchDriveResponse(asset.driveId, {
-      headers: rangeHeader ? { Range: rangeHeader } : {},
-    });
+    const response = await fetchBookAssetResponse(asset, { rangeHeader });
 
     setEpubHeaders(res, {
       filename: `${asset.title || "document"}.epub`,
-      contentLength: response.headers.get("content-length"),
-      contentRange: response.headers.get("content-range"),
-      acceptRanges: response.headers.get("accept-ranges") || "bytes",
-      lastModified: response.headers.get("last-modified"),
-      etag: response.headers.get("etag"),
+      contentLength: getResponseHeader(response, "content-length"),
+      contentRange: getResponseHeader(response, "content-range"),
+      acceptRanges: getResponseHeader(response, "accept-ranges") || "bytes",
+      lastModified: getResponseHeader(response, "last-modified"),
+      etag: getResponseHeader(response, "etag"),
     });
 
-    res.status(response.status === 206 ? 206 : 200);
+    res.status(getResponseStatus(response) === 206 ? 206 : 200);
 
-    if (!response.body) return res.end();
+    const upstreamStream = toNodeReadable(response.body);
+    if (!upstreamStream) return res.end();
 
-    const upstreamStream = Readable.fromWeb(response.body);
     req.on("close", () => upstreamStream.destroy());
     upstreamStream.on("error", (streamError) => {
       console.error("Error proxying book EPUB stream:", streamError);
@@ -572,14 +636,15 @@ export const previewPdfFromDrive = async (req, res) => {
   if (!driveId) return res.status(400).send("No Document ID provided");
 
   try {
-    const normalizedDriveId = String(driveId).trim();
-    const cachedPreview = getCachedPreview(normalizedDriveId);
+    const asset = createDriveAsset(driveId);
+    const cacheKey = getPreviewCacheKey("pdf", asset);
+    const cachedPreview = getCachedPreview(cacheKey);
     const previewBuffer = cachedPreview
-      || await (previewBuilds.get(normalizedDriveId)
+      || await (previewBuilds.get(cacheKey)
         || (() => {
-          const buildPromise = buildPreviewPdfBuffer(normalizedDriveId)
-            .finally(() => previewBuilds.delete(normalizedDriveId));
-          previewBuilds.set(normalizedDriveId, buildPromise);
+          const buildPromise = buildPreviewPdfBuffer(asset)
+            .finally(() => previewBuilds.delete(cacheKey));
+          previewBuilds.set(cacheKey, buildPromise);
           return buildPromise;
         })());
 
@@ -598,12 +663,12 @@ export const previewPdfByBookId = async (req, res) => {
     const asset = await pdfModel.getBookAssetById(req.params.bookId, "pdf", {
       publicOnly: true,
     });
-    const cacheKey = asset.driveId;
+    const cacheKey = getPreviewCacheKey("pdf", asset);
     const cachedPreview = getCachedPreview(cacheKey);
     const previewBuffer = cachedPreview
       || await (previewBuilds.get(cacheKey)
         || (() => {
-          const buildPromise = buildPreviewPdfBuffer(asset.driveId)
+          const buildPromise = buildPreviewPdfBuffer(asset)
             .finally(() => previewBuilds.delete(cacheKey));
           previewBuilds.set(cacheKey, buildPromise);
           return buildPromise;
@@ -624,12 +689,12 @@ export const previewEpubByBookId = async (req, res) => {
     const asset = await pdfModel.getBookAssetById(req.params.bookId, "epub", {
       publicOnly: true,
     });
-    const cacheKey = getPreviewCacheKey("epub", asset.driveId);
+    const cacheKey = getPreviewCacheKey("epub", asset);
     const cachedPreview = getCachedPreview(cacheKey);
     const previewBuffer = cachedPreview
       || await (previewBuilds.get(cacheKey)
         || (() => {
-          const buildPromise = buildPreviewEpubBuffer(asset.driveId)
+          const buildPromise = buildPreviewEpubBuffer(asset)
             .finally(() => previewBuilds.delete(cacheKey));
           previewBuilds.set(cacheKey, buildPromise);
           return buildPromise;
@@ -653,6 +718,21 @@ export const redirectCoverByBookId = async (req, res) => {
       publicOnly: true,
     });
     res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+
+    if (normalizeStorageProvider(asset.storageProvider) === "r2") {
+      const response = await getR2ObjectResponse(asset.assetRef);
+      const upstreamStream = toNodeReadable(response.body);
+      if (!upstreamStream) {
+        return res.status(404).send("Cover not found.");
+      }
+      res.setHeader("Content-Type", getResponseHeader(response, "content-type") || "image/jpeg");
+      const contentLength = getResponseHeader(response, "content-length");
+      if (contentLength) res.setHeader("Content-Length", contentLength);
+      req.on("close", () => upstreamStream.destroy());
+      upstreamStream.pipe(res);
+      return;
+    }
+
     const response = await fetch(
       `https://drive.google.com/thumbnail?id=${encodeURIComponent(asset.driveId)}&sz=${encodeURIComponent(safeSize)}`,
     );
