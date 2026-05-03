@@ -3481,10 +3481,17 @@ function renderPDFRows(pdfs) {
     const coverId = getBookCoverDriveId(pdf);
 
     const replaceBrokenCard = () => {
-      card.remove();
       const replacement = spareHomeBooks.shift();
       if (replacement && row) {
-        row.appendChild(createHomeBookCard(replacement, row));
+        card.replaceWith(createHomeBookCard(replacement, row));
+      } else {
+        const fallback = createBookCoverFallbackElement(
+          normalizeText(pdf.title) || "Book cover",
+          "pdf-thumbnail pdf-thumbnail-fallback"
+        );
+        if (coverNode && coverNode.parentNode) {
+          coverNode.replaceWith(fallback);
+        }
       }
     };
 
