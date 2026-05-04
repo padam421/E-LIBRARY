@@ -1457,3 +1457,17 @@ body[data-epub-mode="paper"] .epub-content-host {
     inset: 98px 0 0;
   }
 }
+
+/* PREVIEW MODE FOR GATED BOOKS */
+.epub-reader-app.preview-mode {
+  height: 52vh;
+  min-height: 52vh;
+  overflow: hidden;
+}
+
+.epub-reader-gate.preview-active {
+  inset: calc(68px + 52vh) 0 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at 50% 10%, rgba(10, 10, 14, 0.98), rgba(10, 10, 14, 0.96) 60%);
+}
