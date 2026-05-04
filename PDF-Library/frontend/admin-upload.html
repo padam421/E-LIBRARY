@@ -2421,7 +2421,7 @@
         btn.innerHTML = `<span class="spinner-sm"></span> Importing...`;
 
         let imported = 0;
-        const batchSize = 100;
+        const batchSize = 1000;
         try {
           for (let i = 0; i < bulkPreparedBooks.length; i += batchSize) {
             const batch = bulkPreparedBooks.slice(i, i + batchSize);
