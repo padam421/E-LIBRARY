@@ -13,39 +13,27 @@
     <meta name="google-site-verification" content="XIa9uO4IJpkrJ3xV-a2K00BZ2kR4bV8vncQBjniJOGM" />
     <link rel="canonical" href="https://e-library-c9t.pages.dev/how-to-use.html" />
     <link rel="icon" type="image/png" href="favicon.png" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', '"Segoe UI"', 'system-ui', 'sans-serif'],
-              serif: ['Georgia', '"Times New Roman"', 'serif'],
-            }
-          }
-        }
-      }
-    </script>
+    <link rel="stylesheet" href="assets/css/seo.css?v=1" />
   </head>
-  <body class="m-0 min-h-screen text-[#f7f7f8] font-sans antialiased" style="background: radial-gradient(circle at 18% 10%, rgba(56, 189, 248, 0.14), transparent 32%), radial-gradient(circle at 84% 6%, rgba(250, 204, 21, 0.1), transparent 28%), #050507;">
-    <header class="min-h-[72px] p-[18px_clamp(18px,4vw,64px)] flex flex-col md:flex-row items-start md:items-center justify-between gap-[18px] border-b border-white/10 bg-[#050507]/80 sticky top-0 z-10 backdrop-blur-[16px]">
-      <a href="/" class="text-white no-underline font-black text-[20px]">E-Library</a>
-      <nav aria-label="Primary" class="flex items-center gap-[14px] flex-wrap">
-        <a href="/books/" class="text-white/70 font-bold text-[14px] no-underline hover:text-white transition-colors">Books</a>
-        <a href="about.html" class="text-white/70 font-bold text-[14px] no-underline hover:text-white transition-colors">About</a>
-        <a href="best-free-books.html" class="text-white/70 font-bold text-[14px] no-underline hover:text-white transition-colors">Best Free Books</a>
+  <body class="seo-page">
+    <header class="seo-header">
+      <a href="/" class="seo-brand">E-Library</a>
+      <nav aria-label="Primary">
+        <a href="/books/">Books</a>
+        <a href="about.html">About</a>
+        <a href="best-free-books.html">Best Free Books</a>
       </nav>
     </header>
-    <main class="w-[min(1180px,calc(100%-32px))] mx-auto py-[clamp(28px,5vw,72px)]">
-      <section class="mt-[24px] p-[clamp(20px,4vw,36px)] border border-white/10 bg-[#101014]/80 rounded-[14px] shadow-[0_28px_80px_rgba(0,0,0,0.32)]">
-        <p class="m-[0_0_10px] text-[#38bdf8] text-[13px] font-black uppercase tracking-[0.08em]">Guide</p>
-        <h1 class="m-0 font-serif max-w-[820px] text-[clamp(36px,7vw,72px)] leading-[0.94] mb-8">How to use E-Library</h1>
-        <p class="text-white/70 text-[clamp(17px,2vw,21px)] leading-[1.65] mb-6">
+    <main class="seo-collection">
+      <section class="seo-collection-hero">
+        <p class="seo-kicker">Guide</p>
+        <h1>How to use E-Library</h1>
+        <p>
           Use the search box to find a book by title, author, or category. Open the book page to view its description,
           format, cover, and access status. If PDF or EPUB reading is available, select the format and continue in the
           built-in reader.
         </p>
-        <p class="text-white/70 text-[clamp(17px,2vw,21px)] leading-[1.65] m-0">
+        <p>
           Sign in when you want a more personal reading experience, including recent books, reading progress, and saved
           items. The library is designed to work on both phones and laptops, so you can search and read from the device
           that is easiest for you.

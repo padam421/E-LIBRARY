@@ -74,31 +74,12 @@
 
     <!-- IMPORTANT: If you have other CSS or API links in your <head>
     <meta name="google-adsense-account" content="ca-pub-9660539784438125">, paste them here -->
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              background: '#08080a',
-              text: '#f5f5f7',
-              brand: '#1a73e8',
-            },
-            fontFamily: {
-              serif: ['"Source Serif 4"', 'Georgia', 'serif'],
-              sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
-            }
-          }
-        }
-      }
-    </script>
   </head>
-  <body class="bg-background text-text font-sans antialiased m-0">
+  <body>
     <!-- HEADER SECTION -->
-    <header class="flex justify-between items-center px-[28px] py-[14px] bg-background/72 backdrop-blur-[20px] backdrop-saturate-[180] border-b border-white/5 sticky top-0 z-50 transition-colors duration-300">
+    <header class="header">
       <!-- Left: Menu Button -->
-      <div class="flex-1 flex items-center">
+      <div class="header-left">
         <button
           id="open-sidebar-btn"
           class="icon-btn"
@@ -113,7 +94,7 @@
         </button>
       </div>
       <!-- Right: Profile & Auth -->
-      <div class="flex-1 flex justify-end items-center relative">
+      <div class="header-right" style="align-items: center;">
         <button id="sign-in-btn" class="sign-in-btn">Sign in</button>
 
         <button
@@ -210,7 +191,16 @@
 
     <!-- MAIN CONTENT SECTION -->
     <!-- MAIN CONTENT SECTION -->
-    <main class="flex flex-col items-start text-left w-full p-[20px] box-border">
+    <main
+      class="main-content"
+      style="
+        padding: 20px;
+        align-items: flex-start;
+        text-align: left;
+        width: 100%;
+        box-sizing: border-box;
+      "
+    >
       <section id="training-mega-shell" class="training-mega-shell" aria-label="Training categories">
         <div id="training-nav-bar" class="training-nav-bar" role="tablist" aria-label="Training category tabs"></div>
         <div id="training-mega-backdrop" class="training-mega-backdrop" aria-hidden="true"></div>
@@ -306,11 +296,11 @@
     <!-- START OF CHANGE PROFILE PICTURE MODAL -->
     <!-- START OF SIDEBAR MENU -->
     <!-- The dark overlay that closes the menu when clicked -->
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 backdrop-blur-[4px] z-[100] opacity-0 pointer-events-none transition-opacity duration-300"></div>
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
     <!-- The sliding panel -->
-    <div id="sidebar" class="fixed top-0 left-[-320px] w-[320px] h-full bg-[#202124] z-[101] transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex flex-col shadow-[4px_0_16px_rgba(0,0,0,0.5)]">
-      <div class="flex justify-between items-center p-4 border-b border-[#3c4043]">
+    <div id="sidebar" class="sidebar">
+      <div class="sidebar-header">
         <!-- Back Arrow Icon -->
         <button id="close-sidebar-btn" class="icon-btn">
           <span class="material-symbols-outlined">arrow_back</span>
@@ -321,133 +311,132 @@
         </button>
       </div>
 
-      <div class="flex-1 overflow-y-auto py-4">
-        <div class="text-[14px] font-medium text-[#9aa0a6] px-6 pb-2 uppercase tracking-[0.5px]">Recent</div>
+      <div class="sidebar-content">
+        <div class="sidebar-section-title">Recent</div>
         <!-- History items will be injected here by JavaScript -->
         <div id="history-list" class="history-list"></div>
       </div>
 
-      <div class="p-4 border-t border-[#3c4043]">
-        <button class="flex items-center gap-3 w-full p-3 bg-transparent border-none text-[#e8eaed] text-[15px] font-medium cursor-pointer rounded-lg hover:bg-white/5 transition-colors duration-200" id="open-settings-btn" type="button">
+      <div class="sidebar-footer">
+        <button class="sidebar-footer-btn" id="open-settings-btn" type="button">
           <span class="material-symbols-outlined">settings</span>
           Settings & help
         </button>
       </div>
     </div>
     <!-- START OF SETTINGS & HELP PANEL -->
-    <div id="settings-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-[6px] z-[10002] transition-opacity duration-200 hidden"></div>
-    <aside id="settings-panel" class="fixed left-[18px] bottom-[18px] w-[min(680px,calc(100vw-36px))] h-[min(620px,calc(100vh-36px))] bg-[#202124] text-[#e8eaed] border border-white/10 rounded-[16px] shadow-[0_24px_70px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.05)] z-[10003] overflow-hidden flex flex-col transition-all duration-200 font-sans hidden" aria-hidden="true" aria-label="Settings and help">
-      <div class="flex items-center justify-between p-[18px_20px] border-b border-white/5 bg-[#25262a]">
+    <div id="settings-backdrop" class="settings-backdrop hidden"></div>
+    <aside id="settings-panel" class="settings-panel hidden" aria-hidden="true" aria-label="Settings and help">
+      <div class="settings-head">
         <div>
-          <p class="m-[0_0_3px] text-[#9aa0a6] text-[12px] font-bold tracking-[0.06em] uppercase">Library controls</p>
-          <h2 class="m-0 text-[22px] leading-[1.15]">Settings & help</h2>
+          <p class="settings-kicker">Library controls</p>
+          <h2>Settings & help</h2>
         </div>
-        <button id="close-settings-btn" class="p-2 rounded-full hover:bg-white/5 flex items-center justify-center border-none bg-transparent cursor-pointer text-[#e8eaed]" type="button" aria-label="Close settings">
+        <button id="close-settings-btn" class="icon-btn" type="button" aria-label="Close settings">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-[210px_1fr] min-h-0 flex-1">
-        <nav class="p-3 bg-[#1b1c1f] md:border-r border-white/5 overflow-y-auto" aria-label="Settings sections">
-          <button class="settings-menu-item w-full grid grid-cols-[24px_1fr_auto] items-center gap-[10px] min-h-[44px] p-[9px_10px] mb-1 rounded-[10px] bg-transparent text-[#dfe3ea] text-left cursor-pointer hover:bg-[#2a2c31] border border-transparent transition-colors active" type="button" data-settings-section="my-list">
-            <span class="material-symbols-outlined text-[#c4c7c5]">bookmark</span>
+      <div class="settings-shell">
+        <nav class="settings-menu" aria-label="Settings sections">
+          <button class="settings-menu-item active" type="button" data-settings-section="my-list">
+            <span class="material-symbols-outlined">bookmark</span>
             <span>My List</span>
-            <small id="settings-my-list-count" class="bg-[#3c4043] text-[#e8eaed] px-2 py-0.5 rounded-full text-[11px] font-bold">0</small>
+            <small id="settings-my-list-count">0</small>
           </button>
-          <button class="settings-menu-item w-full grid grid-cols-[24px_1fr_auto] items-center gap-[10px] min-h-[44px] p-[9px_10px] mb-1 rounded-[10px] bg-transparent text-[#dfe3ea] text-left cursor-pointer hover:bg-[#2a2c31] border border-transparent transition-colors" type="button" data-settings-section="reading">
-            <span class="material-symbols-outlined text-[#c4c7c5]">auto_stories</span>
+          <button class="settings-menu-item" type="button" data-settings-section="reading">
+            <span class="material-symbols-outlined">auto_stories</span>
             <span>Reading</span>
           </button>
-          <button class="settings-menu-item w-full grid grid-cols-[24px_1fr_auto] items-center gap-[10px] min-h-[44px] p-[9px_10px] mb-1 rounded-[10px] bg-transparent text-[#dfe3ea] text-left cursor-pointer hover:bg-[#2a2c31] border border-transparent transition-colors" type="button" data-settings-section="privacy">
-            <span class="material-symbols-outlined text-[#c4c7c5]">shield</span>
+          <button class="settings-menu-item" type="button" data-settings-section="privacy">
+            <span class="material-symbols-outlined">shield</span>
             <span>Privacy</span>
           </button>
-          <button class="settings-menu-item w-full grid grid-cols-[24px_1fr_auto] items-center gap-[10px] min-h-[44px] p-[9px_10px] mb-1 rounded-[10px] bg-transparent text-[#dfe3ea] text-left cursor-pointer hover:bg-[#2a2c31] border border-transparent transition-colors" type="button" data-settings-section="account">
-            <span class="material-symbols-outlined text-[#c4c7c5]">account_circle</span>
+          <button class="settings-menu-item" type="button" data-settings-section="account">
+            <span class="material-symbols-outlined">account_circle</span>
             <span>Account</span>
           </button>
-          <button class="settings-menu-item w-full grid grid-cols-[24px_1fr_auto] items-center gap-[10px] min-h-[44px] p-[9px_10px] mb-1 rounded-[10px] bg-transparent text-[#dfe3ea] text-left cursor-pointer hover:bg-[#2a2c31] border border-transparent transition-colors" type="button" data-settings-section="help">
-            <span class="material-symbols-outlined text-[#c4c7c5]">help</span>
+          <button class="settings-menu-item" type="button" data-settings-section="help">
+            <span class="material-symbols-outlined">help</span>
             <span>Help</span>
           </button>
         </nav>
 
-        <section class="flex flex-col min-h-0 overflow-y-auto p-0 md:p-[20px_24px] bg-[#202124]" id="settings-detail" aria-live="polite"></section>
+        <section class="settings-detail" id="settings-detail" aria-live="polite"></section>
       </div>
     </aside>
     <!-- END OF SETTINGS & HELP PANEL -->
     <!-- START OF SEARCH MODAL -->
-    <div id="search-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-[8px] z-[10000] hidden"></div>
-    <div id="search-modal" class="fixed top-[10%] left-1/2 -translate-x-1/2 w-[90%] max-w-[600px] bg-[#202124] rounded-xl shadow-[0_16px_32px_rgba(0,0,0,0.5)] z-[10001] overflow-hidden flex flex-col max-h-[80vh] hidden">
-      <div class="flex items-center p-[12px_20px] border-b border-[#3c4043]">
-        <span class="material-symbols-outlined text-[#9aa0a6]">search</span>
+    <div id="search-backdrop" class="search-backdrop hidden"></div>
+    <div id="search-modal" class="search-modal hidden">
+      <div class="search-header">
+        <span class="material-symbols-outlined">search</span>
         <input
           type="text"
           id="search-input"
           placeholder="Search books, authors, categories..."
           autocomplete="off"
-          class="flex-1 bg-transparent border-none text-[#e8eaed] text-[18px] outline-none ml-3"
         />
-        <span class="text-[12px] text-[#9aa0a6] bg-[#3c4043] px-2 py-1 rounded-md mr-3">Esc</span>
-        <button id="close-search-btn" class="p-2 rounded-full hover:bg-white/5 flex items-center justify-center border-none bg-transparent cursor-pointer text-[#e8eaed]">
+        <span class="search-esc">Esc</span>
+        <button id="close-search-btn" class="icon-btn">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
-      <p class="text-[12px] text-[#9aa0a6] px-5 py-2 m-0 border-b border-[#3c4043] bg-[#292a2d]">
+      <p class="search-subtext">
         Search your full library. Press Enter to open the first matching book.
       </p>
-      <div id="search-results" class="flex-1 overflow-y-auto py-2">
+      <div id="search-results" class="search-results">
         <!-- Search results injected here -->
       </div>
     </div>
     <!-- END OF SEARCH MODAL -->
-    <div id="change-pic-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-[6px] z-[9998] flex items-center justify-center hidden">
-      <div id="change-pic-modal" class="w-[360px] max-w-[90vw] bg-[#28292c] text-[#e8eaed] rounded-[24px] shadow-[0_24px_40px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.05)] flex flex-col relative overflow-hidden">
-        <div class="flex items-center p-[16px_20px] border-b border-white/10">
-          <button id="close-change-pic" class="p-2 rounded-full hover:bg-white/10 flex items-center justify-center border-none bg-transparent cursor-pointer transition-colors duration-200">
+    <div id="change-pic-backdrop" class="change-pic-backdrop hidden">
+      <div id="change-pic-modal" class="change-pic-modal">
+        <div class="change-pic-header">
+          <button id="close-change-pic" class="icon-btn">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="#e8eaed">
               <path
                 d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
               />
             </svg>
           </button>
-          <h2 class="text-[18px] font-medium m-[0_0_0_16px] tracking-[0.2px]">Change profile picture</h2>
+          <h2>Change profile picture</h2>
         </div>
 
-        <div class="p-[32px_24px_40px_24px] flex flex-col items-center">
+        <div class="change-pic-body">
           <!-- THIS IS THE PROFILE PICTURE DISPLAY THAT WAS MISSING -->
-          <div class="w-[160px] h-[160px] rounded-full overflow-hidden mb-[36px] bg-[#1a73e8] shadow-[0_8px_24px_rgba(0,0,0,0.4)] border-2 border-white/5">
+          <div class="large-profile-display">
             <img
               id="large-preview-img"
               src=""
               alt="Profile"
-              class="w-full h-full object-cover hidden"
+              class="hidden"
               referrerpolicy="no-referrer"
             />
-            <div id="large-preview-initials" class="w-full h-full text-white flex items-center justify-center text-[64px] hidden"></div>
+            <div id="large-preview-initials" class="hidden"></div>
           </div>
 
           <!-- THE TWO BUTTONS -->
-          <div class="flex justify-center gap-[48px] w-full">
-            <div class="flex flex-col items-center w-[80px] text-center gap-3">
-              <button id="upload-device-btn" class="w-[64px] h-[64px] rounded-full bg-[#3c4043] border border-white/5 flex items-center justify-center cursor-pointer transition-all duration-200 shadow-[0_4px_12px_rgba(0,0,0,0.2)] hover:bg-[#4a4d51] hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(0,0,0,0.3)]">
+          <div class="action-buttons-container">
+            <div class="action-btn-wrapper">
+              <button id="upload-device-btn" class="circle-btn">
                 <svg viewBox="0 0 24 24" width="28" height="28" fill="#e8eaed">
                   <path
                     d="M19 7v3h-2V7h-3V5h3V2h2v3h3v2h-3zm-3 4V8h-3V5H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8h-2zM5 19l3-4 2 3 3-4 4 5H5z"
                   />
                 </svg>
               </button>
-              <span class="text-[13px] text-[#e8eaed] leading-[1.4] font-medium">Upload from<br />device</span>
+              <span>Upload from<br />device</span>
             </div>
-            <div class="flex flex-col items-center w-[80px] text-center gap-3">
-              <button id="take-picture-btn" class="w-[64px] h-[64px] rounded-full bg-[#3c4043] border border-white/5 flex items-center justify-center cursor-pointer transition-all duration-200 shadow-[0_4px_12px_rgba(0,0,0,0.2)] hover:bg-[#4a4d51] hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(0,0,0,0.3)]">
+            <div class="action-btn-wrapper">
+              <button id="take-picture-btn" class="circle-btn">
                 <svg viewBox="0 0 24 24" width="28" height="28" fill="#e8eaed">
                   <path
                     d="M4 4h3l2-2h6l2 2h3c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zm8 3c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z"
                   />
                 </svg>
               </button>
-              <span class="text-[13px] text-[#e8eaed] leading-[1.4] font-medium">Take a picture</span>
+              <span>Take a picture</span>
             </div>
           </div>
         </div>
@@ -461,13 +450,13 @@
         />
 
         <!-- Camera UI Overlay -->
-        <div id="camera-ui" class="absolute inset-0 bg-black z-10 flex flex-col hidden">
-          <video id="camera-video" class="w-full flex-1 object-cover" autoplay playsinline></video>
-          <div class="h-[100px] bg-black flex items-center justify-between px-6 pb-5">
-            <button id="cancel-camera-btn" class="bg-transparent border-none text-white text-[16px] font-medium cursor-pointer py-2">
+        <div id="camera-ui" class="camera-ui hidden">
+          <video id="camera-video" autoplay playsinline></video>
+          <div class="camera-controls">
+            <button id="cancel-camera-btn" class="camera-text-btn">
               Cancel
             </button>
-            <button id="capture-btn" class="w-[64px] h-[64px] rounded-full border-[4px] border-white bg-transparent cursor-pointer p-0 shadow-[0_0_0_2px_rgba(255,255,255,0.5)] flex items-center justify-center transition-transform hover:scale-105 active:scale-95 before:content-[''] before:block before:w-[50px] before:h-[50px] before:rounded-full before:bg-white before:transition-all hover:before:bg-[#e8eaed] active:before:scale-90 active:before:bg-[#dadce0]"></button>
+            <button id="capture-btn" class="capture-circle"></button>
             <div style="width: 50px"></div>
             <!-- spacer -->
           </div>
@@ -478,27 +467,27 @@
     <!-- PREMIUM AI SIDEBAR INJECTED HERE -->
 
     <!-- START OF PREMIUM CINEMATIC DETAIL MODAL -->
-    <div id="cinematic-modal-backdrop" class="fixed inset-0 bg-black/80 backdrop-blur-[12px] z-[10000] flex items-center justify-center hidden">
-      <div class="relative w-[95%] max-w-[900px] h-[85vh] max-h-[800px] bg-[#141517] rounded-[24px] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.6)] flex flex-col">
+    <div id="cinematic-modal-backdrop" class="cinematic-backdrop hidden">
+      <div class="cinematic-modal">
         <!-- Close Button -->
-        <button id="close-cinematic-btn" class="absolute top-[20px] right-[20px] z-10 w-[44px] h-[44px] rounded-full bg-black/40 backdrop-blur-[10px] text-white border border-white/10 flex items-center justify-center cursor-pointer transition-colors hover:bg-black/60">
+        <button id="close-cinematic-btn" class="icon-btn close-cinematic-btn">
           <span class="material-symbols-outlined">close</span>
         </button>
 
         <!-- Top Hero Section (Poster & Video) -->
-        <div class="relative w-full flex-1 min-h-0 bg-black overflow-hidden flex flex-col">
+        <div class="cinematic-hero">
           <!-- The Poster that shows for 3 seconds -->
           <img
             id="cinematic-poster"
             src=""
             alt="Book Cover"
-            class="absolute inset-0 w-full h-full object-cover border-none z-[1] pointer-events-none"
+            class="cinematic-media"
           />
 
          <!-- The Video (Google Drive /preview embed — works without backend auth) -->
           <iframe
             id="cinematic-video"
-            class="absolute inset-0 w-full h-full object-cover border-none z-[1] pointer-events-none hidden"
+            class="cinematic-media hidden"
             allow="autoplay; fullscreen; encrypted-media"
             allowfullscreen
             frameborder="0"
@@ -507,34 +496,35 @@
 
 
           <!-- Gradient overlay so text is readable -->
-          <div class="absolute inset-0 z-[2] bg-gradient-to-t from-[#141517] via-[#141517]/70 to-transparent pointer-events-none"></div>
+          <div class="cinematic-vignette"></div>
 
           <!-- Content over the media -->
-          <div class="absolute bottom-0 left-0 w-full p-[40px] z-[3] flex flex-col gap-4">
-            <h1 id="cinematic-title" class="m-0 font-serif text-[42px] font-bold text-white leading-[1.1] text-shadow-md">Book Title</h1>
+          <div class="cinematic-content">
+            <h1 id="cinematic-title" class="cinematic-title">Book Title</h1>
 
-            <div class="flex items-center gap-4 text-[14px] font-medium text-[#c4c7c5]">
-              <span class="text-[#34a853] font-bold">98% Match</span>
-              <span class="border border-[#c4c7c5] px-1.5 py-[1px] rounded-[3px] text-[12px] opacity-80">U/A 13+</span>
-              <span id="cinematic-category" class="text-white">Category</span>
+            <div class="cinematic-meta">
+              <span class="match-text">98% Match</span>
+              <span class="age-rating">U/A 13+</span>
+              <span id="cinematic-category" class="category-tag">Category</span>
             </div>
 
-            <p id="cinematic-desc" class="m-0 text-[#e8eaed] text-[16px] leading-[1.6] max-w-[600px] font-serif">
+            <p id="cinematic-desc" class="cinematic-desc">
               Book description goes here...
             </p>
 
             <!-- Action Buttons -->
-            <div class="flex items-center gap-4 mt-2">
+            <!-- Action Buttons -->
+            <div class="cinematic-actions">
               <!-- Changed to a sleek Read PDF button instead of a Play button -->
-              <button id="cinematic-read-btn" class="w-auto px-[20px] h-[44px] rounded-[22px] bg-white/10 backdrop-blur-[10px] text-white border border-white/20 flex items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-white/20 font-semibold text-[15px]" title="Read PDF">
-                <span class="material-symbols-outlined text-[20px]">menu_book</span> Read PDF
+              <button id="cinematic-read-btn" class="secondary-circle-btn" title="Read PDF" style="width: auto; padding: 0 20px; border-radius: 22px; font-weight: 600; gap: 8px;">
+                <span class="material-symbols-outlined" style="font-size: 20px;">menu_book</span> Read PDF
               </button>
               
-              <button class="w-[44px] h-[44px] rounded-full bg-white/10 backdrop-blur-[10px] text-white border border-white/20 flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20" title="Add to List">
+              <button class="secondary-circle-btn" title="Add to List">
                 <span class="material-symbols-outlined">add</span>
               </button>
               
-              <button class="w-[44px] h-[44px] rounded-full bg-white/10 backdrop-blur-[10px] text-white border border-white/20 flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20" title="Like">
+              <button class="secondary-circle-btn" title="Like">
                 <span class="material-symbols-outlined">thumb_up</span>
               </button>
             </div>
@@ -553,20 +543,20 @@
     <script src="assets/js/theme-toggle.js"></script>
 
     <!-- Site Footer -->
-    <footer class="text-center p-[40px_20px_20px] mt-[60px] border-t border-white/5 bg-[#08080a]">
-      <a class="inline-flex items-center gap-2 px-6 py-3 bg-[#1a73e8] text-white rounded-full no-underline font-medium text-[15px] mb-8 hover:bg-[#1557b0] transition-colors" href="support" target="_blank" rel="noopener noreferrer">
+    <footer class="site-footer">
+      <a class="footer-support-cta" href="support" target="_blank" rel="noopener noreferrer">
         <span class="material-symbols-outlined" aria-hidden="true">auto_stories</span>
         Help us add more books
       </a>
-      <div class="font-serif text-[20px] font-semibold text-[#e8eaed] mb-4">E-Library Dashboard</div>
-      <div class="flex flex-wrap justify-center gap-5 mb-6">
-        <a class="text-[#9aa0a6] no-underline text-[14px] hover:text-[#e8eaed] transition-colors" href="about.html">About</a>
-        <a class="text-[#9aa0a6] no-underline text-[14px] hover:text-[#e8eaed] transition-colors" href="how-to-use.html">How to Use</a>
-        <a class="text-[#9aa0a6] no-underline text-[14px] hover:text-[#e8eaed] transition-colors" href="best-free-books.html">Best Free Books</a>
-        <a class="text-[#9aa0a6] no-underline text-[14px] hover:text-[#e8eaed] transition-colors" href="privacy.html">Privacy Policy</a>
-        <a class="text-[#9aa0a6] no-underline text-[14px] hover:text-[#e8eaed] transition-colors" href="terms.html">Terms of Service</a>
+      <div class="site-footer-title">E-Library Dashboard</div>
+      <div class="site-footer-links">
+        <a href="about.html">About</a>
+        <a href="how-to-use.html">How to Use</a>
+        <a href="best-free-books.html">Best Free Books</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Service</a>
       </div>
-      <div class="text-[#5f6368] text-[13px]">&copy; 2026 E-Library. All rights reserved.</div>
+      <div class="site-footer-copy">&copy; 2026 E-Library. All rights reserved.</div>
     </footer>
 
     <!-- JavaScript Connections (MUST BE AT THE VERY BOTTOM) -->

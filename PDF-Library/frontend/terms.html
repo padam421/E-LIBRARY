@@ -10,54 +10,81 @@
   <meta name="google-site-verification" content="XIa9uO4IJpkrJ3xV-a2K00BZ2kR4bV8vncQBjniJOGM" />
   <link rel="canonical" href="https://e-library-c9t.pages.dev/terms.html" />
   <link rel="icon" type="image/png" href="favicon.png" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            background: '#0a0a0f',
-            textPrimary: '#f1f5f9',
-            textSecondary: 'rgba(241, 245, 249, 0.8)',
-            containerBg: '#13131a',
-            borderOutline: 'rgba(255, 255, 255, 0.08)',
-            brandPrimary: '#6366f1',
-            brandSecondary: '#818cf8',
-          }
-        }
-      }
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #0a0a0f;
+      color: #f1f5f9;
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
     }
-  </script>
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 40px;
+      background-color: #13131a;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 24px;
+      color: #6366f1;
+    }
+    h2 {
+      font-size: 20px;
+      margin-top: 32px;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+    p {
+      margin-bottom: 16px;
+      color: rgba(241, 245, 249, 0.8);
+    }
+    a {
+      color: #818cf8;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 30px;
+      font-weight: 600;
+    }
+  </style>
 </head>
-<body class="font-sans bg-background text-textPrimary leading-relaxed m-0 p-0 md:p-4">
-  <div class="max-w-[800px] mx-auto my-[40px] p-[24px] md:p-[40px] bg-containerBg rounded-[12px] border border-borderOutline">
-    <a href="index.html" class="inline-block mb-[30px] font-semibold text-brandSecondary no-underline hover:underline">&larr; Back to E-Library</a>
-    <h1 class="text-[28px] mb-[24px] text-brandPrimary font-bold">Terms of Service</h1>
-    <p class="mb-[16px] text-textSecondary"><strong>Last Updated:</strong> April 26, 2026</p>
+<body>
+  <div class="container">
+    <a href="index.html" class="back-link">&larr; Back to E-Library</a>
+    <h1>Terms of Service</h1>
+    <p><strong>Last Updated:</strong> April 26, 2026</p>
     
-    <h2 class="text-[20px] mt-[32px] mb-[16px] text-white font-semibold">1. Agreement to Terms</h2>
-    <p class="mb-[16px] text-textSecondary">By accessing or using E-Library, you agree to be bound by these Terms of Service. If you disagree with any part of the terms then you may not access the Service.</p>
+    <h2>1. Agreement to Terms</h2>
+    <p>By accessing or using E-Library, you agree to be bound by these Terms of Service. If you disagree with any part of the terms then you may not access the Service.</p>
     
-    <h2 class="text-[20px] mt-[32px] mb-[16px] text-white font-semibold">2. Intellectual Property</h2>
-    <p class="mb-[16px] text-textSecondary">The Service and its original content, features, and functionality are and will remain the exclusive property of E-Library and its licensors. Books hosted on this platform are for personal reading and evaluation. You may not distribute, modify, transmit, reuse, download, repost, copy, or use said Content, whether in whole or in part, for commercial purposes or for personal gain, without express advance written permission from us.</p>
+    <h2>2. Intellectual Property</h2>
+    <p>The Service and its original content, features, and functionality are and will remain the exclusive property of E-Library and its licensors. Books hosted on this platform are for personal reading and evaluation. You may not distribute, modify, transmit, reuse, download, repost, copy, or use said Content, whether in whole or in part, for commercial purposes or for personal gain, without express advance written permission from us.</p>
     
-    <h2 class="text-[20px] mt-[32px] mb-[16px] text-white font-semibold">3. User Accounts</h2>
-    <p class="mb-[16px] text-textSecondary">When you create an account with us, you must provide information that is accurate, complete, and current at all times. Failure to do so constitutes a breach of the Terms, which may result in immediate termination of your account on our Service.</p>
+    <h2>3. User Accounts</h2>
+    <p>When you create an account with us, you must provide information that is accurate, complete, and current at all times. Failure to do so constitutes a breach of the Terms, which may result in immediate termination of your account on our Service.</p>
     
-    <h2 class="text-[20px] mt-[32px] mb-[16px] text-white font-semibold">4. Subscriptions and Payments</h2>
-    <p class="mb-[16px] text-textSecondary">Some parts of the Service are billed on a subscription basis ("Premium"). You will be billed in advance on a recurring and periodic basis (such as monthly or annually). Payments are processed securely via Razorpay.</p>
-    <p class="mb-[16px] text-textSecondary">All purchases are final and non-refundable, except as required by law.</p>
+    <h2>4. Subscriptions and Payments</h2>
+    <p>Some parts of the Service are billed on a subscription basis ("Premium"). You will be billed in advance on a recurring and periodic basis (such as monthly or annually). Payments are processed securely via Razorpay.</p>
+    <p>All purchases are final and non-refundable, except as required by law.</p>
 
-    <h2 class="text-[20px] mt-[32px] mb-[16px] text-white font-semibold">5. Prohibited Activities</h2>
-    <p class="mb-[16px] text-textSecondary">You agree not to engage in any of the following activities:</p>
-    <ul class="mb-[16px] text-textSecondary pl-6 list-disc space-y-2">
+    <h2>5. Prohibited Activities</h2>
+    <p>You agree not to engage in any of the following activities:</p>
+    <ul>
       <li>Copying, distributing, or disclosing any part of the Service in any medium.</li>
       <li>Attempting to interfere with, compromise the system integrity or security of the Service.</li>
       <li>Using any automated system, including "robots," "spiders," "offline readers," etc., to access the Service.</li>
     </ul>
 
-    <h2 class="text-[20px] mt-[32px] mb-[16px] text-white font-semibold">6. Changes to Terms</h2>
-    <p class="mb-[16px] text-textSecondary">We reserve the right, at our sole discretion, to modify or replace these Terms at any time. What constitutes a material change will be determined at our sole discretion.</p>
+    <h2>6. Changes to Terms</h2>
+    <p>We reserve the right, at our sole discretion, to modify or replace these Terms at any time. What constitutes a material change will be determined at our sole discretion.</p>
   </div>
 </body>
 </html>

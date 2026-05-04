@@ -15,20 +15,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              background: '#0a0a0f',
-              panel: '#13131a',
-              brand: '#6366f1',
-            }
-          }
-        }
-      }
-    </script>
 
     <!-- Google Auth -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -485,16 +471,16 @@
     </style>
   </head>
 
-  <body class="bg-background text-[#f1f5f9] font-sans m-0 min-h-screen">
+  <body>
 
-    <!-- admin nav -->
-    <nav class="sticky top-0 z-[100] flex items-center justify-between px-7 h-[60px] bg-[#0a0a0f]/90 backdrop-blur-[20px] border-b border-white/10">
-      <div class="flex items-center gap-2.5 font-bold tracking-wide">
-        <span class="material-symbols-outlined text-brand text-[22px]">admin_panel_settings</span>
+    <!-- â”€â”€ Navigation â”€â”€ -->
+    <nav class="admin-nav">
+      <div class="admin-nav-brand">
+        <span class="material-symbols-outlined">admin_panel_settings</span>
         E-Library Admin
-        <span class="bg-brand/15 text-brand text-[10px] font-bold px-2 py-0.5 rounded-[4px] ml-2 tracking-wider">ADMIN</span>
+        <span class="admin-badge">ADMIN</span>
       </div>
-      <div id="nav-user-slot" class="flex items-center gap-3"></div>
+      <div id="nav-user-slot"></div>
     </nav>
 
     <!-- â”€â”€ Auth Gate â”€â”€ -->
