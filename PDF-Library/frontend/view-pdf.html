@@ -712,30 +712,7 @@
       async function handleAuthenticatedReader(user, animate = false) {
         currentReaderUser = user;
         currentAccess = await fetchReaderAccess();
-        if (!currentAccess.requiresPayment || currentAccess.fullAccess) {
-          unlockReader(user, animate);
-          return;
-        }
-
-        renderUserNav(user);
-        
-        const page = document.getElementById("reader-page");
-        const wrap = document.getElementById("custom-pdf-wrapper");
-        const gate = document.getElementById("reader-gate");
-        const fade = document.getElementById("pdf-preview-fade");
-        const loading = document.getElementById("pdf-loading");
-
-        page.classList.remove("authenticated");
-        document.body.classList.remove("is-authenticated");
-        if (wrap) wrap.classList.remove("hidden");
-        if (gate) {
-          gate.style.display = "";
-          gate.classList.remove("hidden");
-        }
-        if (fade) fade.classList.remove("hidden");
-        if (loading) loading.style.display = "none";
-        setGateForPremium(currentAccess);
-        startPreviewReader();
+        unlockReader(user, animate);
       }
 
       async function startPremiumPayment(scope, planKey) {
@@ -967,23 +944,9 @@
       // UNLOCK READER (animate gate away, expand iframe)
       // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-            function renderUserNav(user) {
-        const initials = getInitials(user.name, user.email);
-        const firstName =
-          user.given_name ||
-          (user.name ? String(user.name).trim().split(" ")[0] : "User");
-        const navSlot  = document.getElementById("nav-right-slot");
-        const pictureSrc = safeImageSrc(user.picture);
-        const safeInitials = escapeHtml(initials);
-        const safeFirstName = escapeHtml(firstName);
 
-        navSlot.innerHTML = pictureSrc
-          ? <div class="reader-user-chip"><img class="reader-avatar" src="${escapeHtml(pictureSrc)}" alt="${safeInitials}" referrerpolicy="no-referrer" /><span>${safeFirstName}</span></div>
-          : <div class="reader-user-chip"><div class="reader-avatar-initials">${safeInitials}</div><span>${safeFirstName}</span></div>;
-      }
 
       function unlockReader(user, animate) {
-        renderUserNav(user);
 
         const page    = document.getElementById("reader-page");
         const wrap    = document.getElementById("custom-pdf-wrapper");

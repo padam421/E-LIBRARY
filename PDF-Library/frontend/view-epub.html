@@ -673,12 +673,10 @@
         renderUserNav(user);
         document.body.classList.add("is-authenticated");
         document.getElementById("epub-reader-app").classList.remove("hidden");
-        document.getElementById("epub-reader-app").classList.add("preview-mode");
         document.getElementById("epub-loading").style.display = "grid";
         const gate = document.getElementById("reader-gate");
         gate.style.display = "";
         gate.classList.remove("hidden");
-        gate.classList.add("preview-active");
         setGateForPremium(currentAccess);
         setTimeout(startPreviewReader, 0);
       }
@@ -719,14 +717,12 @@
 
         // Show the reader app with preview content visible behind the gate
         document.getElementById("epub-reader-app").classList.remove("hidden");
-        document.getElementById("epub-reader-app").classList.add("preview-mode");
         document.getElementById("epub-loading").style.display = "grid";
         document.body.classList.remove("is-authenticated");
 
         const gate = document.getElementById("reader-gate");
         gate.style.display = "";
         gate.classList.remove("hidden");
-        gate.classList.add("preview-active");
 
         // Start preview reader in background so user can read first few chapters
         setTimeout(() => startPreviewReader(), 300);
@@ -747,8 +743,7 @@
 
         document.body.classList.add("is-authenticated");
         document.getElementById("reader-gate").style.display = "none";
-        document.getElementById("reader-gate").classList.remove("preview-active");
-        document.getElementById("epub-reader-app").classList.remove("hidden", "preview-mode");
+        document.getElementById("epub-reader-app").classList.remove("hidden");
         document.getElementById("epub-loading").style.display = "grid";
 
         saveToRecentHistory();
