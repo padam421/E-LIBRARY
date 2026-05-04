@@ -464,6 +464,10 @@
 
         localStorage.setItem(LS_ACCOUNTS, JSON.stringify(accounts));
         localStorage.setItem(LS_ACTIVE, user.email);
+
+        if (typeof emitActiveUserChanged === "function") emitActiveUserChanged();
+        if (typeof window.syncScopedLibraryState === "function") window.syncScopedLibraryState();
+
         return user;
       }
 

@@ -471,6 +471,10 @@
 
         localStorage.setItem(LS_ACCOUNTS, JSON.stringify(accounts));
         localStorage.setItem(LS_ACTIVE, user.email);
+
+        if (typeof emitActiveUserChanged === "function") emitActiveUserChanged();
+        if (typeof window.syncScopedLibraryState === "function") window.syncScopedLibraryState();
+
         return user;
       }
 
@@ -818,7 +822,7 @@
             Sign in
           </button>`;
 
-        renderUserNav(user);
+        if (user) renderUserNav(user);
         
         const page = document.getElementById("reader-page");
         const wrap = document.getElementById("custom-pdf-wrapper");
@@ -945,8 +949,23 @@
       // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
+      function renderUserNav(user) {
+        const initials = getInitials(user.name, user.email);
+        const firstName =
+          user.given_name ||
+          (user.name ? String(user.name).trim().split(" ")[0] : "User");
+        const navSlot  = document.getElementById("nav-right-slot");
+        const pictureSrc = safeImageSrc(user.picture);
+        const safeInitials = escapeHtml(initials);
+        const safeFirstName = escapeHtml(firstName);
+
+        navSlot.innerHTML = pictureSrc
+          ? `<div class="reader-user-chip"><img class="reader-avatar" src="${escapeHtml(pictureSrc)}" alt="${safeInitials}" referrerpolicy="no-referrer" /><span>${safeFirstName}</span></div>`
+          : `<div class="reader-user-chip"><div class="reader-avatar-initials">${safeInitials}</div><span>${safeFirstName}</span></div>`;
+      }
 
       function unlockReader(user, animate) {
+        renderUserNav(user);
 
         const page    = document.getElementById("reader-page");
         const wrap    = document.getElementById("custom-pdf-wrapper");
