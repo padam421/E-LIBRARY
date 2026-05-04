@@ -717,6 +717,8 @@
           return;
         }
 
+        renderUserNav(user);
+        
         const page = document.getElementById("reader-page");
         const wrap = document.getElementById("custom-pdf-wrapper");
         const gate = document.getElementById("reader-gate");
@@ -839,6 +841,8 @@
             Sign in
           </button>`;
 
+        renderUserNav(user);
+        
         const page = document.getElementById("reader-page");
         const wrap = document.getElementById("custom-pdf-wrapper");
         const gate = document.getElementById("reader-gate");
@@ -963,8 +967,7 @@
       // UNLOCK READER (animate gate away, expand iframe)
       // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-      function unlockReader(user, animate) {
-        // Update nav: show user chip instead of sign-in button
+            function renderUserNav(user) {
         const initials = getInitials(user.name, user.email);
         const firstName =
           user.given_name ||
@@ -975,8 +978,12 @@
         const safeFirstName = escapeHtml(firstName);
 
         navSlot.innerHTML = pictureSrc
-          ? `<div class="reader-user-chip"><img class="reader-avatar" src="${escapeHtml(pictureSrc)}" alt="${safeInitials}" referrerpolicy="no-referrer" /><span>${safeFirstName}</span></div>`
-          : `<div class="reader-user-chip"><div class="reader-avatar-initials">${safeInitials}</div><span>${safeFirstName}</span></div>`;
+          ? <div class="reader-user-chip"><img class="reader-avatar" src="${escapeHtml(pictureSrc)}" alt="${safeInitials}" referrerpolicy="no-referrer" /><span>${safeFirstName}</span></div>
+          : <div class="reader-user-chip"><div class="reader-avatar-initials">${safeInitials}</div><span>${safeFirstName}</span></div>;
+      }
+
+      function unlockReader(user, animate) {
+        renderUserNav(user);
 
         const page    = document.getElementById("reader-page");
         const wrap    = document.getElementById("custom-pdf-wrapper");

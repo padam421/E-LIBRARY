@@ -571,10 +571,6 @@ body.epub-reader-body {
   -webkit-backdrop-filter: blur(12px) saturate(1.1);
 }
 
-body.is-authenticated .epub-reader-gate {
-  display: none;
-}
-
 .epub-gate-card {
   width: min(640px, 100%);
   border: 1px solid var(--epub-border);
