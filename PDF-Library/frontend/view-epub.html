@@ -333,6 +333,7 @@
       const LS_ACCOUNTS = "pdf_lib_accounts";
       const LS_ACTIVE = "pdf_lib_active_email";
       const LS_RECENT_PREFIX = "pdf_lib_recent_books";
+      const LS_SESSION_TOKEN_PREFIX = "pdf_lib_session_token_v1";
       const LS_ACCESS_TOKEN_PREFIX = "pdf_lib_google_access_token_v1";
       const LS_ACCESS_TOKEN_EXPIRY_PREFIX = "pdf_lib_google_access_token_expiry_v1";
 
@@ -714,13 +715,17 @@
             Sign in
           </button>`;
 
-        document.getElementById("epub-reader-app").classList.add("hidden");
-        document.getElementById("epub-loading").style.display = "none";
+        // Show the reader app with preview content visible behind the gate
+        document.getElementById("epub-reader-app").classList.remove("hidden");
+        document.getElementById("epub-loading").style.display = "grid";
         document.body.classList.remove("is-authenticated");
 
         const gate = document.getElementById("reader-gate");
         gate.style.display = "";
         gate.classList.remove("hidden");
+
+        // Start preview reader in background so user can read first few chapters
+        setTimeout(() => startPreviewReader(), 300);
       }
 
       function unlockReader(user) {
@@ -898,6 +903,7 @@
         window.VIEWER_INITIAL_PAGE = explicitSectionParam > 0 ? explicitSectionParam : 0;
         window.VIEWER_DOCUMENT_FORMAT = "epub";
         window.VIEWER_BOOK_TITLE = bookTitle;
+        window.VIEWER_PREVIEW_PAGE_LIMIT = window.VIEWER_PREVIEW_PAGE_LIMIT || 4;
 
         (async () => {
           const restoreVersion = authStateVersion;
@@ -912,6 +918,23 @@
 
           showGatedMode();
         })();
+      });
+
+      // Listen for auth changes from other pages (main homepage, PDF viewer)
+      window.addEventListener("storage", (event) => {
+        if (event.key === LS_ACTIVE && event.newValue) {
+          const emailKey = normalizeEmailKey(event.newValue);
+          if (emailKey && !currentReaderUser) {
+            // User signed in on another page — try to restore session here
+            (async () => {
+              const user = await fetchSessionUser() || await restoreCachedReaderUser();
+              if (user?.email) {
+                persistReaderAccount(user);
+                await handleAuthenticatedReader(user);
+              }
+            })();
+          }
+        }
       });
     </script>
 

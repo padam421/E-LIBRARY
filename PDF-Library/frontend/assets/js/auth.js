@@ -1338,6 +1338,29 @@ if (document.readyState !== "loading") {
   });
 }
 
+
+// Listen for auth changes from reader pages (PDF viewer, EPUB viewer)
+// If user signs in on a reader page, auto-update the main homepage UI
+window.addEventListener("storage", (event) => {
+  if (event.key === "pdf_lib_active_email" && event.newValue) {
+    const newEmailKey = normalizeEmailKey(event.newValue);
+    if (newEmailKey && newEmailKey !== normalizeEmailKey(activeEmail)) {
+      // Re-read accounts from localStorage (the reader page may have added them)
+      try {
+        const parsed = JSON.parse(localStorage.getItem("pdf_lib_accounts") || "[]");
+        accounts = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        accounts = [];
+      }
+      activeEmail = event.newValue;
+      updateUI();
+      if (typeof window.syncScopedLibraryState === "function") {
+        window.syncScopedLibraryState();
+      }
+    }
+  }
+});
+
 function getInitials(name, email) {
   if (name)
     return name

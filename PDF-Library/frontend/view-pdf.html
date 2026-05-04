@@ -811,6 +811,22 @@
         })();
       });
 
+      // Listen for auth changes from other pages (main homepage, EPUB viewer)
+      window.addEventListener("storage", (event) => {
+        if (event.key === LS_ACTIVE && event.newValue) {
+          const emailKey = normalizeEmailKey(event.newValue);
+          if (emailKey && !currentReaderUser) {
+            (async () => {
+              const user = await fetchSessionUser() || await restoreCachedReaderUser();
+              if (user?.email) {
+                persistReaderAccount(user);
+                await handleAuthenticatedReader(user, false);
+              }
+            })();
+          }
+        }
+      });
+
       // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       // GATED MODE  (not signed in)
       // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

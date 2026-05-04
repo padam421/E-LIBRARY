@@ -163,10 +163,13 @@ const HIGHLIGHT_COLORS = {
 };
 const READING_PROGRESS_KEY_PREFIX = "pdf_lib_reading_progress_v1";
 const LIBRARY_SETTINGS_KEY_PREFIX = "pdf_lib_user_settings_v1";
-const PREVIEW_CHAPTER_LIMIT = Math.min(
-  50,
-  Math.max(1, Math.floor(Number(window.VIEWER_PREVIEW_PAGE_LIMIT || 10)) || 10),
-);
+function getPreviewChapterLimit() {
+  return Math.min(
+    50,
+    Math.max(1, Math.floor(Number(window.VIEWER_PREVIEW_PAGE_LIMIT || 4)) || 4),
+  );
+}
+const PREVIEW_CHAPTER_LIMIT = getPreviewChapterLimit();
 
 function resolveApiOrigin() {
   const configured = String(
@@ -843,7 +846,7 @@ async function loadEpub(documentId, previewOnly = false) {
     throw new Error("This EPUB does not contain readable chapters.");
   }
 
-  chapters = previewOnly ? loadedChapters.slice(0, PREVIEW_CHAPTER_LIMIT) : loadedChapters;
+  chapters = previewOnly ? loadedChapters.slice(0, getPreviewChapterLimit()) : loadedChapters;
   searchIndex = null;
 
   if (bookTitle) {

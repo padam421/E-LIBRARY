@@ -559,10 +559,20 @@ body.epub-reader-body {
 }
 
 .epub-reader-gate {
-  min-height: calc(100vh - 68px);
+  position: fixed;
+  inset: 68px 0 0;
+  z-index: 995;
   display: grid;
   place-items: center;
   padding: 40px 18px;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(10, 10, 14, 0.82), rgba(10, 10, 14, 0.96) 60%);
+  backdrop-filter: blur(12px) saturate(1.1);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1);
+}
+
+body.is-authenticated .epub-reader-gate {
+  display: none;
 }
 
 .epub-gate-card {
