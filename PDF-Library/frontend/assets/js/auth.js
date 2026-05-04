@@ -997,7 +997,8 @@ function getPreferredLegacyOwnerEmailKey(fallbackEmail) {
 
 function getScopedStorageKey(prefix, email = activeEmail) {
   const emailKey = normalizeEmailKey(email);
-  return emailKey ? `${prefix}::${emailKey}` : `${prefix}::guest`;
+  if (!emailKey) return null;
+  return `${prefix}::${emailKey}`;
 }
 
 function readStorageMigrationState() {
