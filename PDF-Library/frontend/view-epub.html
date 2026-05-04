@@ -563,18 +563,6 @@
       }
 
       function renderUserNav(user) {
-        const navSlot = document.getElementById("nav-right-slot");
-        if (!navSlot) return;
-
-        if (!user) {
-          navSlot.innerHTML = `
-            <button class="epub-nav-pill" onclick="triggerGoogleSignIn()" title="Sign In">
-              <span class="material-symbols-outlined">login</span>
-              Sign in
-            </button>`;
-          return;
-        }
-
         const initials = getInitials(user.name, user.email);
         const firstName =
           user.given_name ||
@@ -583,7 +571,7 @@
         const safeInitials = escapeHtml(initials);
         const safeFirstName = escapeHtml(firstName);
 
-        navSlot.innerHTML = pictureSrc
+        document.getElementById("nav-right-slot").innerHTML = pictureSrc
           ? `<div class="reader-user-chip"><img class="reader-avatar" src="${escapeHtml(pictureSrc)}" alt="${safeInitials}" referrerpolicy="no-referrer" /><span>${safeFirstName}</span></div>`
           : `<div class="reader-user-chip"><div class="reader-avatar-initials">${safeInitials}</div><span>${safeFirstName}</span></div>`;
       }
@@ -926,19 +914,9 @@
           const user = await fetchSessionUser() || await restoreCachedReaderUser();
           if (restoreVersion !== authStateVersion) return;
 
-          // Check access status for the book
-          const access = await fetchReaderAccess();
-
           if (user?.email) {
             persistReaderAccount(user);
             await handleAuthenticatedReader(user);
-            return;
-          }
-
-          // GUEST (Not signed in)
-          if (!access.requiresPayment) {
-            // Free book: Allow full reading for guests
-            unlockReader(null);
             return;
           }
 
