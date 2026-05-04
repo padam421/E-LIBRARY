@@ -20,105 +20,127 @@
     <link rel="stylesheet" href="assets/css/book-detail.css?v=seo-1" />
     <link rel="stylesheet" href="assets/css/theme-toggle.css" />
     <link rel="stylesheet" href="assets/css/theme-toggle-detail.css" />
+    <!-- Tailwind Setup -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              background: '#0a0a0a',
+              text: '#f5f5f7',
+              brand: '#0071e3', // Apple blue
+            },
+            fontFamily: {
+              sans: ['"Inter"', '-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"Segoe UI"', 'Roboto', 'sans-serif'],
+              serif: ['"Source Serif 4"', 'Georgia', '"Times New Roman"', 'serif'],
+            }
+          }
+        }
+      }
+    </script>
   </head>
-  <body>
+  <body class="bg-background text-text font-sans antialiased m-0 overflow-x-hidden min-h-screen tracking-[-0.01em]">
     <!-- ═══════════════════════════════════════════
          NAVIGATION BAR
          ═══════════════════════════════════════════ -->
-    <nav class="detail-nav" id="detail-nav">
-      <a href="index.html" class="nav-back" id="nav-back">
-        <span class="material-symbols-outlined">chevron_left</span>
-        <span class="nav-logo">PDF Library</span>
+    <nav id="detail-nav" class="fixed top-0 left-0 right-0 z-[100] flex items-center p-[16px_24px] bg-background/70 backdrop-blur-[20px] backdrop-saturate-[180] transition-all duration-300">
+      <a href="index.html" id="nav-back" class="flex items-center gap-2 text-white/90 no-underline text-[16px] font-semibold transition-all duration-300 hover:text-white hover:-translate-x-1 p-2 rounded-full hover:bg-white/10">
+        <span class="material-symbols-outlined text-[24px]">chevron_left</span>
+        <span class="font-serif text-[18px]">PDF Library</span>
       </a>
     </nav>
 
     <!-- ═══════════════════════════════════════════
          HERO VIDEO SECTION (Full Width)
          ═══════════════════════════════════════════ -->
-    <section class="hero-section" id="hero-section">
+    <!-- ═══════════════════════════════════════════
+         HERO VIDEO SECTION (Full Width)
+         ═══════════════════════════════════════════ -->
+    <section id="hero-section" class="relative w-full h-[65vh] min-h-[400px] max-h-[700px] bg-black overflow-hidden flex flex-col md:h-[75vh]">
       <!-- Poster overlay (shows first 3 seconds, then fades to video) -->
       <img
         id="hero-poster"
-        class="hero-poster"
         src=""
         alt="Book Poster"
+        class="absolute inset-0 w-full h-full object-cover z-10 transition-opacity duration-[1500ms]"
         referrerpolicy="no-referrer"
       />
 
       <!-- Video iframe (Google Drive preview — loads behind poster) -->
       <iframe
         id="hero-video"
-        class="hero-video"
+        class="absolute inset-0 w-full h-full object-cover border-none z-[5]"
         allow="autoplay; fullscreen; encrypted-media"
         allowfullscreen
         frameborder="0"
       ></iframe>
 
       <!-- Gradient overlays -->
-      <div class="hero-gradient-bottom"></div>
+      <div class="absolute inset-0 z-20 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent pointer-events-none"></div>
 
       <!-- Title overlay on video -->
-      <div class="hero-title-overlay" id="hero-title-overlay">
-        <h1 id="hero-title" class="hero-title-text"></h1>
+      <div id="hero-title-overlay" class="absolute bottom-0 left-0 right-0 z-30 p-[40px_24px_60px] md:p-[60px_48px_80px] max-w-[1200px] mx-auto w-full flex flex-col justify-end pointer-events-none">
+        <h1 id="hero-title" class="font-serif text-[36px] md:text-[56px] lg:text-[72px] font-bold text-white leading-[1.1] text-shadow-lg m-0 drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)]"></h1>
       </div>
     </section>
 
     <!-- ═══════════════════════════════════════════
          BOOK INFO SECTION
          ═══════════════════════════════════════════ -->
-    <section class="info-section">
-      <div class="info-grid">
+    <section class="max-w-[1200px] mx-auto p-[32px_24px] md:p-[48px_48px]">
+      <div class="flex flex-col md:flex-row gap-10 md:gap-20 items-start">
         <!-- Left Column -->
-        <div class="info-left">
-          <div class="info-meta">
-            <span class="match-badge" id="match-badge">98% Match</span>
-            <span class="rating-badge" id="rating-badge">U/A 13+</span>
-            <span class="category-badge" id="category-badge">Fiction</span>
-            <span class="premium-access-badge hidden" id="premium-access-badge"></span>
+        <div class="flex-[1.5] flex flex-col gap-6 w-full">
+          <div class="flex flex-wrap items-center gap-3 text-[14px] font-medium text-[#a1a1a6]">
+            <span id="match-badge" class="text-[#34c759] font-bold">98% Match</span>
+            <span id="rating-badge" class="border border-[#a1a1a6]/40 px-1.5 py-0.5 rounded-[4px] text-[12px]">U/A 13+</span>
+            <span id="category-badge" class="text-white">Fiction</span>
+            <span id="premium-access-badge" class="hidden"></span>
           </div>
 
-          <p class="info-description" id="info-description">
+          <p id="info-description" class="font-serif text-[18px] md:text-[20px] leading-[1.6] text-[#e8eaed] m-0 max-w-[800px]">
             Loading book description...
           </p>
 
           <!-- Action Buttons — Apple Pill Style -->
-          <div class="format-switcher-shell hidden" id="format-switcher-shell">
-            <span class="format-switcher-label">Choose format</span>
+          <div id="format-switcher-shell" class="hidden flex flex-col gap-2">
+            <span class="text-[12px] text-[#a1a1a6] font-semibold uppercase tracking-wider">Choose format</span>
             <div
-              class="format-switcher"
               id="format-switcher"
+              class="flex bg-[#1c1c1e] p-1 rounded-xl w-fit"
               role="radiogroup"
               aria-label="Choose reading format"
             ></div>
           </div>
 
-          <div class="action-buttons">
-            <button class="btn-apple-primary" id="btn-read-pdf">
+          <div class="flex flex-col sm:flex-row items-center gap-4 mt-2">
+            <button id="btn-read-pdf" class="w-full sm:w-auto px-8 py-3.5 bg-white text-black rounded-full font-semibold text-[16px] flex items-center justify-center gap-2 cursor-pointer transition-all hover:bg-[#e8eaed] active:scale-[0.98]">
               <span class="material-symbols-outlined">menu_book</span>
               Read Now
             </button>
-            <button class="btn-apple-secondary" id="btn-add-list">
+            <button id="btn-add-list" class="w-full sm:w-auto px-8 py-3.5 bg-[#1c1c1e] text-white rounded-full font-semibold text-[16px] flex items-center justify-center gap-2 cursor-pointer transition-all hover:bg-[#2c2c2e] active:scale-[0.98]">
               <span class="material-symbols-outlined">add</span>
               My List
             </button>
           </div>
-          <p class="payment-access-note hidden" id="payment-access-note"></p>
+          <p id="payment-access-note" class="hidden text-[13px] text-[#a1a1a6] m-0"></p>
         </div>
 
         <!-- Right Column -->
-        <div class="info-right">
-          <p class="info-meta-item">
-            <span class="meta-label">Author</span>
-            <span class="meta-value" id="meta-author">Loading...</span>
-          </p>
-          <p class="info-meta-item">
-            <span class="meta-label">Category</span>
-            <span class="meta-value" id="meta-category">Loading...</span>
-          </p>
-          <p class="info-meta-item">
-            <span class="meta-label">Format</span>
-            <span class="meta-value" id="meta-format">PDF, Video</span>
-          </p>
+        <div class="flex-[1] flex flex-col gap-5 w-full pt-4 md:pt-0 border-t md:border-t-0 border-white/10">
+          <div class="flex flex-col gap-1">
+            <span class="text-[13px] text-[#a1a1a6]">Author</span>
+            <span id="meta-author" class="text-[15px] text-white font-medium">Loading...</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-[13px] text-[#a1a1a6]">Category</span>
+            <span id="meta-category" class="text-[15px] text-white font-medium">Loading...</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-[13px] text-[#a1a1a6]">Format</span>
+            <span id="meta-format" class="text-[15px] text-white font-medium">PDF, Video</span>
+          </div>
         </div>
       </div>
     </section>
@@ -126,30 +148,30 @@
     <!-- ═══════════════════════════════════════════
          MORE DETAILS SECTION
          ═══════════════════════════════════════════ -->
-    <section class="details-section">
-      <h2 class="section-title">More Details</h2>
-      <div class="details-grid" id="details-grid">
-        <div class="detail-card glass-card">
-          <h3>About This Book</h3>
-          <p class="detail-label">Author</p>
-          <p class="detail-value" id="detail-author">Loading...</p>
-          <p class="detail-label">Category</p>
-          <p class="detail-value" id="detail-category">Loading...</p>
-          <p class="detail-label">Tags</p>
-          <p class="detail-value detail-tags" id="detail-tags">Loading...</p>
+    <section class="max-w-[1200px] mx-auto p-[0_24px_48px] md:p-[0_48px_64px]">
+      <h2 class="font-serif text-[28px] md:text-[32px] font-bold text-white mb-8 m-0 tracking-tight">More Details</h2>
+      <div id="details-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="bg-[#1c1c1e] p-6 rounded-2xl flex flex-col">
+          <h3 class="font-serif text-[20px] font-bold text-white mb-4 m-0">About This Book</h3>
+          <p class="text-[13px] text-[#a1a1a6] uppercase tracking-wider font-semibold mb-1 m-0">Author</p>
+          <p id="detail-author" class="text-[15px] text-white mb-4 m-0 font-medium">Loading...</p>
+          <p class="text-[13px] text-[#a1a1a6] uppercase tracking-wider font-semibold mb-1 m-0">Category</p>
+          <p id="detail-category" class="text-[15px] text-white mb-4 m-0 font-medium">Loading...</p>
+          <p class="text-[13px] text-[#a1a1a6] uppercase tracking-wider font-semibold mb-1 m-0">Tags</p>
+          <p id="detail-tags" class="text-[15px] text-brand font-medium m-0 flex flex-wrap gap-2">Loading...</p>
         </div>
-        <div class="detail-card glass-card">
-          <h3>Content</h3>
-          <p class="detail-label">Format</p>
-          <p class="detail-value" id="detail-format">PDF Document</p>
-          <p class="detail-label">Video Preview</p>
-          <p class="detail-value" id="detail-video-status">Available</p>
-          <p class="detail-label">Access</p>
-          <p class="detail-value" id="detail-access-status">Free to Read</p>
+        <div class="bg-[#1c1c1e] p-6 rounded-2xl flex flex-col">
+          <h3 class="font-serif text-[20px] font-bold text-white mb-4 m-0">Content</h3>
+          <p class="text-[13px] text-[#a1a1a6] uppercase tracking-wider font-semibold mb-1 m-0">Format</p>
+          <p id="detail-format" class="text-[15px] text-white mb-4 m-0 font-medium">PDF Document</p>
+          <p class="text-[13px] text-[#a1a1a6] uppercase tracking-wider font-semibold mb-1 m-0">Video Preview</p>
+          <p id="detail-video-status" class="text-[15px] text-white mb-4 m-0 font-medium">Available</p>
+          <p class="text-[13px] text-[#a1a1a6] uppercase tracking-wider font-semibold mb-1 m-0">Access</p>
+          <p id="detail-access-status" class="text-[15px] text-white m-0 font-medium">Free to Read</p>
         </div>
-        <div class="detail-card glass-card">
-          <h3>Summary</h3>
-          <p class="detail-value detail-full-desc" id="detail-full-desc">Loading...</p>
+        <div class="bg-[#1c1c1e] p-6 rounded-2xl flex flex-col lg:col-span-1 md:col-span-2">
+          <h3 class="font-serif text-[20px] font-bold text-white mb-4 m-0">Summary</h3>
+          <p id="detail-full-desc" class="font-serif text-[16px] leading-[1.6] text-[#e8eaed] m-0">Loading...</p>
         </div>
       </div>
     </section>
@@ -157,14 +179,14 @@
     <!-- ═══════════════════════════════════════════
          YOU MIGHT ALSO LIKE
          ═══════════════════════════════════════════ -->
-    <section class="recommendations-section" id="recommendations-section">
-      <h2 class="section-title">You Might Also Like</h2>
-      <div class="reco-row-wrapper">
-        <button class="reco-arrow reco-arrow-left hidden" id="reco-arrow-left">
+    <section id="recommendations-section" class="max-w-[1200px] mx-auto p-[0_24px_48px] md:p-[0_48px_64px]">
+      <h2 class="font-serif text-[28px] md:text-[32px] font-bold text-white mb-8 m-0 tracking-tight">You Might Also Like</h2>
+      <div class="relative group">
+        <button id="reco-arrow-left" class="absolute left-[-20px] top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-black/60 backdrop-blur-md rounded-full text-white flex items-center justify-center border border-white/10 opacity-0 md:group-hover:opacity-100 transition-opacity cursor-pointer hidden">
           <span class="material-symbols-outlined">chevron_left</span>
         </button>
-        <div class="reco-row" id="reco-row"></div>
-        <button class="reco-arrow reco-arrow-right" id="reco-arrow-right">
+        <div id="reco-row" class="flex gap-4 md:gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory py-4 hide-scrollbar"></div>
+        <button id="reco-arrow-right" class="absolute right-[-20px] top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-black/60 backdrop-blur-md rounded-full text-white flex items-center justify-center border border-white/10 opacity-0 md:group-hover:opacity-100 transition-opacity cursor-pointer">
           <span class="material-symbols-outlined">chevron_right</span>
         </button>
       </div>
@@ -173,15 +195,15 @@
     <!-- ═══════════════════════════════════════════
          MORE FROM SAME CATEGORY
          ═══════════════════════════════════════════ -->
-    <section class="recommendations-section" id="trending-section">
-      <h2 class="section-title" id="trending-title">Trending Now</h2>
-      <div class="reco-row-wrapper">
-        <div class="reco-row" id="trending-row"></div>
+    <section id="trending-section" class="max-w-[1200px] mx-auto p-[0_24px_48px] md:p-[0_48px_64px]">
+      <h2 id="trending-title" class="font-serif text-[28px] md:text-[32px] font-bold text-white mb-8 m-0 tracking-tight">Trending Now</h2>
+      <div class="relative group">
+        <div id="trending-row" class="flex gap-4 md:gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory py-4 hide-scrollbar"></div>
       </div>
     </section>
 
-    <footer class="detail-footer">
-      <p>&copy; 2026 PDF Library — Your Digital Reading Companion</p>
+    <footer class="text-center p-[40px_24px] border-t border-white/10 mt-10">
+      <p class="text-[#a1a1a6] text-[14px] m-0">&copy; 2026 PDF Library — Your Digital Reading Companion</p>
     </footer>
 
   <script src="assets/js/config.js"></script>

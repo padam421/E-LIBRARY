@@ -13,27 +13,39 @@
     <meta name="google-site-verification" content="XIa9uO4IJpkrJ3xV-a2K00BZ2kR4bV8vncQBjniJOGM" />
     <link rel="canonical" href="https://e-library-c9t.pages.dev/about.html" />
     <link rel="icon" type="image/png" href="favicon.png" />
-    <link rel="stylesheet" href="assets/css/seo.css?v=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', '"Segoe UI"', 'system-ui', 'sans-serif'],
+              serif: ['Georgia', '"Times New Roman"', 'serif'],
+            }
+          }
+        }
+      }
+    </script>
   </head>
-  <body class="seo-page">
-    <header class="seo-header">
-      <a href="/" class="seo-brand">E-Library</a>
-      <nav aria-label="Primary">
-        <a href="/books/">Books</a>
-        <a href="how-to-use.html">How to Use</a>
-        <a href="best-free-books.html">Best Free Books</a>
+  <body class="m-0 min-h-screen text-[#f7f7f8] font-sans antialiased" style="background: radial-gradient(circle at 18% 10%, rgba(56, 189, 248, 0.14), transparent 32%), radial-gradient(circle at 84% 6%, rgba(250, 204, 21, 0.1), transparent 28%), #050507;">
+    <header class="min-h-[72px] p-[18px_clamp(18px,4vw,64px)] flex flex-col md:flex-row items-start md:items-center justify-between gap-[18px] border-b border-white/10 bg-[#050507]/80 sticky top-0 z-10 backdrop-blur-[16px]">
+      <a href="/" class="text-white no-underline font-black text-[20px]">E-Library</a>
+      <nav aria-label="Primary" class="flex items-center gap-[14px] flex-wrap">
+        <a href="/books/" class="text-white/70 font-bold text-[14px] no-underline hover:text-white transition-colors">Books</a>
+        <a href="how-to-use.html" class="text-white/70 font-bold text-[14px] no-underline hover:text-white transition-colors">How to Use</a>
+        <a href="best-free-books.html" class="text-white/70 font-bold text-[14px] no-underline hover:text-white transition-colors">Best Free Books</a>
       </nav>
     </header>
-    <main class="seo-collection">
-      <section class="seo-collection-hero">
-        <p class="seo-kicker">About</p>
-        <h1>About E-Library</h1>
-        <p>
+    <main class="w-[min(1180px,calc(100%-32px))] mx-auto py-[clamp(28px,5vw,72px)]">
+      <section class="mt-[24px] p-[clamp(20px,4vw,36px)] border border-white/10 bg-[#101014]/80 rounded-[14px] shadow-[0_28px_80px_rgba(0,0,0,0.32)]">
+        <p class="m-[0_0_10px] text-[#38bdf8] text-[13px] font-black uppercase tracking-[0.08em]">About</p>
+        <h1 class="m-0 font-serif max-w-[820px] text-[clamp(36px,7vw,72px)] leading-[0.94] mb-8">About E-Library</h1>
+        <p class="text-white/70 text-[clamp(17px,2vw,21px)] leading-[1.65] mb-6">
           E-Library is a free digital reading platform created by Padam Kishore to make useful books easier to discover,
           open, and read on phones and laptops. The library focuses on clean book pages, readable PDF and EPUB formats,
           and a smooth browsing experience for students, readers, and lifelong learners.
         </p>
-        <p>
+        <p class="text-white/70 text-[clamp(17px,2vw,21px)] leading-[1.65] m-0">
           Every public book page is designed to be discoverable by search engines, while reader-only and admin pages stay
           out of search results. This helps people find available books directly from Google and then continue reading
           inside the E-Library experience.

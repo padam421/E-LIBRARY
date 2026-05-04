@@ -21,29 +21,47 @@
     <link rel="stylesheet" href="assets/css/pdf-reader.css" />
     <link rel="stylesheet" href="assets/css/theme-toggle.css" />
     <link rel="stylesheet" href="assets/css/theme-toggle-reader.css" />
+    <!-- Tailwind Setup -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              background: '#0a0a0a',
+              text: '#f5f5f7',
+              brand: '#007aff',
+            },
+            fontFamily: {
+              sans: ['"Inter"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+              serif: ['"Source Serif 4"', 'Georgia', 'serif'],
+            }
+          }
+        }
+      }
+    </script>
 
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="assets/js/config.js"></script>
   </head>
-
-  <body>
+  <body class="bg-[#000000] text-text font-sans m-0 overflow-hidden h-screen w-screen flex flex-col">
 
     <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          NAVIGATION BAR
          â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
-    <nav class="reader-nav" id="reader-nav">
+    <nav id="reader-nav" class="fixed top-0 left-0 right-0 h-[60px] bg-[#1c1c1e]/90 backdrop-blur-md flex items-center justify-between px-4 z-[999] border-b border-white/10 shrink-0">
       <!-- Back Button -->
-      <a href="javascript:void(0)" onclick="history.back()" class="reader-back" id="reader-back">
-        <span class="material-symbols-outlined">chevron_left</span>
-        <span>Library</span>
+      <a href="javascript:void(0)" onclick="history.back()" id="reader-back" class="flex items-center gap-1 text-brand no-underline font-medium hover:opacity-80 transition-opacity text-[15px]">
+        <span class="material-symbols-outlined text-[22px]">chevron_left</span>
+        <span class="hidden sm:inline">Library</span>
       </a>
 
       <!-- Book Title (center) -->
-      <div class="reader-title" id="reader-title">Loadingâ€¦</div>
+      <div id="reader-title" class="font-serif text-[16px] font-semibold text-white absolute left-1/2 -translate-x-1/2 max-w-[40%] sm:max-w-[50%] truncate text-center pointer-events-none">Loading...</div>
 
       <!-- Right slot: user chip OR sign-in pill -->
-      <div id="nav-right-slot"></div>
+      <div id="nav-right-slot" class="flex items-center gap-3"></div>
     </nav>
 
     <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
