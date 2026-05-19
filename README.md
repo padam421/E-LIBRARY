@@ -39,6 +39,125 @@ E-Library is a full-stack digital reading platform built by **Padam Kishore**. I
 - GitHub profile: [https://github.com/padam421](https://github.com/padam421)
 - LinkedIn profile: [https://www.linkedin.com/in/padam-kishore-031b8b377/](https://www.linkedin.com/in/padam-kishore-031b8b377/)
 
+## Visual Walkthrough
+
+These screenshots show the real product surfaces that readers, supporters, and admins use: discovery, signed-in progress, course-style book browsing, PDF/EPUB reading, AI help, Razorpay-backed support, and owner/admin management.
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/home-library.png" alt="E-Library homepage with search, theme toggle, and book rows" />
+      <br />
+      <strong>Home library discovery</strong>
+      <br />
+      Fast search, themed browsing, live book rows, and a polished reader-first layout.
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/continue-reading.png" alt="Signed-in Continue Reading dashboard with saved reading progress" />
+      <br />
+      <strong>Continue Reading dashboard</strong>
+      <br />
+      Signed-in readers can resume PDF and EPUB books with saved progress across the library.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/training-catalog.png" alt="Training catalog menu with curated books" />
+      <br />
+      <strong>Training and course catalog</strong>
+      <br />
+      Category mega-menu for training, fiction, novels, trending titles, mystery, and classics.
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/book-detail.png" alt="Book detail page with PDF and EPUB format switcher" />
+      <br />
+      <strong>Book detail page</strong>
+      <br />
+      Format switching, cover art, metadata, summary, reading actions, and saved-list workflow.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/pdf-reader-preview.png" alt="PDF reader open on Carmilla with thumbnails and page controls" />
+      <br />
+      <strong>PDF reader</strong>
+      <br />
+      Full in-browser PDF reading with thumbnails, page navigation, zoom controls, and progress resume.
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/pdf-ai-assistant.png" alt="PDF reader with AI reading assistant panel open" />
+      <br />
+      <strong>AI reading assistant</strong>
+      <br />
+      Contextual study tools for summaries, explanations, quizzes, book search, and notes while reading.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/epub-reader-preview.png" alt="EPUB reader open on Build a Large Language Model from Scratch with highlighted text" />
+      <br />
+      <strong>EPUB reader</strong>
+      <br />
+      Reflowable EPUB reading with search, bookmarks, chapters, typography controls, and highlighting.
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/support-payment.png" alt="Support page with INR amount, recent supporters, media message, and support checkout" />
+      <br />
+      <strong>Support and payments</strong>
+      <br />
+      Razorpay-backed INR support flow with quick amounts, recent supporters, and optional media notes.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/admin-access.png" alt="Admin library dashboard with book table and library stats" />
+      <br />
+      <strong>Admin library dashboard</strong>
+      <br />
+      Owner/admin view for total books, cover/video stats, visibility controls, search, and safe deletion.
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/admin-add-book.png" alt="Admin add book form with metadata and Google Drive IDs" />
+      <br />
+      <strong>Add book workflow</strong>
+      <br />
+      Add metadata, visibility, descriptions, PDF/EPUB Drive IDs, cover art, and video preview IDs.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/admin-bulk-import.png" alt="Admin bulk import form for CSV or JSON book upload" />
+      <br />
+      <strong>Bulk import workflow</strong>
+      <br />
+      Upload CSV/JSON or paste structured book data for safe batched imports.
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/admin-payments.png" alt="Admin payment settings with Razorpay enabled and premium pricing" />
+      <br />
+      <strong>Payment controls</strong>
+      <br />
+      Configure Razorpay checkout, free preview pages, currency, subscription pricing, and book-level premium rules.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/admin-permissions.png" alt="Admin permissions screen with owner account and grant admin form" />
+      <br />
+      <strong>Admin permissions</strong>
+      <br />
+      Owner-only controls for granting and reviewing admin access.
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/admin-activity.png" alt="Admin activity audit log with book and payment changes" />
+      <br />
+      <strong>Admin activity log</strong>
+      <br />
+      Audit trail for book changes, imports, payment setting updates, and permission changes.
+    </td>
+  </tr>
+</table>
+
 ## Architecture
 
 ```mermaid
