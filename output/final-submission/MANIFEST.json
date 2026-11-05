@@ -1,0 +1,49 @@
+{
+  "student": "Padam Kishore",
+  "enrollment": "25CS003692",
+  "source_revision": "ea609ce9af79fe364c963cac0eea82490078eacb",
+  "source_archive_files": 324,
+  "schema_tables": [
+    "admin_activity_logs",
+    "book_premium_rules",
+    "books_data",
+    "payment_orders",
+    "payment_settings",
+    "support_contributions",
+    "user_entitlements",
+    "users"
+  ],
+  "files": [
+    {
+      "name": "25CS003692_E-Library_ProjectReport.pdf",
+      "bytes": 1119186,
+      "sha256": "fa637220f2aaead7a35ec44433f2829e7064bbe0ef30fb377b5998f515d74415"
+    },
+    {
+      "name": "25CS003692_E-Library_SourceCode.zip",
+      "bytes": 6626482,
+      "sha256": "ed6795ad877aa677c280f98de7020f774da1e5295e026bfd45b540274cd57ecf"
+    },
+    {
+      "name": "25CS003692_E-Library_Database.sql",
+      "bytes": 10100,
+      "sha256": "37dc582188ab554fcb772c0c7369076f979982f6da5f4c54c6481cafa55339f3"
+    },
+    {
+      "name": "SUBMISSION_LINKS_AND_STEPS.txt",
+      "bytes": 3267,
+      "sha256": "d70a54ae3573fd21fcaa3f3f492ac3ee45b03cf5d8a02055cb6c412c49e325b7"
+    },
+    {
+      "name": "VIVA_AND_DEMO_NOTES.txt",
+      "bytes": 2483,
+      "sha256": "b36c301c22c2e423056bef3057b432e98c11a62a7fba222c46de05940ffa2a0e"
+    },
+    {
+      "name": "25CS003692_ProjectLinks.txt",
+      "bytes": 368,
+      "sha256": "68547f8d3ff9f3fdd7a7ab4e5b2e6fb2cdd9d65c676993126627d15469725f19"
+    }
+  ],
+  "submission_platform": "Microsoft Teams for Education"
+}

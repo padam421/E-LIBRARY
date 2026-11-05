@@ -1,0 +1,49 @@
+E-LIBRARY - QUICK DEMONSTRATION AND VIVA NOTES
+
+1. INTRODUCTION (30 seconds)
+My project is E-Library, a full-stack digital library and online reading platform.
+It centralizes book discovery, PDF/EPUB reading and administrator-managed content.
+The primary stack is HTML, CSS, JavaScript, Node.js/Express and MySQL.
+A supplementary catalogue uses React and Bootstrap; PHP exports metadata to CSV.
+
+2. DEMONSTRATION ORDER
+- Open the live library and search for a book.
+- Open its details and demonstrate an available preview or reading format.
+- Open catalogue.html, filter a category/format and demonstrate pagination.
+- Demonstrate Google sign-in and the reader if the configured services are ready.
+- Show the administrator dashboard and explain book CRUD and visibility.
+- Run the PHP CSV exporter with a saved public catalogue JSON or public API.
+- Show the GitHub source, SQL schema and CI check.
+Use suitable test records if demonstrating modifications to book records.
+
+3. REQUEST FLOW
+Browser Fetch request -> Express route -> controller/model -> MySQL -> JSON
+response -> browser UI. Protected reader/admin requests also check access.
+
+4. WHY MYSQL?
+It stores structured book/user metadata, supports CRUD, and expresses relationships
+between users, orders, entitlements and other application records.
+
+5. WHY REACT AND BOOTSTRAP?
+React manages catalogue state, filtering and rendering. Bootstrap supplies the
+responsive grid, forms, buttons and table. Existing reader pages retain their UI.
+
+6. WHAT DOES PHP DO?
+The separate command-line script converts public JSON metadata into CSV. It
+handles quoting/Unicode, validates inputs, skips explicitly private records and
+escapes spreadsheet formulas. The main website backend remains Express.
+
+7. AUTHENTICATION AND AUTHORIZATION
+Authentication verifies who signed in. Authorization checks whether that user
+may perform an action. Google token verification, signed sessions, admin role
+middleware and CSRF checks implement different parts of this access flow.
+
+8. TESTING
+Catalogue browser tests cover filters, pagination, escaping, print action, mobile
+layout, errors/retry and empty data. PHP has 25 behaviour checks plus HTTP tests.
+A 128-book local catalogue CSV was validated. Do not claim that every external
+payment/Google/AI workflow was re-tested in this update.
+
+9. FUTURE SCOPE
+Server-side pagination/search, broader authentication/reader integration tests,
+accessibility improvements and richer catalogue analytics.

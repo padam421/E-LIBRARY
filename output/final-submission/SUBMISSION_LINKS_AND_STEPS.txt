@@ -1,0 +1,63 @@
+E-LIBRARY - FINAL WEB DEVELOPMENT PROJECT SUBMISSION
+
+Student: Padam Kishore
+Enrollment: 25CS003692
+Programme: B.Tech CSE (AI-ML)
+Semester: III
+University: Sir Padampat Singhania University
+
+Project title:
+E-Library: A Smart Digital Library and Online Reading Platform
+
+GitHub repository: https://github.com/padam421/E-LIBRARY
+Live project: https://e-library-c9t.pages.dev/
+React/Bootstrap catalogue: https://e-library-c9t.pages.dev/catalogue.html
+Source revision: ea609ce9af79fe364c963cac0eea82490078eacb
+
+FILES TO ATTACH IN MICROSOFT TEAMS
+1. 25CS003692_E-Library_ProjectReport.pdf
+2. 25CS003692_E-Library_SourceCode.zip
+3. 25CS003692_E-Library_Database.sql
+
+Attach the GitHub repository URL and live project URL as Link attachments if the
+assignment allows them. The same links appear in the report and source README.
+
+MICROSOFT TEAMS STEPS
+Sign in to https://teams.cloud.microsoft/ with the university account.
+Open the correct class team, then Assignments.
+Open Mini Project - Web Development and verify the teacher and deadline.
+Under My work select + Add work / Attach, then Upload from this device.
+Upload the three required files listed above and wait for every upload to finish.
+If Link attachments are available, add the GitHub and live project URLs.
+If not, attach 25CS003692_ProjectLinks.txt, which contains both URLs.
+Check the correct assignment, files and links, then click Turn in / Hand in.
+Complete any confirmation and verify the submitted/turned-in status or timestamp.
+Attaching files without Turn in / Hand in does not finish the submission.
+Official instructions:
+https://support.microsoft.com/en-us/education/assignments/turn-in-an-assignment-in-microsoft-teams
+
+SOURCE CODE AND DATABASE SETUP
+The ZIP contains the GitHub-published source at the revision above.
+Dependencies, real .env files, private keys, credentials and the .git directory
+are excluded. Use the example environment files with your own configuration.
+Read E-LIBRARY/docs/SETUP.md and E-LIBRARY/docs/DEPLOYMENT.md after extraction.
+
+FRESH DATABASE IMPORT - USE THIS ORDER
+Create/select an empty MySQL 8 database, for example e_library_submission.
+Import 25CS003692_E-Library_Database.sql into that selected database.
+This combined file already includes the core, payment and support schemas.
+Do not additionally run the legacy 003 repair script against this fresh schema;
+it adds columns already present in the current core schema.
+The delivered SQL contains table definitions, not a dump of live personal data.
+
+For local execution configure the backend .env and run npm ci, then npm start
+inside PDF-Library/backend. Serve PDF-Library/frontend using a local web server.
+Set PDF_LIBRARY_CONFIG.API_ORIGIN in frontend/assets/js/config.js to the backend
+origin you intend to demonstrate (http://localhost:3000 for a local backend).
+The main frontend can also use the already hosted public API configured in Git.
+Google login, protected assets, AI and payment integrations require their own
+provider configuration. PHP 8.1+ is needed only for the supplementary CSV tool.
+
+The proposal form is already completed according to the student. This package
+is for the final Microsoft Teams project submission. Preparing these files does not
+submit the Teams assignment automatically.

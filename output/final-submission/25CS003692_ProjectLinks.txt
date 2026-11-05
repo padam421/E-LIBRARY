@@ -1,0 +1,14 @@
+E-Library: A Smart Digital Library and Online Reading Platform
+Student: Padam Kishore
+Enrollment: 25CS003692
+Programme: B.Tech CSE (AI-ML), Semester III
+Sir Padampat Singhania University
+
+GitHub repository:
+https://github.com/padam421/E-LIBRARY
+
+Live project:
+https://e-library-c9t.pages.dev/
+
+React/Bootstrap catalogue:
+https://e-library-c9t.pages.dev/catalogue.html
