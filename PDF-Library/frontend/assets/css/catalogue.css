@@ -1,0 +1,16 @@
+body { color: #172b3a; }
+.text-primary { color: #086b81 !important; }
+.btn-primary { --bs-btn-bg: #086b81; --bs-btn-border-color: #086b81; --bs-btn-hover-bg: #07576a; --bs-btn-hover-border-color: #07576a; }
+.catalogue-stat { border-left: 3px solid #16869b; }
+.catalogue-table { min-width: 620px; }
+.catalogue-table th { white-space: nowrap; }
+.catalogue-table td { vertical-align: middle; }
+.catalogue-table a { color: #086b81; }
+@media print {
+  header, footer, .catalogue-controls, .catalogue-pagination { display: none !important; }
+  main.container { max-width: none; padding: 0 !important; }
+  body, .bg-light { background: white !important; }
+  .table-responsive { overflow: visible; }
+  .catalogue-table { min-width: 0; }
+  a { color: inherit !important; text-decoration: none; }
+}

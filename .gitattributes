@@ -8,6 +8,9 @@
 *.sql text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
+*.php text eol=lf
+*.py text eol=lf
+*.cjs text eol=lf
 
 *.ps1 text eol=crlf
 *.png binary
@@ -15,3 +18,4 @@
 *.jpeg binary
 *.gif binary
 *.ico binary
+*.pdf binary

@@ -41,3 +41,9 @@ jobs:
 
       - name: Cloudflare Function syntax check
         run: find PDF-Library/frontend/functions -name "*.js" -print0 | xargs -0 -n1 node --check
+
+      - name: PHP catalogue exporter syntax and behaviour
+        run: |
+          php -l PDF-Library/php/export-catalogue.php
+          php PDF-Library/php/tests/export-catalogue-test.php
+          node tests/catalogue-export-http.cjs

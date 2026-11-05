@@ -10,6 +10,13 @@ E-Library is a full-stack digital reading platform built by **Padam Kishore**. I
 
 ## Project Snapshot
 
+Academic submission: [form answers, technology mapping and verification](docs/ACADEMIC-SUBMISSION.md).
+Download the [proposal PDF](output/pdf/25CS003692_MiniProjectProposal.pdf) or
+[final project report](output/pdf/25CS003692_E-Library_ProjectReport.pdf).
+The supplementary [book catalogue](PDF-Library/frontend/catalogue.html) uses React
+and Bootstrap; a [PHP CSV exporter](PDF-Library/php/export-catalogue.php) provides
+offline catalogue reports while the main backend remains Node.js/Express.
+
 | Area | Implementation |
 | --- | --- |
 | Public site | Static HTML, CSS, and JavaScript hosted on Cloudflare Pages |

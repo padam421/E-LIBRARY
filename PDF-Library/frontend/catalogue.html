@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Search the E-Library catalogue by title, author, category and reading format.">
+    <title>Book Catalogue | E-Library</title>
+    <link rel="canonical" href="https://e-library-c9t.pages.dev/catalogue.html">
+    <link rel="stylesheet" href="assets/vendor/bootstrap-5.3.8.min.css">
+    <link rel="stylesheet" href="assets/css/catalogue.css">
+    <script defer src="assets/vendor/react-18.3.1.min.js"></script>
+    <script defer src="assets/vendor/react-dom-18.3.1.min.js"></script>
+    <script defer src="assets/js/config.js"></script>
+    <script defer src="assets/js/catalogue.js"></script>
+  </head>
+  <body class="bg-light">
+    <header class="border-bottom bg-white">
+      <nav class="container py-3 d-flex justify-content-between align-items-center" aria-label="Catalogue navigation">
+        <a class="fw-bold text-decoration-none text-dark" href="index.html">E-Library</a>
+        <a class="btn btn-outline-dark btn-sm" href="index.html">Back to library</a>
+      </nav>
+    </header>
+    <main class="container py-5">
+      <p class="text-uppercase text-primary fw-semibold small">Explore your next read</p>
+      <h1 class="display-5 fw-bold">Book catalogue</h1>
+      <p class="text-secondary mb-4">A clear view of the collection. Find a book by title, author, category or format.</p>
+      <div id="catalogue-root"><p role="status">Loading the catalogue...</p></div>
+      <noscript><p class="alert alert-info">Enable JavaScript to search this catalogue, or <a href="books/">browse the book directory</a>.</p></noscript>
+    </main>
+    <footer class="container py-4 border-top text-secondary small">E-Library &middot; Discover, read and learn.</footer>
+  </body>
+</html>
