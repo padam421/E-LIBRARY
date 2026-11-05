@@ -26,7 +26,8 @@ const root = path.resolve(__dirname, '../PDF-Library/frontend');
     const books = Array.from({ length: 26 }, (_, i) => ({ id: i + 1, title: 'Book ' + String(i + 1).padStart(2, '0'), author: 'Author ' + i, category: i % 2 ? 'Fiction' : 'Technology', has_pdf: true, has_epub: i % 2 === 0 }));
     books[0].title = '<img src=x onerror=alert(1)>';
     let mode = 'ready';
-    await page.route('http://localhost:3000/api/pdfs', route => {
+    // Match the configured API origin on both a fresh clone and local setups.
+    await page.route('**/api/pdfs', route => {
       if (mode === 'error') return route.fulfill({ status: 503, body: '{}' });
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(mode === 'invalid' ? { error: 'Invalid response' } : mode === 'empty' ? [] : books) });
     });
